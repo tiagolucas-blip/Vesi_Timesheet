@@ -1,7 +1,7 @@
 (function(){
   "use strict";
 
-  var DAYS = ["Mon 14","Tue 15","Wed 16","Thu 17","Fri 18","Sat 19","Sun 20"];
+  var DAYS = [];
   var PROJECTS = [
     {code:"BNK-2026", wbs:"BNK-2026.1.3", name:"Banking, Payroll and ECP", act:"Functional consulting", proj:true,
      sap:{rproj:"BNK-2026.1.3", lstar:"CONS01", skostl:"PT4010", rkostl:"", aufnr:""}},
@@ -13,16 +13,87 @@
      sap:{rproj:"", lstar:"ADMIN1", skostl:"PT4010", rkostl:"PT4010", aufnr:""}}
   ];
   var PERNR = "00104567";
-  var WORKDATES = ["20260914","20260915","20260916","20260917","20260918","20260919","20260920"];
+  var WORKDATES = [];
   var DAYCAP = 8;
 
-  /* Absences come from the Leave Request, read-only in this application */
-  var ABSENCES = [
-    {id:"ab1", day:2, type:"Medical appointment", awart:"0210", hours:4, status:"approved", src:"Request 4500219"},
-    {id:"ab2", day:4, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500221"},
-    {id:"ab3", day:3, type:"Vacation", awart:"0100", hours:8, status:"pending", src:"Request 4500230"}
-  ];
+  var WEEKDAY_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function datesFor(startISO){
+    var y = +startISO.slice(0,4), m = +startISO.slice(4,6)-1, d = +startISO.slice(6,8);
+    var base = new Date(Date.UTC(y,m,d));
+    var out = [];
+    for(var i=0; i<7; i++){
+      var dt = new Date(base.getTime());
+      dt.setUTCDate(base.getUTCDate()+i);
+      out.push(dt.toISOString().slice(0,10).replace(/-/g,""));
+    }
+    return out;
+  }
+  function daysFor(dates){
+    return dates.map(function(wd,i){ return WEEKDAY_ABBR[i] + " " + (+wd.slice(6,8)); });
+  }
+  function weekLabelFor(dates, num){
+    var s = dates[0], e = dates[6];
+    var sD = +s.slice(6,8), sM = +s.slice(4,6)-1, eD = +e.slice(6,8), eM = +e.slice(4,6)-1, y = s.slice(0,4);
+    var range = sM === eM ? (sD+" to "+eD+" "+MONTHS[sM]) : (sD+" "+MONTHS[sM]+" to "+eD+" "+MONTHS[eM]);
+    return "Week "+num+", "+range+" "+y;
+  }
+
+  /* Absences come from the Leave Request, read-only in this application. Sample data
+     covers a few weeks: a posted week, a submitted one, the current draft, and an
+     upcoming one, so week navigation has something real to show. */
   var ABSTATUS = {approved:"Approved", pending:"Pending request"};
+  var WEEKS = [
+    { num:36, start:"20260831", submitted:true,
+      absences:[],
+      rows:[
+        {id:101, p:0, desc:"Payroll cutover testing", h:[4,4,4,4,4,0,0], origin:"Manual"},
+        {id:102, p:1, desc:"Time tracking rollout support", h:[4,4,4,4,4,0,0], origin:"Manual"}
+      ],
+      sugs:[]
+    },
+    { num:37, start:"20260907", submitted:true,
+      absences:[
+        {id:"ab37a", day:4, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500198"}
+      ],
+      rows:[
+        {id:103, p:0, desc:"Payroll parallel run", h:[4,4,4,4,0,0,0], origin:"Manual"},
+        {id:104, p:2, desc:"WFM rollout kickoff", h:[4,4,4,4,0,0,0], origin:"Suggested"}
+      ],
+      sugs:[]
+    },
+    { num:38, start:"20260914", submitted:false,
+      absences:[
+        {id:"ab1", day:2, type:"Medical appointment", awart:"0210", hours:4, status:"approved", src:"Request 4500219"},
+        {id:"ab2", day:4, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500221"},
+        {id:"ab3", day:3, type:"Vacation", awart:"0100", hours:8, status:"pending", src:"Request 4500230"}
+      ],
+      rows:[
+        {id:1, p:0, desc:"Requirements workshop, payroll", h:[3,4,0,2,0,0,0], origin:"Manual"},
+        {id:2, p:1, desc:"Time recording solution design", h:[2,0,3,0,0,0,0], origin:"Suggested"},
+        {id:3, p:3, desc:"", h:[1,0,0,1.5,0,0,0], origin:"Manual"}
+      ],
+      sugs:[
+        {id:"s1", hours:2.5, day:2, p:2, why:"3 client meetings on the calendar", conf:"hi", desc:"Rollout follow-up meetings"},
+        {id:"s2", hours:1.5, day:3, p:1, why:"12 changes in the project repository", conf:"hi", desc:"Time rules configuration"},
+        {id:"s3", hours:2, day:4, p:0, why:"4 tickets handled in Cloud ALM", conf:"mid", desc:"Post-testing payroll fixes"},
+        {id:"s4", hours:1, day:4, p:3, why:"Block with no attributable signal", conf:"low", desc:""}
+      ]
+    },
+    { num:39, start:"20260921", submitted:false,
+      absences:[
+        {id:"ab39a", day:0, type:"Vacation", awart:"0100", hours:8, status:"pending", src:"Request 4500255"}
+      ],
+      rows:[],
+      sugs:[
+        {id:"s5", hours:2, day:1, p:0, why:"2 client meetings on the calendar", conf:"hi", desc:"Payroll steering follow-up"}
+      ]
+    }
+  ];
+  var weekIdx = 2;
+  var ABSENCES = WEEKS[weekIdx].absences;
+  WORKDATES = datesFor(WEEKS[weekIdx].start);
+  DAYS = daysFor(WORKDATES);
 
   function absOn(day, status){
     return ABSENCES.filter(function(a){ return a.day === day && (!status || a.status === status); });
@@ -42,19 +113,10 @@
   }
 
   var state = {
-    submitted:false,
+    submitted: WEEKS[weekIdx].submitted,
     privateMode:false,
-    rows:[
-      {id:1, p:0, desc:"Requirements workshop, payroll", h:[3,4,0,2,0,0,0], origin:"Manual"},
-      {id:2, p:1, desc:"Time recording solution design", h:[2,0,3,0,0,0,0], origin:"Suggested"},
-      {id:3, p:3, desc:"", h:[1,0,0,1.5,0,0,0], origin:"Manual"}
-    ],
-    sugs:[
-      {id:"s1", hours:2.5, day:2, p:2, why:"3 client meetings on the calendar", conf:"hi", desc:"Rollout follow-up meetings"},
-      {id:"s2", hours:1.5, day:3, p:1, why:"12 changes in the project repository", conf:"hi", desc:"Time rules configuration"},
-      {id:"s3", hours:2, day:4, p:0, why:"4 tickets handled in Cloud ALM", conf:"mid", desc:"Post-testing payroll fixes"},
-      {id:"s4", hours:1, day:4, p:3, why:"Block with no attributable signal", conf:"low", desc:""}
-    ],
+    rows: WEEKS[weekIdx].rows,
+    sugs: WEEKS[weekIdx].sugs,
     approvals:[
       {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false},
       {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false},
@@ -249,13 +311,13 @@
     var cal = $("cal");
     cal.innerHTML = "";
     cal.appendChild(el("div","ch","Time"));
-    for(var i=0; i<5; i++) cal.appendChild(el("div","ch", DAYS[i]));
+    for(var i=0; i<7; i++) cal.appendChild(el("div","ch", DAYS[i]));
 
     var hours = el("div","hours","");
     for(var h=9; h<19; h++){ hours.appendChild(el("span","", h+":00")); }
     cal.appendChild(hours);
 
-    for(var d=0; d<5; d++){
+    for(var d=0; d<7; d++){
       var col = el("div","col","");
       absOn(d).forEach(function(a){
         var ab = el("div","blk abs" + (a.status === "pending" ? " pend" : ""), "");
@@ -383,6 +445,9 @@
     });
   }
   function renderKpis(){
+    $("weekLabel").textContent = weekLabelFor(WORKDATES, WEEKS[weekIdx].num);
+    $("prevW").disabled = weekIdx === 0;
+    $("nextW").disabled = weekIdx === WEEKS.length - 1;
     var tot = weekTotal(), proj = projTotal(), expect = weekCapacity();
     $("kTot").innerHTML = fmt(tot) + "<small> / " + fmt(expect) + " h</small>";
     var pct = expect ? Math.min(100, tot/expect*100) : 0;
@@ -560,7 +625,7 @@
       "// On-premise scenario: BAPI_CATIMESHEETMGR_INSERT, table CATSRECORDS\n" +
       "// Property names to confirm against the client's service metadata\n\n" +
       JSON.stringify({
-        requestId: "ts-2026-W38-" + PERNR,
+        requestId: "ts-2026-W" + WEEKS[weekIdx].num + "-" + PERNR,
         profile: "CONS_PT",
         release: state.submitted,
         records: recs,
@@ -592,12 +657,15 @@
   }
   function copyWeek(){
     if(state.submitted) return;
-    var base = [
-      {p:0, desc:"Requirements workshop, payroll"},
-      {p:1, desc:"Time recording solution design"},
-      {p:2, desc:"Rollout follow-up"},
-      {p:3, desc:"Pre-sales and internal training"}
-    ];
+    var prev = WEEKS[weekIdx-1];
+    var base = prev
+      ? prev.rows.map(function(r){ return {p:r.p, desc:r.desc}; })
+      : [
+          {p:0, desc:"Requirements workshop, payroll"},
+          {p:1, desc:"Time recording solution design"},
+          {p:2, desc:"Rollout follow-up"},
+          {p:3, desc:"Pre-sales and internal training"}
+        ];
     var added = 0;
     base.forEach(function(b){
       if(state.rows.some(function(r){ return r.p === b.p; })) return;
@@ -608,6 +676,35 @@
     var first = state.rows[0];
     if(first){ var c = document.getElementById("c-"+first.id+"-0"); if(c) c.focus(); }
     toast(added ? ("Previous week's structure copied, without durations. "+added+" new rows.") : "All of last week's rows are already present.");
+  }
+
+  /* ---------- week navigation ---------- */
+  function saveCurrentWeek(){
+    var w = WEEKS[weekIdx];
+    w.rows = state.rows;
+    w.sugs = state.sugs;
+    w.submitted = state.submitted;
+    w.absences = ABSENCES;
+  }
+  function loadWeek(idx){
+    weekIdx = idx;
+    var w = WEEKS[weekIdx];
+    WORKDATES = datesFor(w.start);
+    DAYS = daysFor(WORKDATES);
+    ABSENCES = w.absences;
+    state.rows = w.rows;
+    state.sugs = w.sugs;
+    state.submitted = w.submitted;
+  }
+  function changeWeek(delta){
+    var next = weekIdx + delta;
+    if(next < 0 || next >= WEEKS.length){
+      toast(delta < 0 ? "No earlier sample weeks." : "No later sample weeks.");
+      return;
+    }
+    saveCurrentWeek();
+    loadWeek(next);
+    render();
   }
   function applyTemplate(){
     if(state.submitted) return;
@@ -721,6 +818,7 @@
 
   /* ---------- submit ---------- */
   function openSubmit(){
+    $("subTitle").textContent = "Submit week " + WEEKS[weekIdx].num;
     var byP = {};
     state.rows.forEach(function(r){
       var t = rowTotal(r);
@@ -771,7 +869,7 @@
     state.submitted = true;
     $("dlgSubmit").close();
     render();
-    toast("Week 38 submitted for approval.", "Reopen", function(){ state.submitted = false; render(); });
+    toast("Week " + WEEKS[weekIdx].num + " submitted for approval.", "Reopen", function(){ state.submitted = false; render(); });
   }
 
   /* ---------- approvals ---------- */
@@ -869,8 +967,8 @@
   $("dataWipe").onclick = function(){ $("dlgData").close(); state.sugs = []; render(); toast("Raw timeline deleted. Pending suggestions disappeared with it."); };
   $("helpBtn").onclick = function(){ $("dlgHelp").showModal(); };
   $("helpClose").onclick = function(){ $("dlgHelp").close(); };
-  $("prevW").onclick = function(){ toast("Week navigation is simulated in this prototype."); };
-  $("nextW").onclick = function(){ toast("Week navigation is simulated in this prototype."); };
+  $("prevW").onclick = function(){ changeWeek(-1); };
+  $("nextW").onclick = function(){ changeWeek(1); };
 
   $("fTbl").onclick = function(){ setFmt(true); };
   $("fPay").onclick = function(){ setFmt(false); };
@@ -1029,7 +1127,7 @@
       return;
     }
     chat.pending = "submit";
-    botSay("bot","Confirm submitting week 38?", botCard(
+    botSay("bot","Confirm submitting week " + WEEKS[weekIdx].num + "?", botCard(
       [["Total","" + fmt(weekTotal()) + " h"],["Expected","" + fmt(weekCapacity()) + " h"],["Status after submitting","In approval"]],
       "Submit", function(){ doSubmit(); botSay("bot","Week submitted. It's now in approval with the project manager."); }));
   }
@@ -1216,6 +1314,8 @@
     if(ev.key === "j" || ev.key === "J"){ ev.preventDefault(); botToggle(); }
     else if(ev.key === "n" || ev.key === "N"){ ev.preventDefault(); openQuick("", 2); }
     else if(ev.key === "c" || ev.key === "C"){ ev.preventDefault(); copyWeek(); }
+    else if(ev.key === "ArrowLeft"){ ev.preventDefault(); changeWeek(-1); }
+    else if(ev.key === "ArrowRight"){ ev.preventDefault(); changeWeek(1); }
     else if(ev.key === "?"){ ev.preventDefault(); $("dlgHelp").showModal(); }
   });
 

@@ -13,9 +13,10 @@ Everything below works, with no server and no real data.
 
 **Recording**
 - Weekly grid with inline editing, accepts `1.5`, `1:30` and `90m`, rounded to 15 minutes
-- Calendar view with project blocks and external events to convert
+- Calendar view (7 days) with project blocks and external events to convert
 - Quick add with natural language interpretation and correctable chips
-- Copy previous week, apply template, favorites per project
+- Copy previous week (pulls the real previous week's rows once one exists in the sample), apply template, favorites per project
+- Week navigation (arrows or `←`/`→`) across four sample weeks: a posted week, one submitted and in approval, the current draft, and an upcoming one with an empty grid
 
 **Absences, read from the leave request**
 - An approved full-day absence closes that day to time entry, in both the grid and the calendar

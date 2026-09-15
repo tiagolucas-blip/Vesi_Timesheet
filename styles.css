@@ -63,6 +63,7 @@
   .btn.ghost{background:transparent; border-color:transparent; color:var(--accent); padding:6px 8px}
   .btn.ghost:hover{background:var(--accent-soft)}
   .btn:disabled{opacity:.45; cursor:not-allowed}
+  .arrow:disabled{opacity:.35; cursor:not-allowed}
   .btn.sm{padding:3px 9px; font-size:12px}
 
   /* nav */
@@ -155,7 +156,7 @@
 
   /* calendar */
   .calscroll{overflow-x:auto; padding:14px}
-  .cal{min-width:700px; display:grid; grid-template-columns:52px repeat(5,minmax(112px,1fr)); gap:1px; background:var(--line-soft)}
+  .cal{min-width:900px; display:grid; grid-template-columns:52px repeat(7,minmax(100px,1fr)); gap:1px; background:var(--line-soft)}
   .cal .ch{background:var(--surface-2); padding:7px 8px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600; text-align:center}
   .cal .ch:first-child{text-align:left}
   .cal .col{background:var(--surface); display:grid; gap:2px; padding:2px; align-content:start; min-height:300px}
