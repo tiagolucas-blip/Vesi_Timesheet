@@ -25,7 +25,8 @@ Tudo abaixo funciona, sem servidor e sem dados reais.
 - Sugestões que caiam em dias de ausência aprovada não são propostas
 
 **Assistente conversacional, padrão Joule**
-- Registo por conversa, consulta do estado da semana, consulta de ausências, copiar semana, submeter
+- Registo por conversa, consulta do estado da semana, consulta de ausências, copiar semana, aplicar sugestões, submeter
+- Interpretação por Claude (`api/chat.js`, function calling), com o interpretador por regex do browser como reserva automática quando a chave não está configurada ou a chamada falha
 - Nunca grava sem confirmação explícita, e mostra sempre o objeto recetor e o tipo de atividade antes de gravar
 - Recusa dias com ausência aprovada e propõe o dia livre seguinte
 - Entradas criadas pelo assistente ficam marcadas com origem `Joule`
@@ -60,42 +61,51 @@ python3 tools/build.py
 
 ## Correr localmente
 
-Não há build nem dependências:
+A página não precisa de build nem dependências:
 
 ```bash
 python3 -m http.server 8000
 # abrir http://localhost:8000
 ```
 
+O `python3 -m http.server` serve apenas ficheiros estáticos, não corre `api/chat.js`. Nesse modo o assistente cai sempre no interpretador local por regex, o que é suficiente para rever o resto da aplicação. Para testar a ligação ao Claude localmente, correr `vercel dev` (precisa do `@anthropic-ai/sdk` instalado com `npm install` e de `ANTHROPIC_API_KEY` no ambiente).
+
 ## Publicar na Vercel
 
-O projeto é estático. Importar o repositório na Vercel e aceitar os valores por omissão, sem framework preset, sem comando de build, com a raiz como diretório de saída. O `vercel.json` já traz essa configuração.
+O projeto é maioritariamente estático, com uma função serverless em `api/chat.js`. Importar o repositório na Vercel e aceitar os valores por omissão, sem framework preset, sem comando de build, com a raiz como diretório de saída. O `vercel.json` já traz essa configuração. Definir `ANTHROPIC_API_KEY` nas variáveis de ambiente do projeto para ativar o assistente com o Claude.
 
 ## Dados
 
-Não há dados reais. Colaborador, projetos, WBS, centros de custo e ausências são inventados e vivem em constantes no topo do `app.js`. Nenhum pedido sai do browser, nenhum dado é guardado, não há armazenamento local nem cookies.
+Não há dados reais. Colaborador, projetos, WBS, centros de custo e ausências são inventados e vivem em constantes no topo do `app.js`. Nenhum pedido sai do browser, exceto o que o assistente envia a `api/chat.js` quando o Claude está ativado (o texto escrito e o contexto da semana descritos acima). Nenhum dado é guardado, não há armazenamento local nem cookies.
 
 ## Limites conhecidos, por desenho
 
 - A navegação entre semanas é simulada, existe uma semana
-- O interpretador de linguagem natural é determinístico, baseado em expressões regulares. Reconhece duração, dia e prefixo do projeto, e nada mais
-- O assistente não chama nenhum modelo de linguagem. Ver a secção seguinte
+- Sem `ANTHROPIC_API_KEY` configurada, o interpretador de linguagem natural é determinístico, baseado em expressões regulares. Reconhece duração, dia e prefixo do projeto, e nada mais. Ver a secção seguinte para ligar o Claude
+- Cada pedido ao assistente é independente, sem memória do turno anterior
 - Não há autenticação nem perfis, o utilizador é fixo
 
-## O que falta para o assistente ser real
+## Ligar o Claude ao assistente
 
-O protótipo demonstra o padrão de interação, que é a parte que precisa de validação com utilizadores. Para o operacionalizar a sério são precisas sete peças:
+O `api/chat.js` já chama o Claude (`claude-opus-5`, function calling) para interpretar o texto livre. Para ativar:
 
-1. **Motor de linguagem.** Um endpoint de inferência, SAP AI Core com Generative AI Hub no cenário BTP, ou outro fornecedor. O interpretador atual não generaliza para fraseado livre
-2. **Function calling com esquema fechado.** O modelo não escreve na timesheet, apenas escolhe entre funções tipadas: `registar_horas`, `consultar_semana`, `listar_ausencias`, `copiar_semana`, `submeter_semana`. Cada função valida os argumentos antes de executar
-3. **Grounding por utilizador.** Projetos e WBS onde a pessoa está alocada, ausências, capacidade do dia, estado da semana. Sem isto o modelo inventa códigos de projeto
-4. **Autenticação e propagação de identidade.** XSUAA ou IAS com propagação de principal até à API do S/4HANA, para que a escrita aconteça em nome da pessoa e o trilho de auditoria fique correto
-5. **Estado de conversa.** Armazenamento de sessão com retenção curta, para manter o contexto entre turnos sem guardar histórico indefinidamente
-6. **Salvaguardas.** Confirmação obrigatória antes de qualquer escrita, que o protótipo já implementa, mais limite de chamadas, recusa de campos contabilísticos preenchidos por texto livre, marcação de origem para auditoria, e registo do que o assistente propôs contra o que a pessoa aceitou
-7. **Avaliação.** Um conjunto de casos de teste com fraseado real dos consultores, incluindo casos difíceis, para medir a precisão antes de abrir a utilizadores
+1. Definir a variável de ambiente `ANTHROPIC_API_KEY` no projeto Vercel (Settings → Environment Variables)
+2. Fazer redeploy
+
+Sem a chave, a função devolve 501 e o cliente cai automaticamente no interpretador por regex do browser, sem quebrar a demo.
+
+O motor escolhe uma das seis funções fechadas (`registar_horas`, `consultar_semana`, `listar_ausencias`, `copiar_semana`, `aplicar_sugestoes`, `submeter_semana`) com base no contexto que o cliente envia a cada pergunta: projetos onde a pessoa está alocada, ausências da semana e capacidade por dia. Nunca escreve na timesheet, só devolve a função e os argumentos; a escrita e a confirmação continuam do lado do cliente, exatamente como no interpretador local.
+
+## O que falta para o assistente ser real em produção SAP
+
+O protótipo demonstra o padrão de interação, que é a parte que precisa de validação com utilizadores. Ligado ao Claude, já cobre a interpretação de linguagem livre, o function calling fechado e o grounding por utilizador. Para o operacionalizar a sério no cenário SAP faltam três peças:
+
+1. **Autenticação e propagação de identidade.** XSUAA ou IAS com propagação de principal até à API do S/4HANA, para que a escrita aconteça em nome da pessoa e o trilho de auditoria fique correto
+2. **Estado de conversa.** Armazenamento de sessão com retenção curta, para manter o contexto entre turnos sem guardar histórico indefinidamente. Cada pedido ao `api/chat.js` é hoje independente, sem memória do turno anterior
+3. **Avaliação.** Um conjunto de casos de teste com fraseado real dos consultores, incluindo casos difíceis, para medir a precisão antes de abrir a utilizadores
 
 No cenário SAP, o caminho standard é expor estas funções como capacidade do Joule, com o Joule Studio no SAP Build, em vez de construir um chat próprio dentro da aplicação. A vantagem é o utilizador ter um só assistente no launchpad em vez de um por aplicação. Este protótipo imita o padrão de interação, não o produto.
 
 ## Aviso
 
-O assistente deste protótipo chama-se Assistente e está marcado como `padrão Joule`. Não é o Joule da SAP, não usa a marca nem os serviços da SAP, e serve apenas para demonstrar o padrão de interação.
+O assistente deste protótipo chama-se Assistente e está marcado como `padrão Joule`. Não é o Joule da SAP, não usa a marca nem os serviços da SAP, e serve apenas para demonstrar o padrão de interação. Quando ligado ao Claude, é a Anthropic quem processa o texto enviado a `api/chat.js`, dentro do contexto descrito acima.

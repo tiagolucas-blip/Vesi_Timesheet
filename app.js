@@ -979,81 +979,58 @@
       (errs ? errs + (errs === 1 ? " erro impede a submissão." : " erros impedem a submissão.") : "Sem erros, pode submeter.");
   }
 
-  function botHandle(txt){
-    if(!txt || !txt.trim()) return;
-    botSay("me", txt);
-    botChips([]);
-    var t = txt.toLowerCase();
-
-    /* ausências */
-    if(/ausênc|ausenc|férias|ferias|leave|falta/.test(t)){
-      var node = el("div","jlist","");
-      ABSENCES.forEach(function(a){
-        node.appendChild(el("div","jrow2", DAYS[a.day] + " · " + a.type + " · " + fmt(a.hours) + " h · " + ABSTATUS[a.status]));
-      });
-      botSay("bot","Estas são as ausências da semana, vindas do Leave Request. Os dias de ausência aprovada de dia inteiro não aceitam registo de horas.", node);
-      botChips(["Quantas horas tenho?","Copiar a semana passada"]);
+  /* ações do assistente, partilhadas entre o Claude (via /api/chat) e o interpretador local */
+  function showAbsences(){
+    var node = el("div","jlist","");
+    ABSENCES.forEach(function(a){
+      node.appendChild(el("div","jrow2", DAYS[a.day] + " · " + a.type + " · " + fmt(a.hours) + " h · " + ABSTATUS[a.status]));
+    });
+    botSay("bot","Estas são as ausências da semana, vindas do Leave Request. Os dias de ausência aprovada de dia inteiro não aceitam registo de horas.", node);
+    botChips(["Quantas horas tenho?","Copiar a semana passada"]);
+  }
+  function showWeekStatus(){
+    botSay("bot", weekSummaryText());
+    botChips(["As minhas ausências","Submeter a semana"]);
+  }
+  function showSuggestionsPanel(){
+    var vis = visibleSugs();
+    botSay("bot", vis.length
+      ? "Tem " + vis.length + " sugestões por rever no painel lateral. Posso aplicar as de confiança alta, se quiser."
+      : "Não há sugestões por rever.");
+    if(vis.length) botChips(["Aplicar as de confiança alta"]);
+  }
+  function offerApplyHighConfidence(){
+    var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
+    if(!hi.length){ botSay("bot","Não tenho sugestões de confiança alta pendentes."); return; }
+    chat.pending = "sugs";
+    botSay("bot","Confirma a aplicação destas sugestões?", botCard(
+      hi.map(function(s){ return [DAYS[s.day] + ", " + PROJECTS[s.p].code, fmt(s.hours) + " h"]; }),
+      "Aplicar", function(){
+        hi.forEach(acceptSug);
+        botSay("bot", hi.length + " sugestões aplicadas. " + weekSummaryText());
+      }));
+  }
+  function offerCopyWeek(){
+    chat.pending = "copy";
+    botSay("bot","Posso trazer a estrutura da semana anterior, sem durações.", botCard(
+      [["Ação","copiar linhas da semana anterior"],["Durações","ficam a zero"]],
+      "Copiar", function(){ copyWeek(); botSay("bot","Feito. As linhas estão criadas, falta preencher as durações."); }));
+  }
+  function offerSubmit(){
+    if(state.submitted){ botSay("bot","A semana já está submetida e em aprovação."); return; }
+    var errs = errors();
+    if(errs.length){
+      botSay("bot","Ainda não posso submeter. " + errs[0].txt);
+      botChips(["Quantas horas tenho?"]);
       return;
     }
-    /* estado da semana */
-    if(/quantas horas|estado|resumo|como está|como esta|falta/.test(t)){
-      botSay("bot", weekSummaryText());
-      botChips(["As minhas ausências","Submeter a semana"]);
-      return;
-    }
-    /* sugestões */
-    if(/sugest/.test(t)){
-      var vis = visibleSugs();
-      botSay("bot", vis.length
-        ? "Tem " + vis.length + " sugestões por rever no painel lateral. Posso aplicar as de confiança alta, se quiser."
-        : "Não há sugestões por rever.");
-      if(vis.length) botChips(["Aplicar as de confiança alta"]);
-      return;
-    }
-    if(/aplicar as de confian/.test(t)){
-      var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
-      if(!hi.length){ botSay("bot","Não tenho sugestões de confiança alta pendentes."); return; }
-      chat.pending = "sugs";
-      botSay("bot","Confirma a aplicação destas sugestões?", botCard(
-        hi.map(function(s){ return [DAYS[s.day] + ", " + PROJECTS[s.p].code, fmt(s.hours) + " h"]; }),
-        "Aplicar", function(){
-          hi.forEach(acceptSug);
-          botSay("bot", hi.length + " sugestões aplicadas. " + weekSummaryText());
-        }));
-      return;
-    }
-    /* copiar semana */
-    if(/copiar|semana passada|semana anterior/.test(t)){
-      chat.pending = "copy";
-      botSay("bot","Posso trazer a estrutura da semana anterior, sem durações.", botCard(
-        [["Ação","copiar linhas da semana anterior"],["Durações","ficam a zero"]],
-        "Copiar", function(){ copyWeek(); botSay("bot","Feito. As linhas estão criadas, falta preencher as durações."); }));
-      return;
-    }
-    /* submeter */
-    if(/submeter|enviar a semana|fechar a semana/.test(t)){
-      if(state.submitted){ botSay("bot","A semana já está submetida e em aprovação."); return; }
-      var errs = errors();
-      if(errs.length){
-        botSay("bot","Ainda não posso submeter. " + errs[0].txt);
-        botChips(["Quantas horas tenho?"]);
-        return;
-      }
-      chat.pending = "submit";
-      botSay("bot","Confirma a submissão da semana 38?", botCard(
-        [["Total","" + fmt(weekTotal()) + " h"],["Esperado","" + fmt(weekCapacity()) + " h"],["Estado após submeter","Em aprovação"]],
-        "Submeter", function(){ doSubmit(); botSay("bot","Semana submetida. Fica em aprovação com o gestor de projeto."); }));
-      return;
-    }
-    /* registo de horas, reutiliza o mesmo parser do registo rápido */
-    var p = botParse(txt);
-    if(!p){
-      botSay("bot","Não consegui perceber o que registar. Escreva a duração e o projeto, por exemplo <span class=\"num\">2h BNK testes de folha ontem</span>. Também posso mostrar o estado da semana ou as ausências.");
-      botChips(["Quantas horas tenho?","As minhas ausências","Ajuda"]);
-      return;
-    }
-    var pr = PROJECTS[p.p];
-    var day = p.day;
+    chat.pending = "submit";
+    botSay("bot","Confirma a submissão da semana 38?", botCard(
+      [["Total","" + fmt(weekTotal()) + " h"],["Esperado","" + fmt(weekCapacity()) + " h"],["Estado após submeter","Em aprovação"]],
+      "Submeter", function(){ doSubmit(); botSay("bot","Semana submetida. Fica em aprovação com o gestor de projeto."); }));
+  }
+  function offerEntry(day, dur, pIdx, desc){
+    var pr = PROJECTS[pIdx];
     var alt = null;
     if(isBlocked(day)){
       alt = nextFreeDay();
@@ -1066,28 +1043,125 @@
     }
     var livre = capacity(day) - dayTotal(day);
     var warn = null;
-    if(p.dur > livre){
-      warn = "Este registo deixa o dia com " + fmt(dayTotal(day) + p.dur) + " h, acima da capacidade de " + fmt(capacity(day)) + " h. Vai gerar erro na submissão.";
+    if(dur > livre){
+      warn = "Este registo deixa o dia com " + fmt(dayTotal(day) + dur) + " h, acima da capacidade de " + fmt(capacity(day)) + " h. Vai gerar erro na submissão.";
     }
     chat.pending = "entry";
     botSay("bot","Confirma esta entrada?", botCard([
       ["Dia", DAYS[day]],
-      ["Duração", fmt(p.dur) + " h"],
+      ["Duração", fmt(dur) + " h"],
       ["Projeto", pr.name],
       ["Objeto recetor", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Centro de custo " + pr.sap.rkostl],
       ["Tipo de atividade", pr.sap.lstar + ", " + pr.act],
-      ["Descrição", p.desc || "(por preencher)"],
+      ["Descrição", desc || "(por preencher)"],
       ["Origem", "Joule"]
     ], "Gravar", function(){
-      var row = state.rows.filter(function(r){ return r.p === p.p; })[0];
-      if(!row){ row = {id:nextId++, p:p.p, desc:p.desc, h:[0,0,0,0,0,0,0], origin:"Joule"}; state.rows.push(row); }
-      if(p.desc) row.desc = p.desc;
+      var row = state.rows.filter(function(r){ return r.p === pIdx; })[0];
+      if(!row){ row = {id:nextId++, p:pIdx, desc:desc, h:[0,0,0,0,0,0,0], origin:"Joule"}; state.rows.push(row); }
+      if(desc) row.desc = desc;
       row.origin = "Joule";
-      row.h[day] += p.dur;
+      row.h[day] += dur;
       render();
-      botSay("bot", fmt(p.dur) + " h gravadas em " + DAYS[day] + ", " + pr.code + ". " + weekSummaryText());
+      botSay("bot", fmt(dur) + " h gravadas em " + DAYS[day] + ", " + pr.code + ". " + weekSummaryText());
       botChips(["Submeter a semana","As minhas ausências"]);
     }, warn));
+  }
+
+  /* pede ao Claude, em /api/chat, para interpretar o texto e escolher uma função.
+     Devolve null em qualquer falha (sem chave configurada, rede, erro do motor),
+     e nesse caso o chamador cai no interpretador local por regex. */
+  async function askAssistant(txt){
+    try{
+      var res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          mensagem: txt,
+          contexto: {
+            projetos: PROJECTS.map(function(p,i){ return {codigo: p.code.split("-")[0], nome: p.name, indice: i}; }),
+            ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
+            capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
+            semana: {total: weekTotal(), esperado: weekCapacity(), erros: errors().length, submetida: state.submitted}
+          }
+        })
+      });
+      if(!res.ok) return null;
+      var data = await res.json();
+      if(!data || data.error) return null;
+      return data;
+    }catch(e){
+      return null;
+    }
+  }
+
+  /* mapeia a resposta do Claude (função + argumentos) para as mesmas ações do bot */
+  function botDispatch(intent){
+    switch(intent.funcao){
+      case "listar_ausencias": showAbsences(); return true;
+      case "consultar_semana": showWeekStatus(); return true;
+      case "aplicar_sugestoes": offerApplyHighConfidence(); return true;
+      case "copiar_semana": offerCopyWeek(); return true;
+      case "submeter_semana": offerSubmit(); return true;
+      case "registar_horas":
+        var a = intent.argumentos || {};
+        var dayIdx = WORKDATES.indexOf(String(a.dia || "").replace(/-/g,""));
+        var pIdx = -1;
+        PROJECTS.forEach(function(pr,i){
+          if(pr.code.toLowerCase().indexOf(String(a.projeto || "").toLowerCase()) === 0) pIdx = i;
+        });
+        var dur = round15(Number(a.duracao_horas));
+        if(dayIdx === -1 || dayIdx > 4 || pIdx === -1 || !dur || dur <= 0){
+          botSay("bot", intent.texto || "Não consegui confirmar todos os dados desse registo. Pode escrever de outra forma?");
+          botChips(["Quantas horas tenho?","As minhas ausências"]);
+          return true;
+        }
+        offerEntry(dayIdx, dur, pIdx, a.descricao || "");
+        return true;
+      default:
+        if(intent.texto){
+          botSay("bot", intent.texto);
+          botChips(["Quantas horas tenho?","As minhas ausências","Ajuda"]);
+          return true;
+        }
+        return false;
+    }
+  }
+
+  async function botHandle(txt){
+    if(!txt || !txt.trim()) return;
+    botSay("me", txt);
+    botChips([]);
+
+    var intent = await askAssistant(txt);
+    if(intent && botDispatch(intent)) return;
+
+    botHandleLocal(txt);
+  }
+
+  /* interpretador local por regex, usado quando o Claude não está configurado ou falha */
+  function botHandleLocal(txt){
+    var t = txt.toLowerCase();
+
+    /* ausências */
+    if(/ausênc|ausenc|férias|ferias|leave|falta/.test(t)){ showAbsences(); return; }
+    /* estado da semana */
+    if(/quantas horas|estado|resumo|como está|como esta|falta/.test(t)){ showWeekStatus(); return; }
+    /* sugestões */
+    if(/sugest/.test(t) && !/aplicar as de confian/.test(t)){ showSuggestionsPanel(); return; }
+    if(/aplicar as de confian/.test(t)){ offerApplyHighConfidence(); return; }
+    /* copiar semana */
+    if(/copiar|semana passada|semana anterior/.test(t)){ offerCopyWeek(); return; }
+    /* submeter */
+    if(/submeter|enviar a semana|fechar a semana/.test(t)){ offerSubmit(); return; }
+
+    /* registo de horas, reutiliza o mesmo parser do registo rápido */
+    var p = botParse(txt);
+    if(!p){
+      botSay("bot","Não consegui perceber o que registar. Escreva a duração e o projeto, por exemplo <span class=\"num\">2h BNK testes de folha ontem</span>. Também posso mostrar o estado da semana ou as ausências.");
+      botChips(["Quantas horas tenho?","As minhas ausências","Ajuda"]);
+      return;
+    }
+    offerEntry(p.day, p.dur, p.p, p.desc);
   }
 
   /* parser do assistente: duração, dia e projeto */

@@ -1,20 +1,17 @@
 /**
- * Função serverless opcional, desligada por omissão.
+ * Função serverless que liga o assistente do protótipo ao Claude, via function calling.
  *
- * O protótipo funciona sem esta função: o assistente do browser é determinístico.
- * Esta função existe para o passo seguinte, ligar um motor de linguagem real,
- * e está aqui como esqueleto do contrato, não como implementação.
- *
- * Para ativar:
- *   1. definir a variável de ambiente LLM_API_KEY no projeto Vercel
- *   2. definir LLM_ENDPOINT, por exemplo o Generative AI Hub do SAP AI Core
- *   3. implementar a chamada onde está o TODO, mantendo o esquema de funções
+ * Desligada por omissão: sem ANTHROPIC_API_KEY, devolve 501 e o cliente cai
+ * automaticamente no interpretador determinístico do browser.
  *
  * Princípios que esta função tem de respeitar:
  *   - nunca escreve na timesheet, apenas devolve a função escolhida e os argumentos
  *   - a confirmação do utilizador acontece no cliente, antes de qualquer escrita
- *   - nenhum dado de cliente vai no prompt além do necessário para a tarefa
+ *   - nunca inventa projetos fora da lista dada no contexto
+ *   - nenhum dado de cliente vai no prompt além do contexto necessário à tarefa
  */
+
+import Anthropic from "@anthropic-ai/sdk";
 
 const FUNCTIONS = [
   {
@@ -34,25 +31,86 @@ const FUNCTIONS = [
   { name: "consultar_semana", description: "Total registado, esperado e erros de validação", parameters: { type: "object", properties: {} } },
   { name: "listar_ausencias", description: "Ausências da semana e capacidade por dia", parameters: { type: "object", properties: {} } },
   { name: "copiar_semana", description: "Copiar a estrutura da semana anterior, sem durações", parameters: { type: "object", properties: {} } },
+  { name: "aplicar_sugestoes", description: "Aplicar as sugestões de confiança alta ainda por rever", parameters: { type: "object", properties: {} } },
   { name: "submeter_semana", description: "Libertar a semana para aprovação", parameters: { type: "object", properties: {} } }
 ];
+
+function toClaudeTools() {
+  return FUNCTIONS.map((f) => ({
+    name: f.name,
+    description: f.description,
+    input_schema: {
+      type: "object",
+      properties: f.parameters.properties,
+      required: f.parameters.required || [],
+      additionalProperties: false
+    },
+    strict: true
+  }));
+}
+
+function buildSystemPrompt(contexto) {
+  return [
+    "És o assistente de registo de horas do protótipo Vesi Timesheet, no padrão Joule.",
+    "A tua única tarefa é interpretar o pedido do consultor e, quando aplicável, escolher uma função da lista fornecida com os argumentos corretos.",
+    "Nunca escreves na timesheet. Só devolves a função e os argumentos; quem grava é a pessoa, depois de confirmar no ecrã.",
+    "Nunca inventas projetos, dias ou horas fora do que está no contexto abaixo. Se não reconheceres o projeto pedido, não chames nenhuma função e explica, em texto curto, quais os projetos disponíveis.",
+    "Se o pedido não corresponder a nenhuma das funções (por exemplo, uma pergunta fora de âmbito), não chames nenhuma função e responde apenas em texto curto, em português de Portugal, sem inglês.",
+    "Durações aceitam vírgula, dois pontos ou minutos, por exemplo 1,5, 1:30 ou 90m. Arredonda sempre a múltiplos de 15 minutos.",
+    "Contexto atual da semana, incluindo projetos onde a pessoa está alocada, ausências e capacidade por dia:",
+    JSON.stringify(contexto || {}, null, 2)
+  ].join("\n");
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Use POST" });
     return;
   }
-  if (!process.env.LLM_API_KEY || !process.env.LLM_ENDPOINT) {
+  if (!process.env.ANTHROPIC_API_KEY) {
     res.status(501).json({
       error: "assistente_nao_configurado",
-      detalhe: "Defina LLM_API_KEY e LLM_ENDPOINT para ativar o motor de linguagem. Sem isso, o protótipo usa o interpretador determinístico do browser.",
+      detalhe: "Defina ANTHROPIC_API_KEY nas variáveis de ambiente do projeto Vercel para ativar o Claude. Sem isso, o protótipo usa o interpretador determinístico do browser.",
       funcoes_disponiveis: FUNCTIONS.map((f) => f.name)
     });
     return;
   }
 
-  // TODO: chamar o motor de linguagem com FUNCTIONS como esquema de function calling,
-  // passando apenas: mensagem do utilizador, projetos onde a pessoa está alocada,
-  // ausências da semana e capacidade por dia. Devolver { funcao, argumentos, texto }.
-  res.status(501).json({ error: "nao_implementado" });
+  const { mensagem, contexto } = req.body || {};
+  if (!mensagem || typeof mensagem !== "string") {
+    res.status(400).json({ error: "mensagem em falta" });
+    return;
+  }
+
+  const client = new Anthropic();
+
+  try {
+    const response = await client.messages.create({
+      model: "claude-opus-5",
+      max_tokens: 1024,
+      system: buildSystemPrompt(contexto),
+      tools: toClaudeTools(),
+      tool_choice: { type: "auto" },
+      output_config: { effort: "low" },
+      messages: [{ role: "user", content: mensagem }]
+    });
+
+    const toolUse = response.content.find((b) => b.type === "tool_use");
+    const texto = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join(" ")
+      .trim();
+
+    res.status(200).json({
+      funcao: toolUse ? toolUse.name : null,
+      argumentos: toolUse ? toolUse.input : null,
+      texto: texto || null
+    });
+  } catch (err) {
+    res.status(502).json({
+      error: "falha_motor_linguagem",
+      detalhe: String((err && err.message) || err)
+    });
+  }
 }
