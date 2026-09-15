@@ -992,6 +992,10 @@
     botSay("bot", weekSummaryText());
     botChips(["My absences","Submit the week"]);
   }
+  function showHelp(){
+    botSay("bot","I can log hours, show the week's status, show your absences, copy last week, apply high-confidence suggestions, or submit the week. Just tell me what you need, in plain language, for example <span class=\"num\">2h BNK payroll testing yesterday</span>.");
+    botChips(["How many hours do I have?","My absences","Copy last week","Submit the week"]);
+  }
   function showSuggestionsPanel(){
     var vis = visibleSugs();
     botSay("bot", vis.length
@@ -1142,6 +1146,8 @@
   function botHandleLocal(txt){
     var t = txt.toLowerCase();
 
+    /* help */
+    if(/\bhelp\b|what can you do|what do you do|how does this work/.test(t)){ showHelp(); return; }
     /* absences */
     if(/absen|vacation|holiday|leave|time off/.test(t)){ showAbsences(); return; }
     /* week status */
