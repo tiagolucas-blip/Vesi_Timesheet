@@ -10,18 +10,18 @@ import pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 body = (ROOT / "body.html").read_text(encoding="utf-8").strip()
 
-TITLE = "Protótipo Timesheet Fiori"
+TITLE = "Timesheet Fiori Prototype"
 FONTS = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
          'family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600'
          '&family=IBM+Plex+Mono:wght@400;500&display=swap">')
 
 index = f"""<!doctype html>
-<html lang="pt-PT">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{TITLE}</title>
-<meta name="description" content="Protótipo de registo de horas a projetos, extensão Fiori, com ausências e assistente conversacional.">
+<meta name="description" content="Project time-recording prototype, Fiori extension, with absences and a conversational assistant.">
 {FONTS}
 <link rel="stylesheet" href="styles.css">
 <style>

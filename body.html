@@ -1,14 +1,14 @@
 <header class="shellbar">
-  <div class="brand"><strong>Registo de Horas</strong><span>Protótipo Fiori</span></div>
-  <div class="capture" id="capture"><span class="dot"></span><span id="captureTxt">Sugestões ativas, linha temporal privada</span></div>
-  <button class="btn sm" id="privBtn">Modo privado</button>
-  <button class="btn sm" id="helpBtn" aria-label="Atalhos de teclado">Atalhos</button>
+  <div class="brand"><strong>Time Recording</strong><span>Fiori Prototype</span></div>
+  <div class="capture" id="capture"><span class="dot"></span><span id="captureTxt">Suggestions on, private timeline</span></div>
+  <button class="btn sm" id="privBtn">Private mode</button>
+  <button class="btn sm" id="helpBtn" aria-label="Keyboard shortcuts">Shortcuts</button>
 </header>
 
 <nav class="nav" role="tablist">
-  <button role="tab" id="tab-semana" aria-current="true" data-screen="semana">A minha semana</button>
-  <button role="tab" id="tab-aprov" data-screen="aprov">Aprovação (gestor)</button>
-  <button role="tab" id="tab-cats" data-screen="cats">Mapeamento CATS</button>
+  <button role="tab" id="tab-semana" aria-current="true" data-screen="semana">My week</button>
+  <button role="tab" id="tab-aprov" data-screen="aprov">Approval (manager)</button>
+  <button role="tab" id="tab-cats" data-screen="cats">CATS mapping</button>
 </nav>
 
 <div class="wrap">
@@ -18,38 +18,38 @@
     <div class="pagehead">
       <div class="top">
         <div class="weeknav">
-          <button class="arrow" id="prevW" aria-label="Semana anterior">&#8249;</button>
-          <span class="label" id="weekLabel">Semana 38, 14 a 20 set 2026</span>
-          <button class="arrow" id="nextW" aria-label="Semana seguinte">&#8250;</button>
+          <button class="arrow" id="prevW" aria-label="Previous week">&#8249;</button>
+          <span class="label" id="weekLabel">Week 38, 14 to 20 Sep 2026</span>
+          <button class="arrow" id="nextW" aria-label="Next week">&#8250;</button>
         </div>
-        <span class="chip grey" id="stateChip">Rascunho</span>
-        <span class="chip blue" id="sugChip" role="button" tabindex="0">4 sugestões por rever</span>
+        <span class="chip grey" id="stateChip">Draft</span>
+        <span class="chip blue" id="sugChip" role="button" tabindex="0">4 suggestions to review</span>
         <span style="margin-left:auto"></span>
-        <button class="btn" id="quickBtn">Registo rápido <kbd>N</kbd></button>
-        <button class="btn primary" id="submitBtn">Submeter semana</button>
+        <button class="btn" id="quickBtn">Quick add <kbd>N</kbd></button>
+        <button class="btn primary" id="submitBtn">Submit week</button>
       </div>
       <div class="kpis">
         <div class="kpi">
-          <span class="k">Registado</span>
-          <span class="v" id="kTot">0,0<small> / 40 h</small></span>
+          <span class="k">Recorded</span>
+          <span class="v" id="kTot">0.0<small> / 40 h</small></span>
           <div class="bar"><i id="kBar" style="width:0%"></i></div>
         </div>
         <div class="kpi">
-          <span class="k">Em projeto</span>
-          <span class="v" id="kProj">0,0<small> h</small></span>
+          <span class="k">In project</span>
+          <span class="v" id="kProj">0.0<small> h</small></span>
           <div class="bar"><i id="kProjBar" class="ok" style="width:0%"></i></div>
         </div>
         <div class="kpi">
-          <span class="k">Ausências</span>
-          <span class="v" id="kAbs">0,0<small> h descontadas</small></span>
+          <span class="k">Absences</span>
+          <span class="v" id="kAbs">0.0<small> h deducted</small></span>
         </div>
         <div class="kpi">
-          <span class="k">Dias úteis a zero</span>
+          <span class="k">Empty working days</span>
           <span class="v" id="kZero">0</span>
         </div>
         <div class="kpi">
-          <span class="k">Validação</span>
-          <span class="v" style="font-size:15px" id="kVal">Sem erros</span>
+          <span class="k">Validation</span>
+          <span class="v" style="font-size:15px" id="kVal">No errors</span>
         </div>
       </div>
     </div>
@@ -58,10 +58,10 @@
       <div style="display:grid; gap:16px; min-width:0">
         <div class="panel">
           <header>
-            <h2>Entradas da semana</h2>
-            <div class="seg" role="group" aria-label="Vista">
-              <button id="vGrid" aria-pressed="true">Grelha</button>
-              <button id="vCal" aria-pressed="false">Calendário</button>
+            <h2>Week entries</h2>
+            <div class="seg" role="group" aria-label="View">
+              <button id="vGrid" aria-pressed="true">Grid</button>
+              <button id="vCal" aria-pressed="false">Calendar</button>
             </div>
           </header>
 
@@ -70,21 +70,21 @@
               <div class="tsgrid" id="tsgrid"></div>
             </div>
             <div class="gridfoot">
-              <button class="btn" id="addRow">Adicionar linha</button>
-              <button class="btn" id="copyWeek">Copiar semana anterior <kbd>C</kbd></button>
-              <button class="btn" id="tplBtn">Aplicar template</button>
-              <span class="hint">Aceita <span class="num">1,5</span> &middot; <span class="num">1:30</span> &middot; <span class="num">90m</span>. Enter desce, Tab avança.</span>
+              <button class="btn" id="addRow">Add row</button>
+              <button class="btn" id="copyWeek">Copy previous week <kbd>C</kbd></button>
+              <button class="btn" id="tplBtn">Apply template</button>
+              <span class="hint">Accepts <span class="num">1.5</span> &middot; <span class="num">1:30</span> &middot; <span class="num">90m</span>. Enter moves down, Tab moves across.</span>
             </div>
           </div>
 
           <div id="viewCal" hidden>
             <div class="calscroll"><div class="cal" id="cal"></div></div>
-            <div class="gridfoot"><span class="hint">Clique numa faixa livre para registar nesse dia. Ausências e feriados não são editáveis.</span></div>
+            <div class="gridfoot"><span class="hint">Click an empty slot to log time that day. Absences and public holidays are not editable.</span></div>
           </div>
         </div>
 
         <div class="panel" id="msgPanel" hidden>
-          <header><h2>Mensagens de validação</h2><span class="chip grey" id="msgCount">0</span></header>
+          <header><h2>Validation messages</h2><span class="chip grey" id="msgCount">0</span></header>
           <div class="msgs" id="msgs"></div>
         </div>
       </div>
@@ -92,42 +92,42 @@
       <div style="display:grid; gap:16px; min-width:0">
       <aside class="panel" id="absPanel">
         <header>
-          <h2>Ausências da semana</h2>
+          <h2>Absences this week</h2>
           <span class="chip grey">Leave Request</span>
         </header>
         <div class="sugs" id="absList"></div>
         <div class="privacy">
-          As ausências são lidas do pedido de ausência e não são editáveis aqui. Dia inteiro aprovado fecha o dia ao registo, meio dia reduz a capacidade.
+          Absences are read from the leave request and cannot be edited here. An approved full day closes that day to time entry; a half day reduces capacity.
         </div>
       </aside>
 
       <aside class="panel" id="sugPanel">
         <header>
-          <h2>Sugestões da semana</h2>
-          <button class="btn sm" id="acceptHi">Aceitar as de confiança alta</button>
+          <h2>Suggestions this week</h2>
+          <button class="btn sm" id="acceptHi">Accept high-confidence ones</button>
         </header>
         <div class="sugs" id="sugs"></div>
         <div class="privacy">
-          Nada entra na timesheet sem confirmação.
-          <button id="dataBtn">O que é recolhido e onde fica</button>
+          Nothing enters the timesheet without confirmation.
+          <button id="dataBtn">What's collected and where it's stored</button>
         </div>
       </aside>
       </div>
     </div>
 
     <div class="specmap">
-      <h2>Como este protótipo mapeia na especificação</h2>
-      <p>Cada ecrã abaixo corresponde a uma secção do documento de especificação, para que o refinamento com a equipa de desenvolvimento se faça sobre o mesmo vocabulário.</p>
+      <h2>How this prototype maps to the specification</h2>
+      <p>Each screen below corresponds to a section of the specification document, so refinement with the development team happens on the same vocabulary.</p>
       <div class="maplist">
-        <div><code>E1</code><span>Grelha semanal com edição inline, totais por dia e por linha, copiar semana</span><em>sap.ui.table.Table</em></div>
-        <div><code>E2</code><span>Vista de calendário com blocos por projeto e eventos externos a converter</span><em>sap.m.PlanningCalendar</em></div>
-        <div><code>E3</code><span>Registo rápido com linguagem natural e chips corrigíveis</span><em>Input com value help</em></div>
-        <div><code>E4</code><span>Sugestões com motivo, nível de confiança e ação explícita</span><em>sap.f.Cards</em></div>
-        <div><code>E5</code><span>Detalhe da entrada com contexto de orçamento e histórico</span><em>Object Page em diálogo</em></div>
-        <div><code>E6</code><span>Validação em três severidades e resumo antes da submissão</span><em>MessageView</em></div>
-        <div><code>E7</code><span>Aprovação em massa com exceções separadas</span><em>Fiori elements List Report</em></div>
-        <div><code>E10</code><span>Ausências do Leave Request, bloqueio do dia e capacidade parcial</span><em>leitura do Time Management</em></div>
-        <div><code>E11</code><span>Assistente conversacional com confirmação antes de gravar</span><em>capacidade Joule</em></div>
+        <div><code>E1</code><span>Weekly grid with inline editing, day and row totals, copy week</span><em>sap.ui.table.Table</em></div>
+        <div><code>E2</code><span>Calendar view with project blocks and external events to convert</span><em>sap.m.PlanningCalendar</em></div>
+        <div><code>E3</code><span>Quick add with natural language and correctable chips</span><em>Input with value help</em></div>
+        <div><code>E4</code><span>Suggestions with reason, confidence level and explicit action</span><em>sap.f.Cards</em></div>
+        <div><code>E5</code><span>Entry detail with budget context and history</span><em>Object Page in dialog</em></div>
+        <div><code>E6</code><span>Three-severity validation and summary before submission</span><em>MessageView</em></div>
+        <div><code>E7</code><span>Bulk approval with exceptions singled out</span><em>Fiori elements List Report</em></div>
+        <div><code>E10</code><span>Absences from the Leave Request, day blocking and partial capacity</span><em>read from Time Management</em></div>
+        <div><code>E11</code><span>Conversational assistant with confirmation before saving</span><em>Joule capability</em></div>
       </div>
     </div>
   </section>
@@ -136,75 +136,75 @@
   <section id="screen-aprov" hidden>
     <div class="pagehead">
       <div class="top">
-        <div class="weeknav"><span class="label">Aprovação de timesheets, semana 37</span></div>
-        <span class="chip blue" id="apSel">0 selecionadas</span>
+        <div class="weeknav"><span class="label">Timesheet approval, week 37</span></div>
+        <span class="chip blue" id="apSel">0 selected</span>
         <span style="margin-left:auto"></span>
-        <button class="btn" id="apSelClean">Selecionar as 4 sem avisos</button>
-        <button class="btn primary" id="apApprove" disabled>Aprovar selecionadas</button>
+        <button class="btn" id="apSelClean">Select the 4 without warnings</button>
+        <button class="btn primary" id="apApprove" disabled>Approve selected</button>
       </div>
       <div class="kpis">
-        <div class="kpi"><span class="k">Por aprovar</span><span class="v" id="apPend">6</span></div>
-        <div class="kpi"><span class="k">Horas submetidas</span><span class="v" id="apHours">231,5<small> h</small></span></div>
-        <div class="kpi"><span class="k">Com avisos</span><span class="v" id="apWarn" style="color:var(--warn)">2</span></div>
-        <div class="kpi"><span class="k">Desvio ao planeado</span><span class="v">+6,5<small> h</small></span></div>
+        <div class="kpi"><span class="k">Pending approval</span><span class="v" id="apPend">6</span></div>
+        <div class="kpi"><span class="k">Hours submitted</span><span class="v" id="apHours">231.5<small> h</small></span></div>
+        <div class="kpi"><span class="k">With warnings</span><span class="v" id="apWarn" style="color:var(--warn)">2</span></div>
+        <div class="kpi"><span class="k">Deviation from plan</span><span class="v">+6.5<small> h</small></span></div>
       </div>
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <header><h2>Equipa alocada aos meus projetos</h2><span class="chip grey">Integra com My Inbox e SAP Task Center</span></header>
+      <header><h2>Team allocated to my projects</h2><span class="chip grey">Integrates with My Inbox and SAP Task Center</span></header>
       <div class="tablescroll">
         <table class="lr">
           <thead>
             <tr>
-              <th style="width:34px"><input type="checkbox" id="apAll" aria-label="Selecionar tudo"></th>
-              <th>Colaborador</th><th>Projeto</th><th style="text-align:right">Total</th>
-              <th style="text-align:right">Em projeto</th><th style="text-align:right">Desvio</th><th>Estado</th>
+              <th style="width:34px"><input type="checkbox" id="apAll" aria-label="Select all"></th>
+              <th>Employee</th><th>Project</th><th style="text-align:right">Total</th>
+              <th style="text-align:right">In project</th><th style="text-align:right">Deviation</th><th>Status</th>
             </tr>
           </thead>
           <tbody id="apBody"></tbody>
         </table>
       </div>
-      <div class="gridfoot"><span class="hint">Aprovação em massa disponível apenas para linhas sem avisos. A rejeição exige motivo, conforme o standard SAP.</span></div>
+      <div class="gridfoot"><span class="hint">Bulk approval is only available for rows without warnings. Rejection requires a reason, per the SAP standard.</span></div>
     </div>
   </section>
 
-  <!-- ============ Mapeamento CATS ============ -->
+  <!-- ============ CATS mapping ============ -->
   <section id="screen-cats" hidden>
     <div class="pagehead">
       <div class="top">
-        <div class="weeknav"><span class="label">Da interface para o CATS</span></div>
-        <span class="chip grey">Anexo A da especificação</span>
+        <div class="weeknav"><span class="label">From the interface to CATS</span></div>
+        <span class="chip grey">Annex A of the specification</span>
         <span style="margin-left:auto"></span>
-        <span class="chip blue" id="catsCount">0 registos gerados</span>
+        <span class="chip blue" id="catsCount">0 records generated</span>
       </div>
       <div class="kpis">
-        <div class="kpi"><span class="k">Destino do registo</span><span class="v" style="font-size:15px">CATSDB</span></div>
-        <div class="kpi"><span class="k">Camada de assistência</span><span class="v" style="font-size:15px">CAP em BTP</span></div>
-        <div class="kpi"><span class="k">Escrita direta em tabela</span><span class="v" style="font-size:15px; color:var(--crit)">Nunca</span></div>
-        <div class="kpi"><span class="k">Campos cliente</span><span class="v" style="font-size:15px">CI_CATSDB</span></div>
+        <div class="kpi"><span class="k">Recording target</span><span class="v" style="font-size:15px">CATSDB</span></div>
+        <div class="kpi"><span class="k">Assistance layer</span><span class="v" style="font-size:15px">CAP on BTP</span></div>
+        <div class="kpi"><span class="k">Direct table write</span><span class="v" style="font-size:15px; color:var(--crit)">Never</span></div>
+        <div class="kpi"><span class="k">Customer fields</span><span class="v" style="font-size:15px">CI_CATSDB</span></div>
       </div>
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <header><h2>Cadeia de estados e transferência</h2></header>
+      <header><h2>State chain and transfer</h2></header>
       <div class="flow">
-        <div class="step"><b>Rascunho</b><span>só em BTP</span></div><span class="sep">&#8594;</span>
-        <div class="step"><b>Gravado</b><span>CATSDB, em processamento</span></div><span class="sep">&#8594;</span>
-        <div class="step"><b>Em aprovação</b><span>libertado, STATUS</span></div><span class="sep">&#8594;</span>
-        <div class="step"><b>Aprovado</b><span>APNAM, APDAT</span></div><span class="sep">&#8594;</span>
-        <div class="step post"><b>Contabilizado</b><span>CATA, CAT5, CAT7, CAT9</span></div>
+        <div class="step"><b>Draft</b><span>BTP only</span></div><span class="sep">&#8594;</span>
+        <div class="step"><b>Saved</b><span>CATSDB, in process</span></div><span class="sep">&#8594;</span>
+        <div class="step"><b>In approval</b><span>released, STATUS</span></div><span class="sep">&#8594;</span>
+        <div class="step"><b>Approved</b><span>APNAM, APDAT</span></div><span class="sep">&#8594;</span>
+        <div class="step post"><b>Posted</b><span>CATA, CAT5, CAT7, CAT9</span></div>
       </div>
       <div class="msgs">
-        <div class="msg i"><span class="ic">REGRA</span><span>A partir de <strong>Em aprovação</strong>, editar deixa de ser alterar. A correção cria um novo registo que aponta ao original por <span class="num">REFCOUNTER</span>, e volta a passar por aprovação.</span></div>
-        <div class="msg i"><span class="ic">REGRA</span><span>O bloqueio de célula reflete o que já foi transferido, não apenas o que foi aprovado. A transferência corre em job, por isso a interface mostra a data do próximo ciclo em vez de fingir imediatismo.</span></div>
+        <div class="msg i"><span class="ic">RULE</span><span>From <strong>In approval</strong> onward, editing is no longer a change. The correction creates a new record pointing to the original via <span class="num">REFCOUNTER</span>, and goes back through approval.</span></div>
+        <div class="msg i"><span class="ic">RULE</span><span>Cell locking reflects what has already been transferred, not just what has been approved. The transfer runs as a job, so the interface shows the date of the next cycle instead of pretending it's instant.</span></div>
       </div>
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <header><h2>Mapeamento campo a campo</h2><span class="chip grey">CATS, BTP ou campo cliente</span></header>
+      <header><h2>Field-by-field mapping</h2><span class="chip grey">CATS, BTP or customer field</span></header>
       <div class="tablescroll">
         <table class="maptbl">
-          <thead><tr><th>Elemento na interface</th><th>Conceito SAP</th><th>Campo</th><th>Onde vive</th></tr></thead>
+          <thead><tr><th>Interface element</th><th>SAP concept</th><th>Field</th><th>Where it lives</th></tr></thead>
           <tbody id="mapBody"></tbody>
         </table>
       </div>
@@ -212,10 +212,10 @@
 
     <div class="panel" style="margin-top:16px">
       <header>
-        <h2>Registos CATS gerados a partir da semana preenchida</h2>
-        <div class="seg" role="group" aria-label="Formato">
-          <button id="fTbl" aria-pressed="true">Tabela</button>
-          <button id="fPay" aria-pressed="false">Payload da API</button>
+        <h2>CATS records generated from the filled week</h2>
+        <div class="seg" role="group" aria-label="Format">
+          <button id="fTbl" aria-pressed="true">Table</button>
+          <button id="fPay" aria-pressed="false">API payload</button>
         </div>
       </header>
       <div id="catsTable" class="tablescroll">
@@ -228,114 +228,114 @@
         </table>
       </div>
       <pre class="payload" id="catsPayload" hidden></pre>
-      <div class="gridfoot"><span class="hint">Gerado ao vivo a partir da grelha do ecrã <strong>A minha semana</strong>. O <span class="num">LTXA1</span> é truncado a 40 caracteres, que é o limite real do campo.</span></div>
+      <div class="gridfoot"><span class="hint">Generated live from the grid on the <strong>My week</strong> screen. <span class="num">LTXA1</span> is truncated to 40 characters, the field's real limit.</span></div>
     </div>
   </section>
 </div>
 
 <button class="joule-fab" id="jouleFab" aria-expanded="false" aria-controls="joulePanel">
-  <span class="jdot"></span>Assistente <kbd>J</kbd>
+  <span class="jdot"></span>Assistant <kbd>J</kbd>
 </button>
 
-<section class="joule" id="joulePanel" hidden aria-label="Assistente de registo de horas">
+<section class="joule" id="joulePanel" hidden aria-label="Time recording assistant">
   <header>
     <span class="jdot"></span>
-    <h3>Assistente</h3>
-    <span class="chip grey">padrão Joule</span>
-    <button class="btn sm" id="jClose" aria-label="Fechar o assistente">Fechar</button>
+    <h3>Assistant</h3>
+    <span class="chip grey">Joule pattern</span>
+    <button class="btn sm" id="jClose" aria-label="Close the assistant">Close</button>
   </header>
   <div class="jlog" id="jlog" aria-live="polite"></div>
   <div class="jchips" id="jchips"></div>
   <form class="jform" id="jform">
-    <input type="text" id="jinput" autocomplete="off" placeholder="2h BNK testes de folha ontem">
-    <button class="btn primary" type="submit">Enviar</button>
+    <input type="text" id="jinput" autocomplete="off" placeholder="2h BNK payroll testing yesterday">
+    <button class="btn primary" type="submit">Send</button>
   </form>
-  <div class="jfoot">Nunca grava sem confirmação. As entradas criadas aqui ficam com origem <span class="num">Joule</span> e passam pelas mesmas validações.</div>
+  <div class="jfoot">Never saves without confirmation. Entries created here are marked with origin <span class="num">Joule</span> and go through the same validations.</div>
 </section>
 
 <div class="toasts" id="toasts"></div>
 
 <!-- dialogs -->
 <dialog id="dlgQuick"><form class="dlg" method="dialog">
-  <header><h3>Registo rápido</h3><button class="btn sm" value="cancel" formnovalidate>Fechar</button></header>
+  <header><h3>Quick add</h3><button class="btn sm" value="cancel" formnovalidate>Close</button></header>
   <div class="body">
     <div class="field">
-      <label for="nlq">Escreva em linguagem natural</label>
-      <input type="text" id="nlq" class="nlqa" placeholder="3h BNK análise de requisitos ontem" autocomplete="off">
+      <label for="nlq">Write in natural language</label>
+      <input type="text" id="nlq" class="nlqa" placeholder="3h BNK requirements analysis yesterday" autocomplete="off">
     </div>
-    <div class="chips" id="nlChips"><span class="pchip">à espera de texto</span></div>
-    <p style="margin:0; font-size:12px; color:var(--ink-3)">Cada campo resolvido é corrigível. Se o texto não for reconhecido, passa para a descrição e nada é inventado.</p>
+    <div class="chips" id="nlChips"><span class="pchip">waiting for text</span></div>
+    <p style="margin:0; font-size:12px; color:var(--ink-3)">Each resolved field can be corrected. If the text isn't recognized, it goes into the description and nothing is invented.</p>
   </div>
   <footer>
-    <button class="btn" value="cancel" formnovalidate>Cancelar</button>
-    <button class="btn primary" id="nlSave" value="save">Gravar entrada</button>
+    <button class="btn" value="cancel" formnovalidate>Cancel</button>
+    <button class="btn primary" id="nlSave" value="save">Save entry</button>
   </footer>
 </form></dialog>
 
 <dialog id="dlgDetail"><div class="dlg">
-  <header><h3 id="dtTitle">Detalhe da entrada</h3><span class="chip blue" id="dtState">Rascunho</span></header>
+  <header><h3 id="dtTitle">Entry detail</h3><span class="chip blue" id="dtState">Draft</span></header>
   <div class="body">
-    <div class="field"><label>Projeto e WBS</label><input type="text" id="dtProj" readonly></div>
+    <div class="field"><label>Project and WBS</label><input type="text" id="dtProj" readonly></div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
-      <div class="field"><label for="dtDur">Duração</label><input type="text" id="dtDur"></div>
-      <div class="field"><label for="dtAct">Tipo de atividade</label>
-        <select id="dtAct"><option>Consultoria funcional</option><option>Desenvolvimento</option><option>Gestão de projeto</option><option>Formação</option><option>Administrativo</option></select>
+      <div class="field"><label for="dtDur">Duration</label><input type="text" id="dtDur"></div>
+      <div class="field"><label for="dtAct">Activity type</label>
+        <select id="dtAct"><option>Functional consulting</option><option>Development</option><option>Project management</option><option>Training</option><option>Administrative</option></select>
       </div>
     </div>
-    <div class="field"><label for="dtDesc">Descrição</label><textarea id="dtDesc" maxlength="300" placeholder="Obrigatória em entradas de projeto. Os primeiros 40 caracteres vão para LTXA1"></textarea></div>
+    <div class="field"><label for="dtDesc">Description</label><textarea id="dtDesc" maxlength="300" placeholder="Required for project entries. The first 40 characters go to LTXA1"></textarea></div>
     <div class="budget">
-      <div class="lbl"><span>Esforço do projeto, real contra planeado</span><span class="num">412 / 520 h</span></div>
+      <div class="lbl"><span>Project effort, actual vs. planned</span><span class="num">412 / 520 h</span></div>
       <div class="bar"><i style="width:79%"></i></div>
     </div>
     <div class="meta">
-      <div><b>Origem</b><span id="dtOrigin">Manual</span></div>
-      <div><b>Criada por</b><span>Tiago Leal, 15 set 2026 09:12</span></div>
-      <div><b>Última alteração</b><span>Tiago Leal, 15 set 2026 09:12</span></div>
+      <div><b>Origin</b><span id="dtOrigin">Manual</span></div>
+      <div><b>Created by</b><span>Tiago Leal, 15 Sep 2026 09:12</span></div>
+      <div><b>Last changed</b><span>Tiago Leal, 15 Sep 2026 09:12</span></div>
     </div>
   </div>
   <footer>
-    <button class="btn" id="dtCancel">Cancelar</button>
-    <button class="btn primary" id="dtSave">Gravar</button>
+    <button class="btn" id="dtCancel">Cancel</button>
+    <button class="btn primary" id="dtSave">Save</button>
   </footer>
 </div></dialog>
 
 <dialog id="dlgSubmit"><div class="dlg">
-  <header><h3>Submeter a semana 38</h3></header>
+  <header><h3>Submit week 38</h3></header>
   <div class="body" id="subBody"></div>
   <footer>
-    <button class="btn" id="subCancel">Voltar</button>
-    <button class="btn primary" id="subOk">Submeter</button>
+    <button class="btn" id="subCancel">Back</button>
+    <button class="btn primary" id="subOk">Submit</button>
   </footer>
 </div></dialog>
 
 <dialog id="dlgData"><div class="dlg">
-  <header><h3>Os meus dados</h3></header>
+  <header><h3>My data</h3></header>
   <div class="body">
-    <p style="margin:0">Para propor entradas, a aplicação usa apenas metadados, ao nível do projeto:</p>
+    <p style="margin:0">To propose entries, the app only uses metadata, at project level:</p>
     <div class="sum">
-      <div class="r"><span>Eventos do calendário corporativo</span><span class="n">18</span><span class="chip green">só metadados</span></div>
-      <div class="r"><span>Tickets tratados</span><span class="n">11</span><span class="chip green">só metadados</span></div>
-      <div class="r"><span>Repositórios com atividade</span><span class="n">2</span><span class="chip green">nível projeto</span></div>
-      <div class="r"><span>Conteúdo de emails, ficheiros ou capturas de ecrã</span><span class="n">0</span><span class="chip grey">nunca recolhido</span></div>
-      <div class="r t"><span>Retenção da linha temporal bruta</span><span class="n">14 dias</span><span class="chip blue">ou até confirmar</span></div>
+      <div class="r"><span>Corporate calendar events</span><span class="n">18</span><span class="chip green">metadata only</span></div>
+      <div class="r"><span>Tickets handled</span><span class="n">11</span><span class="chip green">metadata only</span></div>
+      <div class="r"><span>Repositories with activity</span><span class="n">2</span><span class="chip green">project level</span></div>
+      <div class="r"><span>Content of emails, files or screenshots</span><span class="n">0</span><span class="chip grey">never collected</span></div>
+      <div class="r t"><span>Raw timeline retention</span><span class="n">14 days</span><span class="chip blue">or until confirmed</span></div>
     </div>
-    <p style="margin:0; color:var(--ink-2); font-size:13px">Esta linha temporal é visível apenas a si. A organização vê apenas as entradas de timesheet que submeter. Base legal e avaliação de impacto a validar com o DPO antes do piloto.</p>
+    <p style="margin:0; color:var(--ink-2); font-size:13px">This timeline is visible only to you. The organization only sees the timesheet entries you submit. Legal basis and impact assessment to be validated with the DPO before the pilot.</p>
   </div>
-  <footer><button class="btn" id="dataClose">Fechar</button><button class="btn primary" id="dataWipe">Eliminar linha temporal</button></footer>
+  <footer><button class="btn" id="dataClose">Close</button><button class="btn primary" id="dataWipe">Delete timeline</button></footer>
 </div></dialog>
 
 <dialog id="dlgHelp"><div class="dlg">
-  <header><h3>Atalhos de teclado</h3></header>
+  <header><h3>Keyboard shortcuts</h3></header>
   <div class="body">
     <div class="sum">
-      <div class="r"><span>Abrir e fechar o assistente</span><span></span><span><kbd>J</kbd></span></div>
-      <div class="r"><span>Novo registo rápido</span><span></span><span><kbd>N</kbd></span></div>
-      <div class="r"><span>Copiar semana anterior</span><span></span><span><kbd>C</kbd></span></div>
-      <div class="r"><span>Semana anterior e seguinte</span><span></span><span><kbd>&#8592;</kbd> <kbd>&#8594;</kbd></span></div>
-      <div class="r"><span>Submeter semana</span><span></span><span><kbd>Ctrl</kbd> <kbd>Enter</kbd></span></div>
-      <div class="r"><span>Confirmar célula e descer</span><span></span><span><kbd>Enter</kbd></span></div>
-      <div class="r"><span>Mostrar esta lista</span><span></span><span><kbd>?</kbd></span></div>
+      <div class="r"><span>Open and close the assistant</span><span></span><span><kbd>J</kbd></span></div>
+      <div class="r"><span>New quick add</span><span></span><span><kbd>N</kbd></span></div>
+      <div class="r"><span>Copy previous week</span><span></span><span><kbd>C</kbd></span></div>
+      <div class="r"><span>Previous and next week</span><span></span><span><kbd>&#8592;</kbd> <kbd>&#8594;</kbd></span></div>
+      <div class="r"><span>Submit week</span><span></span><span><kbd>Ctrl</kbd> <kbd>Enter</kbd></span></div>
+      <div class="r"><span>Confirm cell and move down</span><span></span><span><kbd>Enter</kbd></span></div>
+      <div class="r"><span>Show this list</span><span></span><span><kbd>?</kbd></span></div>
     </div>
   </div>
-  <footer><button class="btn primary" id="helpClose">Fechar</button></footer>
+  <footer><button class="btn primary" id="helpClose">Close</button></footer>
 </div></dialog>

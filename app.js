@@ -1,28 +1,28 @@
 (function(){
   "use strict";
 
-  var DAYS = ["Seg 14","Ter 15","Qua 16","Qui 17","Sex 18","Sáb 19","Dom 20"];
+  var DAYS = ["Mon 14","Tue 15","Wed 16","Thu 17","Fri 18","Sat 19","Sun 20"];
   var PROJECTS = [
-    {code:"BNK-2026", wbs:"BNK-2026.1.3", name:"Banca, Payroll e ECP", act:"Consultoria funcional", proj:true,
+    {code:"BNK-2026", wbs:"BNK-2026.1.3", name:"Banking, Payroll and ECP", act:"Functional consulting", proj:true,
      sap:{rproj:"BNK-2026.1.3", lstar:"CONS01", skostl:"PT4010", rkostl:"", aufnr:""}},
-    {code:"RTL-TT", wbs:"RTL-TT.2.1", name:"Retalho, Time Tracking", act:"Consultoria funcional", proj:true,
+    {code:"RTL-TT", wbs:"RTL-TT.2.1", name:"Retail, Time Tracking", act:"Functional consulting", proj:true,
      sap:{rproj:"RTL-TT.2.1", lstar:"CONS01", skostl:"PT4010", rkostl:"", aufnr:""}},
-    {code:"AER-WFM", wbs:"AER-WFM.4.2", name:"Aeroportos, WFM rollout", act:"Gestão de projeto", proj:true,
+    {code:"AER-WFM", wbs:"AER-WFM.4.2", name:"Airports, WFM rollout", act:"Project management", proj:true,
      sap:{rproj:"AER-WFM.4.2", lstar:"PMGT01", skostl:"PT4010", rkostl:"", aufnr:""}},
-    {code:"AXI-INT", wbs:"", name:"Interno, pré venda e formação", act:"Administrativo", proj:false,
+    {code:"AXI-INT", wbs:"", name:"Internal, pre-sales and training", act:"Administrative", proj:false,
      sap:{rproj:"", lstar:"ADMIN1", skostl:"PT4010", rkostl:"PT4010", aufnr:""}}
   ];
   var PERNR = "00104567";
   var WORKDATES = ["20260914","20260915","20260916","20260917","20260918","20260919","20260920"];
   var DAYCAP = 8;
 
-  /* Ausências vindas do Leave Request, leitura apenas nesta aplicação */
+  /* Absences come from the Leave Request, read-only in this application */
   var ABSENCES = [
-    {id:"ab1", day:2, type:"Consulta médica", awart:"0210", hours:4, status:"approved", src:"Pedido 4500219"},
-    {id:"ab2", day:4, type:"Férias", awart:"0100", hours:8, status:"approved", src:"Pedido 4500221"},
-    {id:"ab3", day:3, type:"Férias", awart:"0100", hours:8, status:"pending", src:"Pedido 4500230"}
+    {id:"ab1", day:2, type:"Medical appointment", awart:"0210", hours:4, status:"approved", src:"Request 4500219"},
+    {id:"ab2", day:4, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500221"},
+    {id:"ab3", day:3, type:"Vacation", awart:"0100", hours:8, status:"pending", src:"Request 4500230"}
   ];
-  var ABSTATUS = {approved:"Aprovada", pending:"Pedido pendente"};
+  var ABSTATUS = {approved:"Approved", pending:"Pending request"};
 
   function absOn(day, status){
     return ABSENCES.filter(function(a){ return a.day === day && (!status || a.status === status); });
@@ -45,30 +45,30 @@
     submitted:false,
     privateMode:false,
     rows:[
-      {id:1, p:0, desc:"Workshop de requisitos, folha de vencimento", h:[3,4,0,2,0,0,0], origin:"Manual"},
-      {id:2, p:1, desc:"Desenho da solução de registo de tempo", h:[2,0,3,0,0,0,0], origin:"Sugerida"},
+      {id:1, p:0, desc:"Requirements workshop, payroll", h:[3,4,0,2,0,0,0], origin:"Manual"},
+      {id:2, p:1, desc:"Time recording solution design", h:[2,0,3,0,0,0,0], origin:"Suggested"},
       {id:3, p:3, desc:"", h:[1,0,0,1.5,0,0,0], origin:"Manual"}
     ],
     sugs:[
-      {id:"s1", hours:2.5, day:2, p:2, why:"3 reuniões com o cliente no calendário", conf:"hi", desc:"Reuniões de acompanhamento do rollout"},
-      {id:"s2", hours:1.5, day:3, p:1, why:"12 alterações no repositório do projeto", conf:"hi", desc:"Configuração de regras de tempo"},
-      {id:"s3", hours:2, day:4, p:0, why:"4 tickets tratados em Cloud ALM", conf:"mid", desc:"Correções pós testes de folha"},
-      {id:"s4", hours:1, day:4, p:3, why:"Bloco sem sinal atribuível", conf:"low", desc:""}
+      {id:"s1", hours:2.5, day:2, p:2, why:"3 client meetings on the calendar", conf:"hi", desc:"Rollout follow-up meetings"},
+      {id:"s2", hours:1.5, day:3, p:1, why:"12 changes in the project repository", conf:"hi", desc:"Time rules configuration"},
+      {id:"s3", hours:2, day:4, p:0, why:"4 tickets handled in Cloud ALM", conf:"mid", desc:"Post-testing payroll fixes"},
+      {id:"s4", hours:1, day:4, p:3, why:"Block with no attributable signal", conf:"low", desc:""}
     ],
     approvals:[
-      {who:"Ana Ferreira", role:"Consultora sénior", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false},
-      {who:"Bruno Matos", role:"Consultor", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false},
-      {who:"Carla Nunes", role:"Consultora", proj:"AER-WFM", tot:40, inproj:40, dev:0, warn:0, sel:false},
-      {who:"Diogo Sousa", role:"Consultor júnior", proj:"BNK-2026", tot:37, inproj:30, dev:-3, warn:0, sel:false},
-      {who:"Eva Lopes", role:"Arquiteta", proj:"RTL-TT", tot:52, inproj:52, dev:12, warn:1, sel:false, note:"12 h acima do planeado"},
-      {who:"Filipe Reis", role:"Consultor", proj:"AER-WFM", tot:24, inproj:18, dev:-16, warn:1, sel:false, note:"Dois dias úteis a zero"}
+      {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false},
+      {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false},
+      {who:"Carla Nunes", role:"Consultant", proj:"AER-WFM", tot:40, inproj:40, dev:0, warn:0, sel:false},
+      {who:"Diogo Sousa", role:"Junior consultant", proj:"BNK-2026", tot:37, inproj:30, dev:-3, warn:0, sel:false},
+      {who:"Eva Lopes", role:"Architect", proj:"RTL-TT", tot:52, inproj:52, dev:12, warn:1, sel:false, note:"12 h above plan"},
+      {who:"Filipe Reis", role:"Consultant", proj:"AER-WFM", tot:24, inproj:18, dev:-16, warn:1, sel:false, note:"Two empty working days"}
     ]
   };
 
   var $ = function(id){ return document.getElementById(id); };
   var nextId = 100;
 
-  function fmt(n){ return (Math.round(n*100)/100).toFixed(1).replace(".", ","); }
+  function fmt(n){ return (Math.round(n*100)/100).toFixed(1); }
   function parseDur(txt){
     if(!txt) return 0;
     var t = String(txt).trim().toLowerCase().replace(",", ".");
@@ -92,37 +92,37 @@
   function validate(){
     var out = [];
     for(var d=0; d<7; d++){
-      if(dayTotal(d) > 24) out.push({sev:"e", txt:"O total de "+DAYS[d]+" excede 24 horas.", day:d});
+      if(dayTotal(d) > 24) out.push({sev:"e", txt:"The total for "+DAYS[d]+" exceeds 24 hours.", day:d});
     }
     state.rows.forEach(function(r){
       if(PROJECTS[r.p].proj && rowTotal(r) > 0 && r.desc.trim().length < 10){
-        out.push({sev:"e", txt:"Entradas de projeto precisam de descrição: "+PROJECTS[r.p].code+".", row:r.id});
+        out.push({sev:"e", txt:"Project entries need a description: "+PROJECTS[r.p].code+".", row:r.id});
       }
     });
-    /* conflitos com ausências */
+    /* conflicts with absences */
     for(var a=0; a<5; a++){
       var cap = capacity(a), tot = dayTotal(a);
       if(tot === 0) continue;
       if(cap === 0){
         out.push({sev:"e", day:a, conflict:a,
-          txt:DAYS[a]+" tem "+absOn(a,"approved")[0].type.toLowerCase()+" aprovada. As "+fmt(tot)+" h registadas têm de sair deste dia."});
+          txt:DAYS[a]+" has an approved "+absOn(a,"approved")[0].type.toLowerCase()+". The "+fmt(tot)+" h recorded need to move off this day."});
       } else if(tot > cap){
         out.push({sev:"e", day:a,
-          txt:DAYS[a]+" tem ausência parcial aprovada. A capacidade do dia é "+fmt(cap)+" h e estão registadas "+fmt(tot)+" h."});
+          txt:DAYS[a]+" has an approved partial absence. Day capacity is "+fmt(cap)+" h and "+fmt(tot)+" h are recorded."});
       }
     }
     for(var p=0; p<5; p++){
       if(absOn(p,"pending").length && dayTotal(p) > 0){
-        out.push({sev:"w", day:p, txt:DAYS[p]+" tem um pedido de ausência pendente e horas registadas. Se o pedido for aprovado, estas horas entram em conflito."});
+        out.push({sev:"w", day:p, txt:DAYS[p]+" has a pending leave request and recorded hours. If the request is approved, these hours will conflict."});
       }
     }
     for(var i=0; i<5; i++){
-      if(capacity(i) > 0 && dayTotal(i) === 0) out.push({sev:"w", txt:DAYS[i]+" está a zero.", day:i});
+      if(capacity(i) > 0 && dayTotal(i) === 0) out.push({sev:"w", txt:DAYS[i]+" is empty.", day:i});
     }
     var expect = weekCapacity();
-    if(weekTotal() > 0 && weekTotal() < expect) out.push({sev:"w", txt:"A semana tem "+fmt(weekTotal())+" h registadas, o esperado com as ausências descontadas é "+fmt(expect)+" h."});
+    if(weekTotal() > 0 && weekTotal() < expect) out.push({sev:"w", txt:"The week has "+fmt(weekTotal())+" h recorded; the expected total with absences deducted is "+fmt(expect)+" h."});
     var pend = visibleSugs().length;
-    if(pend > 0 && !state.privateMode) out.push({sev:"i", txt:pend+" sugestões ainda por rever no painel lateral."});
+    if(pend > 0 && !state.privateMode) out.push({sev:"i", txt:pend+" suggestions still to review in the side panel."});
     return out;
   }
   function errors(){ return validate().filter(function(m){ return m.sev === "e"; }); }
@@ -134,13 +134,13 @@
 
     var head = document.createElement("div");
     head.className = "row head";
-    head.appendChild(el("div","","Projeto, WBS e atividade"));
+    head.appendChild(el("div","","Project, WBS and activity"));
     DAYS.forEach(function(d,i){
       var c = el("div", i>4?"we":"", "");
       c.appendChild(el("span","", d));
       var ap = absOn(i,"approved")[0], pe = absOn(i,"pending")[0];
-      if(ap) c.appendChild(el("span","dayabs" + (capacity(i) === 0 ? " full" : ""), capacity(i) === 0 ? ap.type : "meio dia"));
-      else if(pe) c.appendChild(el("span","dayabs pend", "pendente"));
+      if(ap) c.appendChild(el("span","dayabs" + (capacity(i) === 0 ? " full" : ""), capacity(i) === 0 ? ap.type : "half day"));
+      else if(pe) c.appendChild(el("span","dayabs pend", "pending"));
       head.appendChild(c);
     });
     head.appendChild(el("div","","Total"));
@@ -150,11 +150,11 @@
     if(state.rows.length === 0){
       var e = document.createElement("div");
       e.className = "empty";
-      e.innerHTML = '<p><strong>Ainda sem horas nesta semana.</strong> Comece pelo caminho mais curto.</p>';
+      e.innerHTML = '<p><strong>No hours recorded this week yet.</strong> Start with the shortest path.</p>';
       var acts = el("div","acts","");
-      acts.appendChild(btn("Copiar a semana passada","btn primary", copyWeek));
-      acts.appendChild(btn("Rever "+state.sugs.length+" sugestões","btn", function(){ $("sugPanel").scrollIntoView({block:"center"}); }));
-      acts.appendChild(btn("Adicionar o primeiro projeto","btn", addRow));
+      acts.appendChild(btn("Copy last week","btn primary", copyWeek));
+      acts.appendChild(btn("Review "+state.sugs.length+" suggestions","btn", function(){ $("sugPanel").scrollIntoView({block:"center"}); }));
+      acts.appendChild(btn("Add the first project","btn", addRow));
       e.appendChild(acts);
       g.appendChild(e);
     }
@@ -168,10 +168,10 @@
       var p = el("div","p","");
       p.appendChild(el("span","", pr.name));
       var c = document.createElement("code"); c.textContent = pr.wbs || pr.sap.rkostl; p.appendChild(c);
-      p.appendChild(el("span","bill" + (pr.proj?"":" no"), pr.proj ? "PEP" : "INTERNO"));
+      p.appendChild(el("span","bill" + (pr.proj?"":" no"), pr.proj ? "PEP" : "INTERNAL"));
       meta.appendChild(p);
       var needDesc = pr.proj && rowTotal(r) > 0 && r.desc.trim().length < 10;
-      var s = el("div","s", (r.desc || (needDesc ? "Descrição obrigatória" : "Sem descrição")) + " · " + pr.act);
+      var s = el("div","s", (r.desc || (needDesc ? "Description required" : "No description")) + " · " + pr.act);
       if(needDesc) s.style.color = "var(--crit)";
       meta.appendChild(s);
       meta.style.cursor = "pointer";
@@ -185,17 +185,17 @@
         inp.id = "c-"+r.id+"-"+i;
         inp.value = v ? fmt(v) : "";
         inp.inputMode = "decimal";
-        inp.setAttribute("aria-label","Duração em horas, "+pr.name+", "+DAYS[i]);
+        inp.setAttribute("aria-label","Duration in hours, "+pr.name+", "+DAYS[i]);
         inp.disabled = state.submitted || (isBlocked(i) && !v);
         if(isBlocked(i)){
           inp.classList.add("abs");
-          inp.title = absOn(i,"approved")[0].type + " aprovada, dia não disponível para registo";
+          inp.title = "Approved " + absOn(i,"approved")[0].type.toLowerCase() + ", day not available for time entry";
         } else if(absHours(i) > 0){
-          inp.title = "Ausência parcial aprovada, capacidade de " + fmt(capacity(i)) + " h neste dia";
+          inp.title = "Approved partial absence, capacity of " + fmt(capacity(i)) + " h this day";
         }
         inp.addEventListener("change", function(){
           var parsed = parseDur(inp.value);
-          if(isNaN(parsed)){ toast("Não consegui ler “"+inp.value+"”. Use 1,5 ou 1:30 ou 90m."); inp.value = v ? fmt(v) : ""; return; }
+          if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 1.5 or 1:30 or 90m."); inp.value = v ? fmt(v) : ""; return; }
           r.h[i] = round15(parsed);
           render();
         });
@@ -217,9 +217,9 @@
       var act = el("div","rowact","");
       var rm = btn("×","", function(){
         state.rows = state.rows.filter(function(x){ return x.id !== r.id; });
-        render(); toast("Linha removida.", "Desfazer", function(){ state.rows.push(r); render(); });
+        render(); toast("Row removed.", "Undo", function(){ state.rows.push(r); render(); });
       });
-      rm.setAttribute("aria-label","Remover linha "+pr.name);
+      rm.setAttribute("aria-label","Remove row "+pr.name);
       rm.disabled = state.submitted;
       act.appendChild(rm);
       row.appendChild(act);
@@ -229,14 +229,14 @@
     if(state.rows.length){
       var tr = document.createElement("div");
       tr.className = "row totals";
-      tr.appendChild(el("div","rowmeta","Total por dia"));
+      tr.appendChild(el("div","rowmeta","Total per day"));
       for(var d=0; d<7; d++){
         var v = dayTotal(d), cap = capacity(d);
         var cls = "t";
         if(v > 24 || (d < 5 && v > cap)) cls += " over";
         else if(v === 0 && d < 5 && cap > 0) cls += " zero";
         else if(d < 5 && cap === 0) cls += " off";
-        tr.appendChild(el("div", cls, d < 5 && cap === 0 && !v ? "–" : (v ? fmt(v) : "0,0")));
+        tr.appendChild(el("div", cls, d < 5 && cap === 0 && !v ? "–" : (v ? fmt(v) : "0.0")));
       }
       tr.appendChild(el("div","t", fmt(weekTotal())));
       tr.appendChild(el("div","",""));
@@ -248,7 +248,7 @@
   function renderCal(){
     var cal = $("cal");
     cal.innerHTML = "";
-    cal.appendChild(el("div","ch","Hora"));
+    cal.appendChild(el("div","ch","Time"));
     for(var i=0; i<5; i++) cal.appendChild(el("div","ch", DAYS[i]));
 
     var hours = el("div","hours","");
@@ -267,8 +267,8 @@
       if(d === 1){
         var ext = document.createElement("button");
         ext.className = "blk ext";
-        ext.innerHTML = "<b>1,0 h</b>Comité de projeto, cliente externo · converter";
-        ext.onclick = (function(day){ return function(){ openQuick("1h AER comité de projeto", day); }; })(d);
+        ext.innerHTML = "<b>1.0 h</b>Project committee, external client · convert";
+        ext.onclick = (function(day){ return function(){ openQuick("1h AER project committee", day); }; })(d);
         col.appendChild(ext);
       }
       state.rows.forEach(function(r){
@@ -285,18 +285,18 @@
       if(!isBlocked(d)){
         var free = document.createElement("button");
         free.className = "calfree";
-        free.textContent = "+ registar";
+        free.textContent = "+ log time";
         free.onclick = (function(day){ return function(){ openQuick("", day); }; })(d);
         col.appendChild(free);
       } else {
-        col.appendChild(el("div","calfree off","dia não disponível"));
+        col.appendChild(el("div","calfree off","day not available"));
       }
       cal.appendChild(col);
     }
   }
 
   /* ---------- render: suggestions ---------- */
-  var CONF = {hi:"confiança alta", mid:"confiança média", low:"confiança baixa"};
+  var CONF = {hi:"high confidence", mid:"medium confidence", low:"low confidence"};
   function visibleSugs(){
     return state.sugs.filter(function(s){ return !isBlocked(s.day); });
   }
@@ -309,17 +309,17 @@
 
     if(state.privateMode){
       var p = el("div","paused","");
-      p.innerHTML = "<strong>Modo privado ativo.</strong><span>A captura de sinais está em pausa. Nada é recolhido enquanto este modo estiver ligado.</span>";
-      p.appendChild(btn("Retomar sugestões","btn", togglePrivate));
+      p.innerHTML = "<strong>Private mode on.</strong><span>Signal capture is paused. Nothing is collected while this mode is on.</span>";
+      p.appendChild(btn("Resume suggestions","btn", togglePrivate));
       box.appendChild(p);
       return;
     }
     if(vis.length === 0){
-      box.appendChild(el("div","paused", hidden ? "Nada a propor. As sugestões que existiam caíam em dias com ausência aprovada." : "Sem sugestões pendentes. Bom sinal, a semana está revista."));
+      box.appendChild(el("div","paused", hidden ? "Nothing to propose. The suggestions that existed fell on days with an approved absence." : "No pending suggestions. Good sign, the week is reviewed."));
       return;
     }
     if(hidden){
-      box.appendChild(el("div","msg i", hidden + (hidden === 1 ? " sugestão descartada" : " sugestões descartadas") + " por caírem em dias com ausência aprovada."));
+      box.appendChild(el("div","msg i", hidden + (hidden === 1 ? " suggestion discarded" : " suggestions discarded") + " for falling on days with an approved absence."));
     }
     vis.forEach(function(s){
       var pr = PROJECTS[s.p];
@@ -332,26 +332,26 @@
       card.appendChild(el("div","why", s.why));
       card.appendChild(el("div","conf", CONF[s.conf]));
       var acts = el("div","acts","");
-      acts.appendChild(btn("Aceitar","btn sm primary", function(){ acceptSug(s); }));
-      acts.appendChild(btn("Editar","btn sm", function(){ openQuick(fmt(s.hours)+"h "+pr.code+" "+(s.desc||""), s.day); }));
-      acts.appendChild(btn("Dispensar","btn sm ghost", function(){ dropSug(s, true); }));
+      acts.appendChild(btn("Accept","btn sm primary", function(){ acceptSug(s); }));
+      acts.appendChild(btn("Edit","btn sm", function(){ openQuick(fmt(s.hours)+"h "+pr.code+" "+(s.desc||""), s.day); }));
+      acts.appendChild(btn("Dismiss","btn sm ghost", function(){ dropSug(s, true); }));
       card.appendChild(acts);
       box.appendChild(card);
     });
   }
   function acceptSug(s){
-    if(isBlocked(s.day)){ toast(DAYS[s.day]+" tem ausência aprovada, a sugestão não pode ser aplicada."); return; }
+    if(isBlocked(s.day)){ toast(DAYS[s.day]+" has an approved absence, the suggestion can't be applied."); return; }
     var row = state.rows.filter(function(r){ return r.p === s.p; })[0];
-    if(!row){ row = {id:nextId++, p:s.p, desc:s.desc, h:[0,0,0,0,0,0,0], origin:"Sugerida"}; state.rows.push(row); }
+    if(!row){ row = {id:nextId++, p:s.p, desc:s.desc, h:[0,0,0,0,0,0,0], origin:"Suggested"}; state.rows.push(row); }
     if(!row.desc) row.desc = s.desc;
     row.h[s.day] += s.hours;
     dropSug(s, false);
-    toast("Sugestão aceite em "+DAYS[s.day]+".");
+    toast("Suggestion accepted on "+DAYS[s.day]+".");
   }
   function dropSug(s, notify){
     state.sugs = state.sugs.filter(function(x){ return x.id !== s.id; });
     render();
-    if(notify) toast("Sugestão dispensada. O padrão deixa de ser proposto.", "Desfazer", function(){ state.sugs.push(s); render(); });
+    if(notify) toast("Suggestion dismissed. The pattern won't be proposed again.", "Undo", function(){ state.sugs.push(s); render(); });
   }
 
   /* ---------- render: messages, KPIs ---------- */
@@ -360,19 +360,19 @@
     var box = $("msgs");
     box.innerHTML = "";
     $("msgPanel").hidden = list.length === 0;
-    $("msgCount").textContent = list.length + (list.length === 1 ? " mensagem" : " mensagens");
-    var names = {e:"ERRO", w:"AVISO", i:"INFO"};
+    $("msgCount").textContent = list.length + (list.length === 1 ? " message" : " messages");
+    var names = {e:"ERROR", w:"WARNING", i:"INFO"};
     list.forEach(function(m){
       var row = el("div","msg "+m.sev,"");
       row.appendChild(el("span","ic", names[m.sev]));
       var t = el("span","", m.txt);
       row.appendChild(t);
       if(typeof m.conflict === "number" && !state.submitted){
-        var fix = btn("resolver, mover as horas","", (function(day){ return function(){ resolveConflict(day); }; })(m.conflict));
+        var fix = btn("resolve, move the hours","", (function(day){ return function(){ resolveConflict(day); }; })(m.conflict));
         fix.style.marginLeft = "auto";
         row.appendChild(fix);
       } else if(typeof m.day === "number" && !state.submitted){
-        var go = btn("ir para o dia","", function(){
+        var go = btn("go to day","", function(){
           var r0 = state.rows[0];
           if(r0){ var c = document.getElementById("c-"+r0.id+"-"+m.day); if(c) c.focus(); }
         });
@@ -391,34 +391,34 @@
     bar.className = tot >= expect ? "ok" : (pct < 80 ? "low" : "");
     var absW = 0;
     for(var a=0; a<5; a++) absW += absHours(a);
-    $("kAbs").innerHTML = fmt(absW) + "<small> h descontadas</small>";
+    $("kAbs").innerHTML = fmt(absW) + "<small> h deducted</small>";
     $("kProj").innerHTML = fmt(proj) + "<small> h</small>";
     $("kProjBar").style.width = (tot ? proj/tot*100 : 0) + "%";
     var zeros = 0;
     for(var i=0; i<5; i++) if(capacity(i) > 0 && dayTotal(i) === 0) zeros++;
     $("kZero").textContent = zeros;
     var errs = errors().length;
-    $("kVal").textContent = errs ? (errs + (errs===1 ? " erro" : " erros")) : "Sem erros";
+    $("kVal").textContent = errs ? (errs + (errs===1 ? " error" : " errors")) : "No errors";
     $("kVal").style.color = errs ? "var(--crit)" : "var(--good)";
     $("submitBtn").disabled = state.submitted || errs > 0 || tot === 0;
-    $("submitBtn").textContent = state.submitted ? "Semana submetida" : "Submeter semana";
+    $("submitBtn").textContent = state.submitted ? "Week submitted" : "Submit week";
     var chip = $("stateChip");
-    chip.textContent = state.submitted ? "Em aprovação" : "Rascunho";
+    chip.textContent = state.submitted ? "In approval" : "Draft";
     chip.className = state.submitted ? "chip blue" : "chip grey";
     var sc = $("sugChip"), nv = visibleSugs().length;
     sc.hidden = state.privateMode || nv === 0;
-    sc.textContent = nv + (nv === 1 ? " sugestão por rever" : " sugestões por rever");
+    sc.textContent = nv + (nv === 1 ? " suggestion to review" : " suggestions to review");
   }
 
   function render(){ renderGrid(); renderCal(); renderSugs(); renderAbs(); renderMsgs(); renderKpis(); renderApprovals(); renderCats(); }
 
-  /* ---------- ausências ---------- */
+  /* ---------- absences ---------- */
   function renderAbs(){
     var box = $("absList");
     if(!box) return;
     box.innerHTML = "";
     if(!ABSENCES.length){
-      box.appendChild(el("div","paused","Sem ausências nesta semana."));
+      box.appendChild(el("div","paused","No absences this week."));
       return;
     }
     ABSENCES.forEach(function(a){
@@ -428,10 +428,10 @@
       h.appendChild(el("span","chip " + (a.status === "approved" ? "grey" : "amber"), ABSTATUS[a.status]));
       c.appendChild(h);
       c.appendChild(el("div","why", DAYS[a.day] + " · " + fmt(a.hours) + " h · AWART " + a.awart));
-      c.appendChild(el("div","why", a.src + " · Leave Request, leitura apenas"));
+      c.appendChild(el("div","why", a.src + " · Leave Request, read-only"));
       if(a.status === "pending"){
         var acts = el("div","acts","");
-        acts.appendChild(btn("Simular aprovação","btn sm", function(){ approveAbsence(a); }));
+        acts.appendChild(btn("Simulate approval","btn sm", function(){ approveAbsence(a); }));
         c.appendChild(acts);
       }
       box.appendChild(c);
@@ -441,8 +441,8 @@
     a.status = "approved";
     var moved = dayTotal(a.day);
     render();
-    if(moved > 0) toast("Ausência aprovada em "+DAYS[a.day]+". As "+fmt(moved)+" h registadas nesse dia ficaram em conflito.", "Resolver", function(){ resolveConflict(a.day); });
-    else toast("Ausência aprovada em "+DAYS[a.day]+". O dia deixou de estar disponível para registo.");
+    if(moved > 0) toast("Absence approved on "+DAYS[a.day]+". The "+fmt(moved)+" h recorded that day are now in conflict.", "Resolve", function(){ resolveConflict(a.day); });
+    else toast("Absence approved on "+DAYS[a.day]+". The day is no longer available for time entry.");
   }
   function resolveConflict(day){
     var target = -1;
@@ -456,35 +456,35 @@
     });
     render();
     toast(target > -1
-      ? fmt(moved)+" h movidas de "+DAYS[day]+" para "+DAYS[target]+"."
-      : fmt(moved)+" h removidas de "+DAYS[day]+", não havia dia com capacidade livre.");
+      ? fmt(moved)+" h moved from "+DAYS[day]+" to "+DAYS[target]+"."
+      : fmt(moved)+" h removed from "+DAYS[day]+", no day had free capacity.");
   }
 
   /* ---------- CATS mapping screen ---------- */
   var MAP = [
-    ["Colaborador do registo","Número de pessoa","PERNR","cats",""],
-    ["Coluna do dia na grelha","Data do trabalho","WORKDATE","cats","Uma entrada por dia, nunca agregada à semana"],
-    ["Valor da célula","Horas registadas","CATSHOURS","cats","Unidade em UNIT, normalmente H"],
-    ["Início e fim, quando exigidos","Janela horária","BEGUZ, ENDUZ","cats","Só quando o país ou o cliente os exigem"],
-    ["Projeto e WBS da linha","Elemento PEP recetor","RPROJ","cats","Campo com conversão, a interface mostra a máscara externa"],
-    ["Ordem, quando o recetor é ordem","Ordem recetora","RAUFNR","cats","Manutenção, CAPEX ou ordens internas"],
-    ["Rede e operação","Rede e operação","RNPLNR, RAUFPL, RAPLZL","cats","Só com planeamento por rede"],
-    ["Tipo de atividade","Tipo de atividade CO","LSTAR","cats","Chave da valorização"],
-    ["Centro de custo do colaborador","Centro de custo emissor","SKOSTL","cats","Dos dados mestre, nunca manual"],
-    ["Centro de custo recetor","Centro de custo recetor","RKOSTL","cats","Entradas internas sem projeto"],
-    ["Descrição da entrada","Texto breve","LTXA1","cats","40 caracteres. A interface aceita 300 e trunca"],
-    ["Ausências no calendário e na grelha","Tipo de ausência ou presença","AWART","cats","Lidas do Leave Request, leitura apenas. O registo fica no Time Management"],
-    ["Bloqueio do dia por ausência","Capacidade diária do colaborador","plano de trabalho e infotipo 2001","cats","Dia inteiro aprovado fecha o dia, meio dia reduz a capacidade"],
-    ["Pedido de ausência pendente","Pedido em aprovação","workflow do Leave Request","cats","Não bloqueia, gera aviso. Se for aprovado, as horas do dia entram em conflito"],
-    ["Entradas criadas pelo assistente","Sem equivalente","ZZORIGIN com valor Joule","btp","Mesmas validações das entradas manuais, marcadas para auditoria"],
-    ["Estado da semana","Estado de processamento","STATUS","cats","Confirmar os valores do domínio no cliente"],
-    ["Aprovador e data","Aprovação","APNAM, APDAT","cats","Preenchidos pelo processo, nunca pela interface"],
-    ["Correção após submissão","Referência ao registo alterado","REFCOUNTER","cats","A alteração cria novo registo, o histórico fica"],
-    ["Origem da entrada","Sem equivalente","ZZORIGIN","btp","Manual, sugerida, copiada, em nome de. Serve telemetria"],
-    ["Nível de confiança da sugestão","Sem equivalente","nenhum","btp","Nunca sai da camada de experiência"],
-    ["Linha temporal dos sinais","Sem equivalente","nenhum","btp","Retenção de 14 dias, dado pessoal"],
-    ["Favoritos e copiar semana","Worklist do CATS","tabelas de worklist","cats","Preferir a worklist standard à lista paralela"],
-    ["Justificação do desvio","Sem equivalente","nenhum","btp","Fica no histórico, visível ao aprovador"]
+    ["Employee recording the time","Personnel number","PERNR","cats",""],
+    ["Day column in the grid","Work date","WORKDATE","cats","One entry per day, never aggregated to the week"],
+    ["Cell value","Recorded hours","CATSHOURS","cats","Unit in UNIT, usually H"],
+    ["Start and end, when required","Time window","BEGUZ, ENDUZ","cats","Only when the country or the client requires it"],
+    ["Project and WBS of the row","Receiver WBS element","RPROJ","cats","Field with conversion, the interface shows the external mask"],
+    ["Order, when the receiver is an order","Receiver order","RAUFNR","cats","Maintenance, CAPEX or internal orders"],
+    ["Network and operation","Network and operation","RNPLNR, RAUFPL, RAPLZL","cats","Only with network planning"],
+    ["Activity type","CO activity type","LSTAR","cats","The valuation key"],
+    ["Employee's cost center","Sender cost center","SKOSTL","cats","From master data, never manual"],
+    ["Receiver cost center","Receiver cost center","RKOSTL","cats","Internal entries without a project"],
+    ["Entry description","Short text","LTXA1","cats","40 characters. The interface accepts 300 and truncates"],
+    ["Absences in the calendar and the grid","Absence or attendance type","AWART","cats","Read from the Leave Request, read-only. The record stays in Time Management"],
+    ["Day blocking from an absence","Employee's daily capacity","work schedule and infotype 2001","cats","An approved full day closes the day, a half day reduces capacity"],
+    ["Pending leave request","Request in approval","Leave Request workflow","cats","Doesn't block, raises a warning. If approved, that day's hours conflict"],
+    ["Entries created by the assistant","No equivalent","ZZORIGIN with value Joule","btp","Same validations as manual entries, flagged for audit"],
+    ["Week status","Processing status","STATUS","cats","Confirm the domain values with the client"],
+    ["Approver and date","Approval","APNAM, APDAT","cats","Filled by the process, never by the interface"],
+    ["Correction after submission","Reference to the changed record","REFCOUNTER","cats","The change creates a new record, history stays"],
+    ["Entry origin","No equivalent","ZZORIGIN","btp","Manual, suggested, copied, on behalf of. Used for telemetry"],
+    ["Suggestion confidence level","No equivalent","none","btp","Never leaves the experience layer"],
+    ["Signal timeline","No equivalent","none","btp","14-day retention, personal data"],
+    ["Favorites and copy week","CATS worklist","worklist tables","cats","Prefer the standard worklist over a parallel list"],
+    ["Deviation justification","No equivalent","none","btp","Stays in the history, visible to the approver"]
   ];
   var WHERE = {cats:["CATS","cats"], btp:["BTP","btp"], ci:["CI_CATSDB","ci"]};
 
@@ -498,7 +498,7 @@
       c2.innerHTML = m[1] + (m[4] ? "<div class='sub' style='color:var(--ink-3); font-size:12px'>"+m[4]+"</div>" : "");
       tr.appendChild(c2);
       var c3 = document.createElement("td");
-      c3.className = "f" + (m[2] === "nenhum" ? " none" : "");
+      c3.className = "f" + (m[2] === "none" ? " none" : "");
       c3.textContent = m[2];
       tr.appendChild(c3);
       var c4 = document.createElement("td");
@@ -518,7 +518,7 @@
         recs.push({
           PERNR: PERNR,
           WORKDATE: WORKDATES[i],
-          CATSHOURS: fmt(v).replace(",", "."),
+          CATSHOURS: fmt(v),
           UNIT: "H",
           LSTAR: pr.sap.lstar,
           RPROJ: pr.sap.rproj || "",
@@ -551,21 +551,21 @@
       var tr = document.createElement("tr");
       var td = document.createElement("td");
       td.colSpan = 10; td.style.color = "var(--ink-3)";
-      td.textContent = "Sem horas na semana, por isso não há registos a gerar.";
+      td.textContent = "No hours this week, so there are no records to generate.";
       tr.appendChild(td); body.appendChild(tr);
     }
-    $("catsCount").textContent = recs.length + (recs.length === 1 ? " registo gerado" : " registos gerados");
+    $("catsCount").textContent = recs.length + (recs.length === 1 ? " record generated" : " records generated");
     $("catsPayload").textContent =
-      "// Cenário cloud: WorkforceTimesheetService, entidade TimeSheetEntry\n" +
-      "// Cenário on premise: BAPI_CATIMESHEETMGR_INSERT, tabela CATSRECORDS\n" +
-      "// Nomes das propriedades a confirmar nos metadados do serviço do cliente\n\n" +
+      "// Cloud scenario: WorkforceTimesheetService, entity TimeSheetEntry\n" +
+      "// On-premise scenario: BAPI_CATIMESHEETMGR_INSERT, table CATSRECORDS\n" +
+      "// Property names to confirm against the client's service metadata\n\n" +
       JSON.stringify({
         requestId: "ts-2026-W38-" + PERNR,
         profile: "CONS_PT",
         release: state.submitted,
         records: recs,
         btpOnly: {
-          comment: "fica na camada de experiência, não entra em CATSDB",
+          comment: "stays in the experience layer, never enters CATSDB",
           origins: state.rows.filter(function(r){ return rowTotal(r) > 0; }).map(function(r){
             return {rproj: PROJECTS[r.p].sap.rproj || PROJECTS[r.p].sap.rkostl, origin: r.origin};
           }),
@@ -593,21 +593,21 @@
   function copyWeek(){
     if(state.submitted) return;
     var base = [
-      {p:0, desc:"Workshop de requisitos, folha de vencimento"},
-      {p:1, desc:"Desenho da solução de registo de tempo"},
-      {p:2, desc:"Acompanhamento do rollout"},
-      {p:3, desc:"Pré venda e formação interna"}
+      {p:0, desc:"Requirements workshop, payroll"},
+      {p:1, desc:"Time recording solution design"},
+      {p:2, desc:"Rollout follow-up"},
+      {p:3, desc:"Pre-sales and internal training"}
     ];
     var added = 0;
     base.forEach(function(b){
       if(state.rows.some(function(r){ return r.p === b.p; })) return;
-      state.rows.push({id:nextId++, p:b.p, desc:b.desc, h:[0,0,0,0,0,0,0], origin:"Copiada"});
+      state.rows.push({id:nextId++, p:b.p, desc:b.desc, h:[0,0,0,0,0,0,0], origin:"Copied"});
       added++;
     });
     render();
     var first = state.rows[0];
     if(first){ var c = document.getElementById("c-"+first.id+"-0"); if(c) c.focus(); }
-    toast(added ? ("Estrutura da semana anterior copiada, sem durações. "+added+" linhas novas.") : "As linhas da semana anterior já estão todas presentes.");
+    toast(added ? ("Previous week's structure copied, without durations. "+added+" new rows.") : "All of last week's rows are already present.");
   }
   function applyTemplate(){
     if(state.submitted) return;
@@ -615,14 +615,14 @@
       for(var i=0; i<5; i++){ if(!r.h[i]) r.h[i] = PROJECTS[r.p].proj ? 1.5 : 0.5; }
     });
     render();
-    toast("Template de alocação aplicado aos dias úteis.", "Desfazer", function(){ location.reload(); });
+    toast("Allocation template applied to working days.", "Undo", function(){ location.reload(); });
   }
   function togglePrivate(){
     state.privateMode = !state.privateMode;
     var cap = $("capture");
     cap.classList.toggle("off", state.privateMode);
-    $("captureTxt").textContent = state.privateMode ? "Captura em pausa" : "Sugestões ativas, linha temporal privada";
-    $("privBtn").textContent = state.privateMode ? "Retomar captura" : "Modo privado";
+    $("captureTxt").textContent = state.privateMode ? "Capture paused" : "Suggestions on, private timeline";
+    $("privBtn").textContent = state.privateMode ? "Resume capture" : "Private mode";
     render();
   }
 
@@ -641,7 +641,7 @@
     var box = $("nlChips");
     box.innerHTML = "";
     if(!txt.trim()){
-      box.appendChild(chip("à espera de texto",""));
+      box.appendChild(chip("waiting for text",""));
       nlParsed = null;
       $("nlSave").disabled = true;
       return;
@@ -655,13 +655,13 @@
 
     var day = $("nlq").dataset.day ? +$("nlq").dataset.day : 0;
     var dayLabel = null;
-    var names = ["segunda","terça","terca","quarta","quinta","sexta"];
-    if(/\bontem\b/i.test(rest)){ day = 1; dayLabel = "ontem, "+DAYS[1]; rest = rest.replace(/\bontem\b/i," "); }
-    else if(/\bhoje\b/i.test(rest)){ day = 2; dayLabel = "hoje, "+DAYS[2]; rest = rest.replace(/\bhoje\b/i," "); }
+    var names = ["monday","tuesday","wednesday","thursday","friday"];
+    if(/\byesterday\b/i.test(rest)){ day = 1; dayLabel = "yesterday, "+DAYS[1]; rest = rest.replace(/\byesterday\b/i," "); }
+    else if(/\btoday\b/i.test(rest)){ day = 2; dayLabel = "today, "+DAYS[2]; rest = rest.replace(/\btoday\b/i," "); }
     else {
       for(var i=0; i<names.length; i++){
         var re = new RegExp("\\b"+names[i]+"\\b","i");
-        if(re.test(rest)){ day = i > 2 ? i-1 : i; dayLabel = DAYS[day]; rest = rest.replace(re," "); break; }
+        if(re.test(rest)){ day = i; dayLabel = DAYS[day]; rest = rest.replace(re," "); break; }
       }
     }
     if(!dayLabel) dayLabel = DAYS[day];
@@ -673,12 +673,12 @@
     });
     var desc = rest.replace(/\s+/g," ").trim();
 
-    box.appendChild(chip(isNaN(dur) || !dur ? "duração por indicar" : fmt(dur)+" h", isNaN(dur) || !dur ? "warnc" : "okc"));
+    box.appendChild(chip(isNaN(dur) || !dur ? "duration to set" : fmt(dur)+" h", isNaN(dur) || !dur ? "warnc" : "okc"));
     box.appendChild(chip(dayLabel, "okc"));
-    box.appendChild(chip(pIdx === -1 ? "projeto por escolher" : PROJECTS[pIdx].name, pIdx === -1 ? "warnc" : "okc"));
-    box.appendChild(chip(pIdx === -1 ? "atividade por definir" : PROJECTS[pIdx].act, pIdx === -1 ? "" : "okc"));
-    if(pIdx !== -1) box.appendChild(chip(PROJECTS[pIdx].sap.rproj ? "PEP "+PROJECTS[pIdx].sap.rproj : "centro de custo "+PROJECTS[pIdx].sap.rkostl, "okc"));
-    if(desc) box.appendChild(chip("descrição: "+desc.slice(0,42), "okc"));
+    box.appendChild(chip(pIdx === -1 ? "project to choose" : PROJECTS[pIdx].name, pIdx === -1 ? "warnc" : "okc"));
+    box.appendChild(chip(pIdx === -1 ? "activity to set" : PROJECTS[pIdx].act, pIdx === -1 ? "" : "okc"));
+    if(pIdx !== -1) box.appendChild(chip(PROJECTS[pIdx].sap.rproj ? "PEP "+PROJECTS[pIdx].sap.rproj : "cost center "+PROJECTS[pIdx].sap.rkostl, "okc"));
+    if(desc) box.appendChild(chip("description: "+desc.slice(0,42), "okc"));
 
     var ok = !isNaN(dur) && dur > 0 && pIdx !== -1;
     nlParsed = ok ? {dur:round15(dur), day:day, p:pIdx, desc:desc} : null;
@@ -686,13 +686,13 @@
   }
   function saveNL(){
     if(!nlParsed) return;
-    if(isBlocked(nlParsed.day)){ toast(DAYS[nlParsed.day]+" tem ausência aprovada, não aceita registo de horas."); return; }
+    if(isBlocked(nlParsed.day)){ toast(DAYS[nlParsed.day]+" has an approved absence, doesn't accept time entries."); return; }
     var row = state.rows.filter(function(r){ return r.p === nlParsed.p; })[0];
     if(!row){ row = {id:nextId++, p:nlParsed.p, desc:nlParsed.desc, h:[0,0,0,0,0,0,0], origin:"Manual"}; state.rows.push(row); }
     if(nlParsed.desc) row.desc = nlParsed.desc;
     row.h[nlParsed.day] += nlParsed.dur;
     render();
-    toast(fmt(nlParsed.dur)+" h registadas em "+PROJECTS[nlParsed.p].code+", "+DAYS[nlParsed.day]+".");
+    toast(fmt(nlParsed.dur)+" h recorded in "+PROJECTS[nlParsed.p].code+", "+DAYS[nlParsed.day]+".");
   }
 
   /* ---------- detail ---------- */
@@ -707,7 +707,7 @@
     $("dtAct").value = pr.act;
     $("dtOrigin").textContent = r.origin;
     var st = $("dtState");
-    st.textContent = state.submitted ? "Em aprovação, leitura" : "Rascunho";
+    st.textContent = state.submitted ? "In approval, read-only" : "Draft";
     st.className = state.submitted ? "chip blue" : "chip grey";
     $("dtDesc").readOnly = state.submitted;
     $("dtDur").readOnly = true;
@@ -715,7 +715,7 @@
     $("dlgDetail").showModal();
   }
   function saveDetail(){
-    if(dtRow){ dtRow.desc = $("dtDesc").value; render(); toast("Entrada atualizada."); }
+    if(dtRow){ dtRow.desc = $("dtDesc").value; render(); toast("Entry updated."); }
     $("dlgDetail").close();
   }
 
@@ -741,8 +741,8 @@
       sum.appendChild(r);
     });
     var tr = el("div","r t","");
-    tr.appendChild(el("span","","Total da semana"));
-    tr.appendChild(el("span","", fmt(projTotal())+" h em projeto"));
+    tr.appendChild(el("span","","Week total"));
+    tr.appendChild(el("span","", fmt(projTotal())+" h in project"));
     tr.appendChild(el("span","n", fmt(weekTotal())+" h"));
     sum.appendChild(tr);
     body.appendChild(sum);
@@ -750,19 +750,19 @@
     var warns = validate().filter(function(m){ return m.sev === "w"; });
     if(warns.length){
       var w = el("div","","");
-      w.innerHTML = "<div class='field'><label>"+warns.length+" avisos, não bloqueiam a submissão</label></div>";
+      w.innerHTML = "<div class='field'><label>"+warns.length+" warnings, they don't block submission</label></div>";
       var ul = el("div","sum","");
       warns.forEach(function(m){
         var r = el("div","r","");
         r.appendChild(el("span","", m.txt));
-        r.appendChild(el("span","chip amber","aviso"));
+        r.appendChild(el("span","chip amber","warning"));
         r.appendChild(el("span","",""));
         ul.appendChild(r);
       });
       w.appendChild(ul);
       body.appendChild(w);
       var f = el("div","field","");
-      f.innerHTML = "<label for='subWhy'>Justificação do desvio ao esperado</label><textarea id='subWhy' placeholder='Uma linha basta. Fica no histórico da semana.'></textarea>";
+      f.innerHTML = "<label for='subWhy'>Justification for the deviation from the expected total</label><textarea id='subWhy' placeholder='One line is enough. Stays in the week's history.'></textarea>";
       body.appendChild(f);
     }
     $("dlgSubmit").showModal();
@@ -771,7 +771,7 @@
     state.submitted = true;
     $("dlgSubmit").close();
     render();
-    toast("Semana 38 submetida para aprovação.", "Reabrir", function(){ state.submitted = false; render(); });
+    toast("Week 38 submitted for approval.", "Reopen", function(){ state.submitted = false; render(); });
   }
 
   /* ---------- approvals ---------- */
@@ -794,7 +794,7 @@
         var c1 = document.createElement("td");
         var cb = document.createElement("input");
         cb.type = "checkbox"; cb.checked = a.sel; cb.disabled = !!a.warn;
-        cb.setAttribute("aria-label","Selecionar timesheet de "+a.who);
+        cb.setAttribute("aria-label","Select timesheet for "+a.who);
         cb.onchange = function(){ a.sel = cb.checked; renderApprovals(); };
         c1.appendChild(cb); tr.appendChild(c1);
         var c2 = document.createElement("td");
@@ -807,16 +807,16 @@
         var c7 = document.createElement("td");
         c7.innerHTML = a.warn
           ? "<span class='chip amber'>"+a.note+"</span>"
-          : (a.approved ? "<span class='chip green'>Aprovada</span>" : "<span class='chip blue'>Em aprovação</span>");
+          : (a.approved ? "<span class='chip green'>Approved</span>" : "<span class='chip blue'>In approval</span>");
         tr.appendChild(c7);
         body.appendChild(tr);
       });
     }
-    group("Sem avisos, aprovação em massa disponível", clean);
-    group("Exceções, exigem revisão individual", flagged);
+    group("No warnings, bulk approval available", clean);
+    group("Exceptions, need individual review", flagged);
 
     var sel = state.approvals.filter(function(a){ return a.sel; }).length;
-    $("apSel").textContent = sel + (sel === 1 ? " selecionada" : " selecionadas");
+    $("apSel").textContent = sel + (sel === 1 ? " selected" : " selected");
     $("apApprove").disabled = sel === 0;
     var pend = state.approvals.filter(function(a){ return !a.approved; }).length;
     $("apPend").textContent = pend;
@@ -849,7 +849,7 @@
     var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
     if(!hi.length) return;
     hi.forEach(acceptSug);
-    toast(hi.length+" sugestões de confiança alta aplicadas. As de confiança média e baixa ficam por rever.");
+    toast(hi.length+" high-confidence suggestions applied. Medium and low confidence ones are still to review.");
   };
   $("vGrid").onclick = function(){ setView(true); };
   $("vCal").onclick = function(){ setView(false); };
@@ -866,11 +866,11 @@
   $("subOk").onclick = doSubmit;
   $("dataBtn").onclick = function(){ $("dlgData").showModal(); };
   $("dataClose").onclick = function(){ $("dlgData").close(); };
-  $("dataWipe").onclick = function(){ $("dlgData").close(); state.sugs = []; render(); toast("Linha temporal bruta eliminada. As sugestões pendentes desapareceram com ela."); };
+  $("dataWipe").onclick = function(){ $("dlgData").close(); state.sugs = []; render(); toast("Raw timeline deleted. Pending suggestions disappeared with it."); };
   $("helpBtn").onclick = function(){ $("dlgHelp").showModal(); };
   $("helpClose").onclick = function(){ $("dlgHelp").close(); };
-  $("prevW").onclick = function(){ toast("Navegação de semana simulada neste protótipo."); };
-  $("nextW").onclick = function(){ toast("Navegação de semana simulada neste protótipo."); };
+  $("prevW").onclick = function(){ toast("Week navigation is simulated in this prototype."); };
+  $("nextW").onclick = function(){ toast("Week navigation is simulated in this prototype."); };
 
   $("fTbl").onclick = function(){ setFmt(true); };
   $("fPay").onclick = function(){ setFmt(false); };
@@ -893,7 +893,7 @@
     var n = 0;
     state.approvals.forEach(function(a){ if(a.sel){ a.approved = true; a.sel = false; n++; } });
     renderApprovals();
-    toast(n+" timesheets aprovadas numa só chamada. As exceções continuam por revisão.");
+    toast(n+" timesheets approved in a single call. Exceptions remain for review.");
   };
 
   Array.prototype.forEach.call(document.querySelectorAll(".nav button"), function(b){
@@ -906,7 +906,7 @@
     };
   });
 
-  /* ---------- assistente conversacional, padrão Joule ---------- */
+  /* ---------- conversational assistant, Joule pattern ---------- */
   var chat = {pending:null, greeted:false};
 
   function botToggle(force){
@@ -917,8 +917,8 @@
     if(open){
       if(!chat.greeted){
         chat.greeted = true;
-        botSay("bot", "Olá Tiago. Posso registar horas, mostrar o estado da semana, ver as suas ausências ou submeter a folha. Diga o que fez, em linguagem normal.");
-        botChips(["Quantas horas tenho?","As minhas ausências","2h BNK testes ontem","Submeter a semana"]);
+        botSay("bot", "Hi Tiago. I can log hours, show the week's status, show your absences or submit the sheet. Tell me what you did, in plain language.");
+        botChips(["How many hours do I have?","My absences","2h BNK testing yesterday","Submit the week"]);
       }
       setTimeout(function(){ $("jinput").focus(); }, 60);
     }
@@ -956,14 +956,14 @@
     acts.appendChild(btn(confirmLabel,"btn sm primary", function(){
       chat.pending = null;
       acts.innerHTML = "";
-      acts.appendChild(el("span","chip green","confirmado"));
+      acts.appendChild(el("span","chip green","confirmed"));
       onConfirm();
     }));
-    acts.appendChild(btn("Cancelar","btn sm", function(){
+    acts.appendChild(btn("Cancel","btn sm", function(){
       chat.pending = null;
       acts.innerHTML = "";
-      acts.appendChild(el("span","chip grey","cancelado"));
-      botSay("bot","Sem problema, não gravei nada.");
+      acts.appendChild(el("span","chip grey","cancelled"));
+      botSay("bot","No problem, I didn't save anything.");
     }));
     c.appendChild(acts);
     return c;
@@ -974,60 +974,60 @@
   }
   function weekSummaryText(){
     var errs = errors().length;
-    return "Tem " + fmt(weekTotal()) + " h registadas de " + fmt(weekCapacity()) +
-      " h esperadas, já com as ausências descontadas. " +
-      (errs ? errs + (errs === 1 ? " erro impede a submissão." : " erros impedem a submissão.") : "Sem erros, pode submeter.");
+    return "You have " + fmt(weekTotal()) + " h recorded of " + fmt(weekCapacity()) +
+      " h expected, already with absences deducted. " +
+      (errs ? errs + (errs === 1 ? " error blocks submission." : " errors block submission.") : "No errors, you can submit.");
   }
 
-  /* ações do assistente, partilhadas entre o Claude (via /api/chat) e o interpretador local */
+  /* assistant actions, shared between Claude (via /api/chat) and the local interpreter */
   function showAbsences(){
     var node = el("div","jlist","");
     ABSENCES.forEach(function(a){
       node.appendChild(el("div","jrow2", DAYS[a.day] + " · " + a.type + " · " + fmt(a.hours) + " h · " + ABSTATUS[a.status]));
     });
-    botSay("bot","Estas são as ausências da semana, vindas do Leave Request. Os dias de ausência aprovada de dia inteiro não aceitam registo de horas.", node);
-    botChips(["Quantas horas tenho?","Copiar a semana passada"]);
+    botSay("bot","These are this week's absences, from the Leave Request. Days with an approved full-day absence don't accept time entries.", node);
+    botChips(["How many hours do I have?","Copy last week"]);
   }
   function showWeekStatus(){
     botSay("bot", weekSummaryText());
-    botChips(["As minhas ausências","Submeter a semana"]);
+    botChips(["My absences","Submit the week"]);
   }
   function showSuggestionsPanel(){
     var vis = visibleSugs();
     botSay("bot", vis.length
-      ? "Tem " + vis.length + " sugestões por rever no painel lateral. Posso aplicar as de confiança alta, se quiser."
-      : "Não há sugestões por rever.");
-    if(vis.length) botChips(["Aplicar as de confiança alta"]);
+      ? "You have " + vis.length + " suggestions to review in the side panel. I can apply the high-confidence ones, if you'd like."
+      : "No suggestions to review.");
+    if(vis.length) botChips(["Apply the high-confidence ones"]);
   }
   function offerApplyHighConfidence(){
     var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
-    if(!hi.length){ botSay("bot","Não tenho sugestões de confiança alta pendentes."); return; }
+    if(!hi.length){ botSay("bot","I don't have any pending high-confidence suggestions."); return; }
     chat.pending = "sugs";
-    botSay("bot","Confirma a aplicação destas sugestões?", botCard(
+    botSay("bot","Confirm applying these suggestions?", botCard(
       hi.map(function(s){ return [DAYS[s.day] + ", " + PROJECTS[s.p].code, fmt(s.hours) + " h"]; }),
-      "Aplicar", function(){
+      "Apply", function(){
         hi.forEach(acceptSug);
-        botSay("bot", hi.length + " sugestões aplicadas. " + weekSummaryText());
+        botSay("bot", hi.length + " suggestions applied. " + weekSummaryText());
       }));
   }
   function offerCopyWeek(){
     chat.pending = "copy";
-    botSay("bot","Posso trazer a estrutura da semana anterior, sem durações.", botCard(
-      [["Ação","copiar linhas da semana anterior"],["Durações","ficam a zero"]],
-      "Copiar", function(){ copyWeek(); botSay("bot","Feito. As linhas estão criadas, falta preencher as durações."); }));
+    botSay("bot","I can bring in last week's structure, without durations.", botCard(
+      [["Action","copy last week's rows"],["Durations","stay at zero"]],
+      "Copy", function(){ copyWeek(); botSay("bot","Done. The rows are created, durations still need filling in."); }));
   }
   function offerSubmit(){
-    if(state.submitted){ botSay("bot","A semana já está submetida e em aprovação."); return; }
+    if(state.submitted){ botSay("bot","The week is already submitted and in approval."); return; }
     var errs = errors();
     if(errs.length){
-      botSay("bot","Ainda não posso submeter. " + errs[0].txt);
-      botChips(["Quantas horas tenho?"]);
+      botSay("bot","I can't submit yet. " + errs[0].txt);
+      botChips(["How many hours do I have?"]);
       return;
     }
     chat.pending = "submit";
-    botSay("bot","Confirma a submissão da semana 38?", botCard(
-      [["Total","" + fmt(weekTotal()) + " h"],["Esperado","" + fmt(weekCapacity()) + " h"],["Estado após submeter","Em aprovação"]],
-      "Submeter", function(){ doSubmit(); botSay("bot","Semana submetida. Fica em aprovação com o gestor de projeto."); }));
+    botSay("bot","Confirm submitting week 38?", botCard(
+      [["Total","" + fmt(weekTotal()) + " h"],["Expected","" + fmt(weekCapacity()) + " h"],["Status after submitting","In approval"]],
+      "Submit", function(){ doSubmit(); botSay("bot","Week submitted. It's now in approval with the project manager."); }));
   }
   function offerEntry(day, dur, pIdx, desc){
     var pr = PROJECTS[pIdx];
@@ -1035,41 +1035,41 @@
     if(isBlocked(day)){
       alt = nextFreeDay();
       if(alt === -1){
-        botSay("bot", DAYS[day] + " tem " + absOn(day,"approved")[0].type.toLowerCase() + " aprovada e não há outro dia com capacidade livre. Não registei nada.");
+        botSay("bot", DAYS[day] + " has an approved " + absOn(day,"approved")[0].type.toLowerCase() + " and there's no other day with free capacity. I didn't record anything.");
         return;
       }
-      botSay("bot", DAYS[day] + " tem " + absOn(day,"approved")[0].type.toLowerCase() + " aprovada, por isso não aceita horas. Proponho " + DAYS[alt] + ".");
+      botSay("bot", DAYS[day] + " has an approved " + absOn(day,"approved")[0].type.toLowerCase() + ", so it doesn't accept hours. I suggest " + DAYS[alt] + ".");
       day = alt;
     }
     var livre = capacity(day) - dayTotal(day);
     var warn = null;
     if(dur > livre){
-      warn = "Este registo deixa o dia com " + fmt(dayTotal(day) + dur) + " h, acima da capacidade de " + fmt(capacity(day)) + " h. Vai gerar erro na submissão.";
+      warn = "This entry leaves the day at " + fmt(dayTotal(day) + dur) + " h, above the capacity of " + fmt(capacity(day)) + " h. It will raise an error at submission.";
     }
     chat.pending = "entry";
-    botSay("bot","Confirma esta entrada?", botCard([
-      ["Dia", DAYS[day]],
-      ["Duração", fmt(dur) + " h"],
-      ["Projeto", pr.name],
-      ["Objeto recetor", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Centro de custo " + pr.sap.rkostl],
-      ["Tipo de atividade", pr.sap.lstar + ", " + pr.act],
-      ["Descrição", desc || "(por preencher)"],
-      ["Origem", "Joule"]
-    ], "Gravar", function(){
+    botSay("bot","Confirm this entry?", botCard([
+      ["Day", DAYS[day]],
+      ["Duration", fmt(dur) + " h"],
+      ["Project", pr.name],
+      ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
+      ["Activity type", pr.sap.lstar + ", " + pr.act],
+      ["Description", desc || "(to be filled in)"],
+      ["Origin", "Joule"]
+    ], "Save", function(){
       var row = state.rows.filter(function(r){ return r.p === pIdx; })[0];
       if(!row){ row = {id:nextId++, p:pIdx, desc:desc, h:[0,0,0,0,0,0,0], origin:"Joule"}; state.rows.push(row); }
       if(desc) row.desc = desc;
       row.origin = "Joule";
       row.h[day] += dur;
       render();
-      botSay("bot", fmt(dur) + " h gravadas em " + DAYS[day] + ", " + pr.code + ". " + weekSummaryText());
-      botChips(["Submeter a semana","As minhas ausências"]);
+      botSay("bot", fmt(dur) + " h saved on " + DAYS[day] + ", " + pr.code + ". " + weekSummaryText());
+      botChips(["Submit the week","My absences"]);
     }, warn));
   }
 
-  /* pede ao Claude, em /api/chat, para interpretar o texto e escolher uma função.
-     Devolve null em qualquer falha (sem chave configurada, rede, erro do motor),
-     e nesse caso o chamador cai no interpretador local por regex. */
+  /* asks Claude, at /api/chat, to interpret the text and choose a function.
+     Returns null on any failure (no key configured, network, engine error),
+     and in that case the caller falls back to the local regex interpreter. */
   async function askAssistant(txt){
     try{
       var res = await fetch("/api/chat", {
@@ -1094,7 +1094,7 @@
     }
   }
 
-  /* mapeia a resposta do Claude (função + argumentos) para as mesmas ações do bot */
+  /* maps Claude's response (function + arguments) to the same bot actions */
   function botDispatch(intent){
     switch(intent.funcao){
       case "listar_ausencias": showAbsences(); return true;
@@ -1111,8 +1111,8 @@
         });
         var dur = round15(Number(a.duracao_horas));
         if(dayIdx === -1 || dayIdx > 4 || pIdx === -1 || !dur || dur <= 0){
-          botSay("bot", intent.texto || "Não consegui confirmar todos os dados desse registo. Pode escrever de outra forma?");
-          botChips(["Quantas horas tenho?","As minhas ausências"]);
+          botSay("bot", intent.texto || "I couldn't confirm all the details for that entry. Could you write it another way?");
+          botChips(["How many hours do I have?","My absences"]);
           return true;
         }
         offerEntry(dayIdx, dur, pIdx, a.descricao || "");
@@ -1120,7 +1120,7 @@
       default:
         if(intent.texto){
           botSay("bot", intent.texto);
-          botChips(["Quantas horas tenho?","As minhas ausências","Ajuda"]);
+          botChips(["How many hours do I have?","My absences","Help"]);
           return true;
         }
         return false;
@@ -1138,33 +1138,33 @@
     botHandleLocal(txt);
   }
 
-  /* interpretador local por regex, usado quando o Claude não está configurado ou falha */
+  /* local regex interpreter, used when Claude isn't configured or fails */
   function botHandleLocal(txt){
     var t = txt.toLowerCase();
 
-    /* ausências */
-    if(/ausênc|ausenc|férias|ferias|leave|falta/.test(t)){ showAbsences(); return; }
-    /* estado da semana */
-    if(/quantas horas|estado|resumo|como está|como esta|falta/.test(t)){ showWeekStatus(); return; }
-    /* sugestões */
-    if(/sugest/.test(t) && !/aplicar as de confian/.test(t)){ showSuggestionsPanel(); return; }
-    if(/aplicar as de confian/.test(t)){ offerApplyHighConfidence(); return; }
-    /* copiar semana */
-    if(/copiar|semana passada|semana anterior/.test(t)){ offerCopyWeek(); return; }
-    /* submeter */
-    if(/submeter|enviar a semana|fechar a semana/.test(t)){ offerSubmit(); return; }
+    /* absences */
+    if(/absen|vacation|holiday|leave|time off/.test(t)){ showAbsences(); return; }
+    /* week status */
+    if(/how many hours|week status|status|summary|how('| i)?s (the week|it going)/.test(t)){ showWeekStatus(); return; }
+    /* suggestions */
+    if(/suggest/.test(t) && !/high.confidence/.test(t)){ showSuggestionsPanel(); return; }
+    if(/high.confidence/.test(t)){ offerApplyHighConfidence(); return; }
+    /* copy week */
+    if(/copy|last week|previous week/.test(t)){ offerCopyWeek(); return; }
+    /* submit */
+    if(/submit|send the week|close the week/.test(t)){ offerSubmit(); return; }
 
-    /* registo de horas, reutiliza o mesmo parser do registo rápido */
+    /* time entry, reuses the same parser as quick add */
     var p = botParse(txt);
     if(!p){
-      botSay("bot","Não consegui perceber o que registar. Escreva a duração e o projeto, por exemplo <span class=\"num\">2h BNK testes de folha ontem</span>. Também posso mostrar o estado da semana ou as ausências.");
-      botChips(["Quantas horas tenho?","As minhas ausências","Ajuda"]);
+      botSay("bot","I couldn't understand what to record. Write the duration and the project, for example <span class=\"num\">2h BNK payroll testing yesterday</span>. I can also show the week's status or your absences.");
+      botChips(["How many hours do I have?","My absences","Help"]);
       return;
     }
     offerEntry(p.day, p.dur, p.p, p.desc);
   }
 
-  /* parser do assistente: duração, dia e projeto */
+  /* assistant parser: duration, day and project */
   function botParse(txt){
     var rest = " " + txt + " ", m, dur = NaN;
     if((m = rest.match(/(\d+(?:[.,]\d+)?)\s*h/i))){ dur = parseDur(m[1]); rest = rest.replace(m[0]," "); }
@@ -1174,10 +1174,10 @@
     if(isNaN(dur) || dur <= 0) return null;
 
     var day = 2;
-    if(/\bontem\b/i.test(rest)){ day = 1; rest = rest.replace(/\bontem\b/i," "); }
-    else if(/\bhoje\b/i.test(rest)){ day = 2; rest = rest.replace(/\bhoje\b/i," "); }
+    if(/\byesterday\b/i.test(rest)){ day = 1; rest = rest.replace(/\byesterday\b/i," "); }
+    else if(/\btoday\b/i.test(rest)){ day = 2; rest = rest.replace(/\btoday\b/i," "); }
     else {
-      var names = ["segunda","terça|terca","quarta","quinta","sexta"];
+      var names = ["monday","tuesday","wednesday","thursday","friday"];
       for(var i=0; i<names.length; i++){
         var re = new RegExp("\\b("+names[i]+")\\b","i");
         if(re.test(rest)){ day = i; rest = rest.replace(re," "); break; }
