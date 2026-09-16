@@ -1310,7 +1310,7 @@
     if(/\byesterday\b/i.test(rest)){ day = 1; rest = rest.replace(/\byesterday\b/i," "); }
     else if(/\btoday\b/i.test(rest)){ day = 2; rest = rest.replace(/\btoday\b/i," "); }
     else {
-      var names = ["monday","tuesday","wednesday","thursday","friday"];
+      var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
       for(var i=0; i<names.length; i++){
         var re = new RegExp("\\b("+names[i]+")\\b","i");
         if(re.test(rest)){ day = i; rest = rest.replace(re," "); break; }
