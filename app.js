@@ -752,7 +752,7 @@
 
     var day = $("nlq").dataset.day ? +$("nlq").dataset.day : 0;
     var dayLabel = null;
-    var names = ["monday","tuesday","wednesday","thursday","friday"];
+    var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
     if(/\byesterday\b/i.test(rest)){ day = 1; dayLabel = "yesterday, "+DAYS[1]; rest = rest.replace(/\byesterday\b/i," "); }
     else if(/\btoday\b/i.test(rest)){ day = 2; dayLabel = "today, "+DAYS[2]; rest = rest.replace(/\btoday\b/i," "); }
     else {
@@ -770,9 +770,28 @@
     });
     var desc = rest.replace(/\s+/g," ").trim();
 
-    box.appendChild(chip(isNaN(dur) || !dur ? "duration to set" : fmt(dur)+" h", isNaN(dur) || !dur ? "warnc" : "okc"));
-    box.appendChild(chip(dayLabel, "okc"));
-    box.appendChild(chip(pIdx === -1 ? "project to choose" : PROJECTS[pIdx].name, pIdx === -1 ? "warnc" : "okc"));
+    box.appendChild(chipBtn(isNaN(dur) || !dur ? "duration to set" : fmt(dur)+" h", isNaN(dur) || !dur ? "warnc" : "okc", function(){
+      var v = window.prompt("Duration (e.g. 1.5, 1:30, 90m)", isNaN(dur) || !dur ? "" : fmt(dur));
+      if(v === null) return;
+      var parsed = parseDur(v);
+      if(isNaN(parsed) || parsed <= 0){ toast("Couldn't read “"+v+"”. Use 1.5, 1:30 or 90m."); return; }
+      $("nlq").value = nlText(round15(parsed), day, pIdx, desc);
+      parseNL();
+    }));
+    box.appendChild(chipBtn(dayLabel, "okc", function(){
+      $("nlq").value = nlText(dur, (day + 1) % 7, pIdx, desc);
+      parseNL();
+    }));
+    box.appendChild(chipBtn(pIdx === -1 ? "project to choose" : PROJECTS[pIdx].name, pIdx === -1 ? "warnc" : "okc", function(){
+      var codes = PROJECTS.map(function(p){ return p.code.split("-")[0]; }).join(", ");
+      var v = window.prompt("Project code ("+codes+")", pIdx === -1 ? "" : PROJECTS[pIdx].code.split("-")[0]);
+      if(v === null) return;
+      var idx = -1;
+      PROJECTS.forEach(function(p,i){ if(p.code.split("-")[0].toLowerCase() === v.trim().toLowerCase()) idx = i; });
+      if(idx === -1){ toast("Unknown project code “"+v+"”."); return; }
+      $("nlq").value = nlText(dur, day, idx, desc);
+      parseNL();
+    }));
     box.appendChild(chip(pIdx === -1 ? "activity to set" : PROJECTS[pIdx].act, pIdx === -1 ? "" : "okc"));
     if(pIdx !== -1) box.appendChild(chip(PROJECTS[pIdx].sap.rproj ? "PEP "+PROJECTS[pIdx].sap.rproj : "cost center "+PROJECTS[pIdx].sap.rkostl, "okc"));
     if(desc) box.appendChild(chip("description: "+desc.slice(0,42), "okc"));
@@ -926,6 +945,16 @@
   function el(tag, cls, txt){ var n = document.createElement(tag); if(cls) n.className = cls; if(txt) n.textContent = txt; return n; }
   function btn(txt, cls, fn){ var b = document.createElement("button"); b.className = cls || "btn"; b.textContent = txt; if(fn) b.onclick = fn; return b; }
   function chip(txt, cls){ var s = document.createElement("span"); s.className = "pchip " + (cls||""); s.textContent = txt; return s; }
+  function chipBtn(txt, cls, fn){ var b = document.createElement("button"); b.type = "button"; b.className = "pchip clickable " + (cls||""); b.textContent = txt; b.onclick = fn; return b; }
+  function dayWordFor(day){ var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]; return names[day] !== undefined ? names[day] : names[2]; }
+  function nlText(dur, day, pIdx, desc){
+    var parts = [];
+    if(!isNaN(dur) && dur > 0) parts.push(fmt(dur)+"h");
+    parts.push(dayWordFor(day));
+    if(pIdx !== -1) parts.push(PROJECTS[pIdx].code.split("-")[0]);
+    if(desc) parts.push(desc);
+    return parts.join(" ");
+  }
   function toast(txt, actionLabel, fn){
     var box = $("toasts");
     var t = el("div","toast","");
