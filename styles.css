@@ -313,3 +313,46 @@
     .joule{right:8px; left:8px; width:auto; max-height:80vh}
   }
   @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+
+  /* ---------- company switch and data entry profile ---------- */
+  .coswitch{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-3)}
+  .coswitch span{text-transform:uppercase; letter-spacing:.08em; font-weight:600}
+  .coswitch select{font:inherit; font-size:12px; padding:3px 6px; border:1px solid var(--line); border-radius:5px; background:var(--surface); color:var(--ink)}
+
+  /* ---------- start and end cells, profile Z_BSRV ---------- */
+  .tsgrid.clock .row{grid-template-columns:minmax(210px,1fr) repeat(7,92px) 70px 34px}
+  .tsgrid.clock{min-width:940px}
+  .clockcell{border-left:1px solid var(--line-soft); display:grid; gap:2px; padding:5px 5px; align-content:start}
+  .clockcell.we{background:var(--surface-2)}
+  .clockcell .tinp{width:100%; border:1px solid var(--line-soft); border-radius:4px; background:var(--surface); color:var(--ink);
+    font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12px; text-align:center; padding:2px 0}
+  .clockcell .tinp:focus{background:var(--accent-soft); outline:2px solid var(--accent); outline-offset:-2px}
+  .clockcell .tinp:disabled{background:var(--surface-3); color:var(--ink-3)}
+  .clockcell .cdur{font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:11px; text-align:center; color:var(--ink-3)}
+  .clockcell.abs{background:repeating-linear-gradient(135deg,var(--surface-3),var(--surface-3) 4px,var(--surface-2) 4px,var(--surface-2) 8px)}
+
+  /* ---------- closed periods ---------- */
+  .cell.closed, .clockcell.closed{background:var(--surface-3); cursor:not-allowed}
+  .cell.closed{color:var(--ink-3)}
+
+  /* ---------- allowances ---------- */
+  .abscard.bonus{border-left:3px solid var(--good)}
+  .qtywrap{display:flex; align-items:center; gap:8px}
+  .qtywrap input{flex:1 1 auto; min-width:0}
+  .qtywrap span{font-size:12px; color:var(--ink-3); font-family:var(--f-mono)}
+
+  /* ---------- team mass entry ---------- */
+  .massbar{display:flex; gap:12px; flex-wrap:wrap; align-items:end; padding:12px 14px; border-bottom:1px solid var(--line-soft)}
+  .massbar .f{display:grid; gap:4px; font-size:12px; color:var(--ink-3)}
+  .massbar .f span{text-transform:uppercase; letter-spacing:.08em; font-weight:600}
+  .massbar .f.wide{flex:1 1 220px}
+  .massbar select, .massbar input[type=text]{font:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); max-width:100%}
+  .massbar input#mDur{width:90px}
+  .mdays{display:flex; gap:10px; flex-wrap:wrap; padding-top:3px}
+  .mday{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--ink-2); text-transform:none; letter-spacing:0; font-weight:400}
+  .tsgrid.team{min-width:760px}
+  .tsgrid.team .rowmeta .p{gap:8px}
+  .tsgrid.team .rowmeta input[type=checkbox]{margin:0}
+  .errdot{display:grid; place-items:center; width:20px; height:20px; border-radius:50%; background:var(--crit-soft); color:var(--crit); font-weight:700; font-size:12px; cursor:help}
+  .spacer{flex:1 1 auto}
+  .maptbl td.wt{color:var(--accent-ink); font-weight:600}

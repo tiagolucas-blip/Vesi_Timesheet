@@ -25,6 +25,30 @@ Everything below works, with no server and no real data.
 - The `Simulate approval` button shows the conflict that arises when a request is approved after hours were already recorded, with assisted resolution
 - Suggestions that fall on days with an approved absence aren't proposed
 
+**Allowances against a project**
+- Catalogue of wage types with unit and mandatory fields: domestic and foreign per diem, own-car kilometres, shift allowance, project bonus
+- Recorded as quantity and unit, never as a value. Payroll does the valuation
+- An allowance can exist on a day with no hours, for example kilometres for a Saturday trip
+- Kilometres and foreign per diem block submission until origin and destination, or the country, is filled in
+- The bonus is the exception: it carries an amount, it is not on the employee's screen, and only the project owner records it
+
+**Entry mode by company, profile Z_CONS or Z_BSRV**
+- The company comes from the employee's IT0001 and `ZTIME_COMPANY_CFG` maps it to a CATS data entry profile, read at the date of the entry
+- `Z_CONS` records duration only. `Z_BSRV` records start and end, `BEGUZ` and `ENDUZ`, with the duration computed and never editable
+- Overnight windows are allowed in `Z_BSRV` and the entry stays on the starting day
+- Overlapping windows on the same day block submission
+- The switch in the shellbar changes IT0001, which is the same as opening the sheet as someone assigned to the other company
+
+**Team leader mass entry**
+- Two scopes, both supported: line hierarchy from IT0001 and OM, and project team. Rui Tavares is the crossing case, he reports to Pedro Alves but works on the project Ana Ferreira owns
+- Fill a project, a duration and the days, select people, apply. Nothing is saved until the leader reviews the grid
+- The save is partial on purpose: lines that fail keep their reason on screen, the rest are written
+- Every line keeps `CREATED_BY` and `ON_BEHALF_OF`. There is no self-confirmation step
+- The project owner records and approves the bonus in the same act, on the same screen
+
+**Period control**
+- Monthly, per company. A closed period rejects entries and changes, in the personal sheet and in mass entry
+
 **Conversational assistant, Joule pattern**
 - Recording by conversation, checking the week's status, checking absences, copying the week, applying suggestions, submitting
 - Interpreted by Claude (`api/chat.js`, function calling), with the browser's regex interpreter as an automatic fallback when the key isn't configured or the call fails
@@ -40,6 +64,8 @@ Everything below works, with no server and no real data.
 **CATS mapping**
 - Field-by-field table, state chain through to transfer
 - Live generation of CATS records from the filled week, as a table or as a payload
+- Hours and allowances in the same record set: `CATSHOURS` with `BEGUZ` and `ENDUZ`, or `LGART` with `ANZHL`
+- The bonus amount travels in a customer field, because CATSDB is a quantity structure. `CAT6` transfers quantity, not value, so writing `IT2010 BETRG` needs an enhancement. The payload view shows this explicitly
 
 ## Structure
 
@@ -82,6 +108,7 @@ There's no real data. Employee, projects, WBS, cost centers and absences are mad
 ## Known limits, by design
 
 - Week navigation is simulated, there's only one week
+- The bonus amount reaching `IT2010 BETRG` is shown as an open question in the payload, not solved. Two routes exist: a customer field in `CI_CATSDB` plus a BAdI on `CAT6`, or writing `IT2010` directly and leaving CATS out of the bonus
 - Without `ANTHROPIC_API_KEY` configured, the natural-language interpreter is deterministic, based on regular expressions. It recognizes duration, day and project prefix, and nothing else. See the next section to connect Claude
 - Each request to the assistant is independent, with no memory of the previous turn
 - There's no authentication or profiles, the user is fixed

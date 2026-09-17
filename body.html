@@ -1,12 +1,20 @@
 <header class="shellbar">
   <div class="brand"><strong>Time Recording</strong><span>Fiori Prototype</span></div>
   <div class="capture" id="capture"><span class="dot"></span><span id="captureTxt">Suggestions on, private timeline</span></div>
+  <label class="coswitch" for="coSel"><span>IT0001</span>
+    <select id="coSel" aria-label="Company of the employee, from IT0001">
+      <option value="PT01">PT01 · Consulting</option>
+      <option value="PT02">PT02 · Building Service</option>
+    </select>
+  </label>
+  <span class="chip grey" id="profChip">Z_CONS</span>
   <button class="btn sm" id="privBtn">Private mode</button>
   <button class="btn sm" id="helpBtn" aria-label="Keyboard shortcuts">Shortcuts</button>
 </header>
 
 <nav class="nav" role="tablist">
   <button role="tab" id="tab-semana" aria-current="true" data-screen="semana">My week</button>
+  <button role="tab" id="tab-team" data-screen="team">Team (mass entry)</button>
   <button role="tab" id="tab-aprov" data-screen="aprov">Approval (manager)</button>
   <button role="tab" id="tab-cats" data-screen="cats">CATS mapping</button>
 </nav>
@@ -101,6 +109,20 @@
         </div>
       </aside>
 
+      <aside class="panel" id="allowPanel">
+        <header>
+          <h2>Allowances</h2>
+          <span class="chip grey" id="allowCount">0 allowances</span>
+        </header>
+        <div class="sugs" id="allowList"></div>
+        <div class="gridfoot">
+          <button class="btn" id="allowAdd">Add allowance</button>
+        </div>
+        <div class="privacy">
+          Per diems, kilometres and shift allowances are recorded against a project and a date, as quantity and unit. No value is calculated here. The project bonus is the exception: it carries an amount and only the project owner records it.
+        </div>
+      </aside>
+
       <aside class="panel" id="sugPanel">
         <header>
           <h2>Suggestions this week</h2>
@@ -128,7 +150,91 @@
         <div><code>E7</code><span>Bulk approval with exceptions singled out</span><em>Fiori elements List Report</em></div>
         <div><code>E10</code><span>Absences from the Leave Request, day blocking and partial capacity</span><em>read from Time Management</em></div>
         <div><code>E11</code><span>Conversational assistant with confirmation before saving</span><em>Joule capability</em></div>
+        <div><code>E12</code><span>Allowances against a project, wage type and quantity, bonus with an amount</span><em>CATSDB LGART and ANZHL</em></div>
+        <div><code>E13</code><span>Start and end by data entry profile, derived from IT0001</span><em>BEGUZ and ENDUZ</em></div>
+        <div><code>E14</code><span>Team leader mass entry with partial save and on-behalf-of trace</span><em>sap.ui.table with row states</em></div>
       </div>
+    </div>
+  </section>
+
+
+  <!-- ============ E14, team leader mass entry ============ -->
+  <section id="screen-team" hidden>
+    <div class="pagehead">
+      <div class="top">
+        <h1 style="font-size:19px; margin:0">Team entry</h1>
+        <span class="chip blue" id="teamScope">Hierarchy</span>
+        <span class="chip grey" id="teamCount">0 people</span>
+        <div class="spacer"></div>
+        <label class="coswitch" for="leadSel"><span>Acting as</span>
+          <select id="leadSel" aria-label="Leader and scope"></select>
+        </label>
+      </div>
+      <p class="sub" id="teamScopeNote" style="margin:6px 0 0; font-size:13px; color:var(--ink-3)"></p>
+      <div class="kpis">
+        <div class="kpi"><span class="k">Selected</span><span class="v" id="mSel">0 selected</span></div>
+        <div class="kpi"><span class="k">Staged, not saved</span><span class="v" id="mStaged">0.0<small> h staged</small></span></div>
+        <div class="kpi"><span class="k">Recorded on behalf</span><span class="v" id="massLogCount">0 entries</span></div>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div style="min-width:0; display:grid; gap:16px">
+        <div class="panel">
+          <header>
+            <h2>Fill several people at once</h2>
+          </header>
+          <div class="massbar">
+            <label class="f"><span>Project</span><select id="mProj"></select></label>
+            <label class="f"><span>Duration</span><input type="text" id="mDur" value="8" inputmode="decimal" placeholder="8"></label>
+            <div class="f mdayswrap"><span>Days</span>
+              <div class="mdays">
+                <label class="mday"><input type="checkbox" value="0" checked>Mon</label>
+                <label class="mday"><input type="checkbox" value="1" checked>Tue</label>
+                <label class="mday"><input type="checkbox" value="2" checked>Wed</label>
+                <label class="mday"><input type="checkbox" value="3" checked>Thu</label>
+                <label class="mday"><input type="checkbox" value="4" checked>Fri</label>
+              </div>
+            </div>
+            <button class="btn" id="mApply">Apply to selected</button>
+          </div>
+          <div class="tablescroll">
+            <div class="tsgrid team" id="teamGrid"></div>
+          </div>
+          <div class="gridfoot">
+            <button class="btn primary" id="mSave" disabled>Save staged entries</button>
+            <button class="btn" id="mClear">Clear</button>
+            <span class="hint">Saving is partial. Lines that fail stay on screen with the reason.</span>
+          </div>
+        </div>
+
+        <div class="panel" id="bonusPanel" hidden>
+          <header>
+            <h2>Project bonus</h2>
+            <span class="chip green" id="bProj">Project</span>
+          </header>
+          <div class="massbar">
+            <label class="f"><span>Employee</span><select id="bWho"></select></label>
+            <label class="f"><span>Amount, EUR</span><input type="text" id="bAmount" inputmode="decimal" placeholder="500"></label>
+            <label class="f wide"><span>Reason</span><input type="text" id="bNote" placeholder="Go-live weekend, payroll cutover"></label>
+            <button class="btn primary" id="bSave">Record and approve</button>
+          </div>
+          <div class="sugs" id="bonusList"></div>
+          <div class="privacy">
+            The bonus is the only allowance the employee does not record. The project owner defines the amount and approves in the same act, because the project carries the cost. The amount lives in a customer field, since CATSDB is a quantity structure.
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <header>
+          <h2>Recorded on behalf</h2>
+        </header>
+        <div class="sugs" id="massLog"></div>
+        <div class="privacy">
+          Every line keeps CREATED_BY and ON_BEHALF_OF. There is no self-confirmation step: the employee sees the entry marked as recorded by the leader, which informs without blocking. On the CATS side the submitting user still lands in ERNAM.
+        </div>
+      </aside>
     </div>
   </section>
 
@@ -221,8 +327,8 @@
       <div id="catsTable" class="tablescroll">
         <table class="maptbl" id="catsTbl">
           <thead><tr>
-            <th>PERNR</th><th>WORKDATE</th><th>CATSHOURS</th><th>UNIT</th><th>LSTAR</th>
-            <th>RPROJ</th><th>SKOSTL</th><th>RKOSTL</th><th>LTXA1</th><th>STATUS</th>
+            <th>PERNR</th><th>WORKDATE</th><th>CATSHOURS</th><th>BEGUZ</th><th>ENDUZ</th>
+            <th>LGART</th><th>ANZHL</th><th>LSTAR</th><th>RPROJ</th><th>LTXA1</th><th>STATUS</th>
           </tr></thead>
           <tbody id="catsBody"></tbody>
         </table>
@@ -252,6 +358,27 @@
   </form>
   <div class="jfoot">Never saves without confirmation. Entries created here are marked with origin <span class="num">Joule</span> and go through the same validations.</div>
 </section>
+
+
+<dialog id="dlgAllow"><form class="dlg" method="dialog">
+  <header><h3>Add allowance</h3><span class="chip grey">Wage type</span></header>
+  <div class="body">
+    <div class="field"><label for="alCode">Allowance</label><select id="alCode"></select></div>
+    <div class="two">
+      <div class="field"><label for="alDay">Day</label><select id="alDay"></select></div>
+      <div class="field"><label for="alQty">Quantity</label>
+        <div class="qtywrap"><input type="text" id="alQty" inputmode="decimal" value="1"><span id="alUnit">days</span></div>
+      </div>
+    </div>
+    <div class="field" id="alProjWrap"><label for="alProj">Project</label><select id="alProj"></select></div>
+    <div class="field" id="alNoteWrap"><label for="alNote"><span id="alNoteLbl">Note</span></label><input type="text" id="alNote" placeholder="Required for this allowance"></div>
+    <p class="sub" id="alHint" style="font-size:12px; color:var(--ink-3); margin:0"></p>
+  </div>
+  <footer>
+    <button class="btn" id="alCancel" value="cancel">Cancel</button>
+    <button class="btn primary" id="alSave" value="save">Record allowance</button>
+  </footer>
+</form></dialog>
 
 <div class="toasts" id="toasts"></div>
 

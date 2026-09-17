@@ -16,6 +16,119 @@
   var WORKDATES = [];
   var DAYCAP = 8;
 
+  /* ---------- companies, IT0001 and CATS data entry profiles ----------
+     The entry mode is a business setting per company, never a user preference.
+     The company comes from the employee's IT0001 (Organizational Assignment)
+     and ZTIME_COMPANY_CFG maps it to a CATS data entry profile, with validity
+     dates, so a retroactive entry keeps the profile that was in force then.
+     Start and end are BEGUZ and ENDUZ, standard CATSDB fields whose visibility
+     is controlled by the profile, not by code in this application. */
+  var COMPANIES = [
+    {bukrs:"PT01", name:"Consulting and digital services"},
+    {bukrs:"PT02", name:"Building service and maintenance"}
+  ];
+  var PROFILES = {
+    Z_CONS:{code:"Z_CONS", name:"Consultants",      clock:false, overnight:false, fields:"Date, project, duration"},
+    Z_BSRV:{code:"Z_BSRV", name:"Building Service", clock:true,  overnight:true,  fields:"Date, project, start, end, computed duration"}
+  };
+  var ZTIME_COMPANY_CFG = [
+    {bukrs:"PT01", begda:"20200101", endda:"99991231", profile:"Z_CONS"},
+    {bukrs:"PT02", begda:"20200101", endda:"99991231", profile:"Z_BSRV"}
+  ];
+  var DEFAULT_PROFILE = "Z_CONS";
+
+  /* IT0001 of the person using the application. The switch in the header changes
+     it, which is the same as opening the sheet as someone assigned to the other
+     company. Nothing else in the application decides the entry mode. */
+  var IT0001 = {pernr:PERNR, bukrs:"PT01"};
+
+  function profileCodeFor(bukrs, dateISO){
+    var hit = ZTIME_COMPANY_CFG.filter(function(c){
+      return c.bukrs === bukrs && c.begda <= dateISO && c.endda >= dateISO;
+    })[0];
+    return hit ? hit.profile : DEFAULT_PROFILE;
+  }
+  /* Read at the date of the entry, not today, so history is never reinterpreted. */
+  function profileFor(dateISO, bukrs){
+    return PROFILES[profileCodeFor(bukrs || IT0001.bukrs, dateISO || WORKDATES[0])];
+  }
+  function isClock(){ return profileFor(WORKDATES[0]).clock; }
+  function companyName(bukrs){
+    var c = COMPANIES.filter(function(x){ return x.bukrs === bukrs; })[0];
+    return c ? c.name : bukrs;
+  }
+
+  /* ---------- period control, monthly, per company ----------
+     A closed period rejects new entries and changes. Reopening is an HR action
+     and leaves a trace. */
+  var PERIODS = [
+    {bukrs:"PT01", ym:"202608", open:false, by:"HR, 3 Sep 2026"},
+    {bukrs:"PT01", ym:"202609", open:true,  by:""},
+    {bukrs:"PT02", ym:"202608", open:false, by:"HR, 3 Sep 2026"},
+    {bukrs:"PT02", ym:"202609", open:true,  by:""}
+  ];
+  function periodFor(dateISO, bukrs){
+    var b = bukrs || IT0001.bukrs, ym = String(dateISO).slice(0,6);
+    return PERIODS.filter(function(p){ return p.bukrs === b && p.ym === ym; })[0] || {bukrs:b, ym:ym, open:true, by:""};
+  }
+  function periodOpen(dateISO, bukrs){ return periodFor(dateISO, bukrs).open !== false; }
+  function weekPeriodClosed(){
+    for(var i=0; i<5; i++){ if(!periodOpen(WORKDATES[i])) return true; }
+    return false;
+  }
+
+  /* ---------- wage type catalogue ----------
+     Every allowance is a wage type valid in T512Z and authorised in the data
+     entry profile. Quantity goes to ANZHL. The bonus is the only one carrying
+     an amount, which CATSDB has no field for, so it travels in a customer
+     field and is created by the project owner, never by the employee. */
+  var WAGETYPES = [
+    {code:"AJC_NAC", lgart:"1200", name:"Domestic per diem",  unit:"days",   amount:false, needProj:true,  noteLabel:"",                     selfEntry:true},
+    {code:"AJC_INT", lgart:"1210", name:"Foreign per diem",   unit:"days",   amount:false, needProj:true,  noteLabel:"Country",              selfEntry:true},
+    {code:"KMS",     lgart:"1300", name:"Own-car kilometres", unit:"km",     amount:false, needProj:true,  noteLabel:"Origin and destination", selfEntry:true},
+    {code:"TURNO",   lgart:"1500", name:"Shift allowance",    unit:"days",   amount:false, needProj:false, noteLabel:"",                     selfEntry:true},
+    {code:"BONUS",   lgart:"1400", name:"Project bonus",      unit:"amount", amount:true,  needProj:true,  noteLabel:"Reason",               selfEntry:false}
+  ];
+  function wt(code){ return WAGETYPES.filter(function(w){ return w.code === code; })[0]; }
+  function wtFor(bukrs){
+    /* Shift allowance only makes sense where people work shifts. */
+    return WAGETYPES.filter(function(w){ return w.code !== "TURNO" || (bukrs || IT0001.bukrs) === "PT02"; });
+  }
+
+  /* ---------- team, for the leader's mass entry ----------
+     Two scopes coexist in consulting: the line hierarchy, from IT0001 and the
+     OM relationships, and the project team. Rui Tavares is the crossing case,
+     he reports to Pedro Alves but works on the project Ana Ferreira owns. */
+  var LEADERS = [
+    {id:"RN", name:"Ricardo Nunes", kind:"hier", label:"Hierarchy, SAP HCM team",      bukrs:"PT01"},
+    {id:"PA", name:"Pedro Alves",   kind:"hier", label:"Hierarchy, S/4HANA team",      bukrs:"PT01"},
+    {id:"AF", name:"Ana Ferreira",  kind:"proj", label:"Project team, BNK-2026", proj:0, bukrs:"PT01"},
+    {id:"CP", name:"Carlos Pinto",  kind:"hier", label:"Hierarchy, Building Service",  bukrs:"PT02"}
+  ];
+  var TEAM = [
+    {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", mgr:"RN", projs:[0,3], abs:{}},
+    {pernr:"00104502", name:"João Costa",     role:"Consultant",        bukrs:"PT01", mgr:"RN", projs:[0,1], abs:{4:"Vacation"}},
+    {pernr:"00104503", name:"Inês Braga",     role:"Junior consultant", bukrs:"PT01", mgr:"RN", projs:[1,3], abs:{}, locked:true},
+    {pernr:"00104504", name:"Rui Tavares",    role:"Consultant",        bukrs:"PT01", mgr:"PA", projs:[0,2], abs:{}},
+    {pernr:"00104505", name:"Sofia Marques",  role:"Architect",         bukrs:"PT01", mgr:"PA", projs:[2],   abs:{2:"Medical appointment"}},
+    {pernr:"00104510", name:"Nuno Dias",      role:"Technician",        bukrs:"PT02", mgr:"CP", projs:[3],   abs:{}},
+    {pernr:"00104511", name:"Hélder Rocha",   role:"Technician",        bukrs:"PT02", mgr:"CP", projs:[3],   abs:{}},
+    {pernr:"00104512", name:"Hugo Matos",     role:"Technician",        bukrs:"PT02", mgr:"CP", projs:[3],   abs:{1:"Vacation"}}
+  ];
+  function leaderById(id){ return LEADERS.filter(function(l){ return l.id === id; })[0] || LEADERS[0]; }
+  function teamOf(leaderId){
+    var l = leaderById(leaderId);
+    if(l.kind === "proj") return TEAM.filter(function(m){ return m.projs.indexOf(l.proj) !== -1; });
+    return TEAM.filter(function(m){ return m.mgr === l.id; });
+  }
+  function projectsOf(leaderId){
+    var l = leaderById(leaderId);
+    if(l.kind === "proj") return [l.proj];
+    var set = [];
+    teamOf(leaderId).forEach(function(m){ m.projs.forEach(function(p){ if(set.indexOf(p) === -1) set.push(p); }); });
+    return set.sort();
+  }
+
   var WEEKDAY_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   function datesFor(startISO){
@@ -50,6 +163,7 @@
         {id:101, p:0, desc:"Payroll cutover testing", h:[4,4,4,4,4,0,0], origin:"Manual"},
         {id:102, p:1, desc:"Time tracking rollout support", h:[4,4,4,4,4,0,0], origin:"Manual"}
       ],
+      allow:[],
       sugs:[]
     },
     { num:37, start:"20260907", submitted:true,
@@ -60,6 +174,7 @@
         {id:103, p:0, desc:"Payroll parallel run", h:[4,4,4,4,0,0,0], origin:"Manual"},
         {id:104, p:2, desc:"WFM rollout kickoff", h:[4,4,4,4,0,0,0], origin:"Suggested"}
       ],
+      allow:[],
       sugs:[]
     },
     { num:38, start:"20260914", submitted:false,
@@ -73,6 +188,10 @@
         {id:2, p:1, desc:"Time recording solution design", h:[2,0,3,0,0,0,0], origin:"Suggested"},
         {id:3, p:3, desc:"", h:[1,0,0,1.5,0,0,0], origin:"Manual"}
       ],
+      allow:[
+        {id:"al1", day:0, p:0, code:"AJC_NAC", qty:1,  amount:0, note:"", by:"00104567", onBehalf:"00104567"},
+        {id:"al2", day:0, p:0, code:"KMS",     qty:86, amount:0, note:"Lisbon to Porto and back", by:"00104567", onBehalf:"00104567"}
+      ],
       sugs:[
         {id:"s1", hours:2.5, day:2, p:2, why:"3 client meetings on the calendar", conf:"hi", desc:"Rollout follow-up meetings"},
         {id:"s2", hours:1.5, day:3, p:1, why:"12 changes in the project repository", conf:"hi", desc:"Time rules configuration"},
@@ -85,6 +204,7 @@
         {id:"ab39a", day:0, type:"Vacation", awart:"0100", hours:8, status:"pending", src:"Request 4500255"}
       ],
       rows:[],
+      allow:[],
       sugs:[
         {id:"s5", hours:2, day:1, p:0, why:"2 client meetings on the calendar", conf:"hi", desc:"Payroll steering follow-up"}
       ]
@@ -116,7 +236,11 @@
     submitted: WEEKS[weekIdx].submitted,
     privateMode:false,
     rows: WEEKS[weekIdx].rows,
+    allow: WEEKS[weekIdx].allow,
     sugs: WEEKS[weekIdx].sugs,
+    leader: "RN",
+    staged: {},
+    massLog: [],
     approvals:[
       {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false},
       {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false},
@@ -183,16 +307,189 @@
     }
     var expect = weekCapacity();
     if(weekTotal() > 0 && weekTotal() < expect) out.push({sev:"w", txt:"The week has "+fmt(weekTotal())+" h recorded; the expected total with absences deducted is "+fmt(expect)+" h."});
+    /* closed periods, monthly and per company */
+    for(var c=0; c<7; c++){
+      if(dayTotal(c) > 0 && !periodOpen(WORKDATES[c])){
+        out.push({sev:"e", day:c, txt:DAYS[c]+" falls in period "+periodFor(WORKDATES[c]).ym+", closed for "+IT0001.bukrs+". Reopening is an HR action."});
+      }
+    }
+    /* overlapping windows, only in the profile that records start and end */
+    if(isClock()){
+      for(var o=0; o<7; o++){
+        var hits = clockOverlaps(o);
+        if(hits.length){
+          out.push({sev:"e", day:o, txt:DAYS[o]+" has overlapping time windows: "+fmtClock(hits[0][0].b)+" to "+fmtClock(hits[0][0].e%1440)+" and "+fmtClock(hits[0][1].b)+" to "+fmtClock(hits[0][1].e%1440)+"."});
+        }
+      }
+      state.rows.forEach(function(r){
+        for(var i=0; i<7; i++){
+          var s = slot(r,i);
+          if(s && (s.b === null) !== (s.e === null)){
+            out.push({sev:"e", row:r.id, day:i, txt:DAYS[i]+", "+PROJECTS[r.p].code+": the window needs both a start and an end."});
+          }
+        }
+      });
+    }
+    /* allowances on this employee's own sheet */
+    myAllow().forEach(function(a){
+      var w = wt(a.code);
+      if(!w) return;
+      if(w.noteLabel && !String(a.note || "").trim()){
+        out.push({sev:"e", allow:a.id, txt:w.name+" on "+DAYS[a.day]+" needs "+w.noteLabel.toLowerCase()+"."});
+      }
+      if(!periodOpen(WORKDATES[a.day])){
+        out.push({sev:"e", allow:a.id, txt:w.name+" on "+DAYS[a.day]+" falls in a closed period."});
+      }
+      if(w.amount && !(a.amount > 0)){
+        out.push({sev:"e", allow:a.id, txt:w.name+" on "+DAYS[a.day]+" has no amount."});
+      }
+      if(!w.amount && !(a.qty > 0)){
+        out.push({sev:"e", allow:a.id, txt:w.name+" on "+DAYS[a.day]+" has no quantity."});
+      }
+    });
     var pend = visibleSugs().length;
     if(pend > 0 && !state.privateMode) out.push({sev:"i", txt:pend+" suggestions still to review in the side panel."});
     return out;
   }
   function errors(){ return validate().filter(function(m){ return m.sev === "e"; }); }
 
+  /* ---------- start and end, profile Z_BSRV ----------
+     Stored per row and day as {b, e} in minutes, written to BEGUZ and ENDUZ.
+     The duration is always computed and never editable in this profile, and
+     the three values are all kept so nothing downstream has to recalculate. */
+  function parseClock(txt){
+    if(txt === null || txt === undefined) return null;
+    var t = String(txt).trim();
+    if(!t) return null;
+    var m = t.replace(/[.hH]/g, ":").match(/^(\d{1,2})(?::(\d{1,2}))?$/);
+    if(!m) return NaN;
+    var h = +m[1], mi = m[2] === undefined ? 0 : +m[2];
+    if(h > 23 || mi > 59) return NaN;
+    return h*60 + mi;
+  }
+  function fmtClock(min){
+    if(min === null || min === undefined) return "";
+    var h = Math.floor(min/60), m = min%60;
+    return (h<10?"0":"") + h + ":" + (m<10?"0":"") + m;
+  }
+  function slot(r, i){
+    if(!r.t) r.t = [null,null,null,null,null,null,null];
+    return r.t[i];
+  }
+  function setSlot(r, i, s){
+    if(!r.t) r.t = [null,null,null,null,null,null,null];
+    r.t[i] = s;
+  }
+  function slotHours(s){
+    if(!s || s.b === null || s.e === null) return 0;
+    var d = s.e - s.b;
+    if(d < 0) d = profileFor(WORKDATES[0]).overnight ? d + 1440 : 0;
+    return round15(d/60);
+  }
+  /* Recomputes every duration from the time window. Called whenever a window
+     changes and once when the profile switches to Z_BSRV. */
+  function syncClock(){
+    state.rows.forEach(function(r){
+      for(var i=0; i<7; i++){
+        var s = slot(r,i);
+        if(s) r.h[i] = slotHours(s);
+      }
+    });
+  }
+  /* Overlapping windows on the same day, only meaningful in Z_BSRV. */
+  function clockOverlaps(day){
+    var slots = [];
+    state.rows.forEach(function(r){
+      var s = slot(r,day);
+      if(s && s.b !== null && s.e !== null) slots.push({b:s.b, e:s.e < s.b ? s.e + 1440 : s.e, p:r.p});
+    });
+    slots.sort(function(a,b){ return a.b - b.b; });
+    var hits = [];
+    for(var i=1; i<slots.length; i++){
+      if(slots[i].b < slots[i-1].e) hits.push([slots[i-1], slots[i]]);
+    }
+    return hits;
+  }
+
+  function durCell(r, i, v, pr){
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "cell" + (i>4 ? " we" : "");
+    inp.id = "c-"+r.id+"-"+i;
+    inp.value = v ? fmt(v) : "";
+    inp.inputMode = "decimal";
+    inp.setAttribute("aria-label","Duration in hours, "+pr.name+", "+DAYS[i]);
+    inp.disabled = state.submitted || !periodOpen(WORKDATES[i]) || (isBlocked(i) && !v);
+    decorateCell(inp, i, v);
+    inp.addEventListener("change", function(){
+      var parsed = parseDur(inp.value);
+      if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 1.5 or 1:30 or 90m."); inp.value = v ? fmt(v) : ""; return; }
+      r.h[i] = round15(parsed);
+      render();
+    });
+    inp.addEventListener("keydown", function(ev){
+      if(ev.key === "Enter" && !ev.ctrlKey && !ev.metaKey){
+        ev.preventDefault(); inp.blur();
+        var idx = state.rows.indexOf(r);
+        var nxt = state.rows[idx+1];
+        setTimeout(function(){
+          var t = nxt ? document.getElementById("c-"+nxt.id+"-"+i) : document.getElementById("c-"+r.id+"-"+Math.min(i+1,6));
+          if(t) t.focus();
+        },0);
+      }
+    });
+    return inp;
+  }
+
+  function clockCell(r, i, v, pr){
+    var box = el("div","clockcell" + (i>4 ? " we" : ""), "");
+    var s = slot(r,i);
+    var locked = state.submitted || !periodOpen(WORKDATES[i]) || (isBlocked(i) && !v);
+    ["b","e"].forEach(function(k){
+      var inp = document.createElement("input");
+      inp.type = "text";
+      inp.className = "tinp";
+      inp.id = "c-"+r.id+"-"+i+(k === "b" ? "" : "-e");
+      inp.value = s ? fmtClock(s[k]) : "";
+      inp.placeholder = k === "b" ? "start" : "end";
+      inp.inputMode = "numeric";
+      inp.disabled = locked;
+      inp.setAttribute("aria-label", (k === "b" ? "Start time, " : "End time, ") + pr.name + ", " + DAYS[i]);
+      inp.addEventListener("change", function(){
+        var parsed = parseClock(inp.value);
+        if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 08:00 or 8."); render(); return; }
+        var cur = slot(r,i) || {b:null, e:null};
+        cur[k] = parsed;
+        if(cur.b === null && cur.e === null) setSlot(r,i,null); else setSlot(r,i,cur);
+        syncClock();
+        render();
+      });
+      box.appendChild(inp);
+    });
+    var d = el("div","cdur", v ? fmt(v) + " h" : "–");
+    if(s && s.b !== null && s.e !== null && s.e < s.b) d.textContent = fmt(v) + " h +1";
+    box.appendChild(d);
+    decorateCell(box, i, v);
+    return box;
+  }
+
+  function decorateCell(node, i, v){
+    if(!periodOpen(WORKDATES[i])){
+      node.classList.add("closed");
+      node.title = "Period " + periodFor(WORKDATES[i]).ym + " is closed for " + IT0001.bukrs + ". Reopening is an HR action.";
+    } else if(isBlocked(i)){
+      node.classList.add("abs");
+      node.title = "Approved " + absOn(i,"approved")[0].type.toLowerCase() + ", day not available for time entry";
+    } else if(absHours(i) > 0){
+      node.title = "Approved partial absence, capacity of " + fmt(capacity(i)) + " h this day";
+    }
+  }
+
   /* ---------- render: grid ---------- */
   function renderGrid(){
     var g = $("tsgrid");
     g.innerHTML = "";
+    g.className = "tsgrid" + (isClock() ? " clock" : "");
 
     var head = document.createElement("div");
     head.className = "row head";
@@ -241,38 +538,7 @@
       row.appendChild(meta);
 
       r.h.forEach(function(v,i){
-        var inp = document.createElement("input");
-        inp.type = "text";
-        inp.className = "cell" + (i>4 ? " we" : "");
-        inp.id = "c-"+r.id+"-"+i;
-        inp.value = v ? fmt(v) : "";
-        inp.inputMode = "decimal";
-        inp.setAttribute("aria-label","Duration in hours, "+pr.name+", "+DAYS[i]);
-        inp.disabled = state.submitted || (isBlocked(i) && !v);
-        if(isBlocked(i)){
-          inp.classList.add("abs");
-          inp.title = "Approved " + absOn(i,"approved")[0].type.toLowerCase() + ", day not available for time entry";
-        } else if(absHours(i) > 0){
-          inp.title = "Approved partial absence, capacity of " + fmt(capacity(i)) + " h this day";
-        }
-        inp.addEventListener("change", function(){
-          var parsed = parseDur(inp.value);
-          if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 1.5 or 1:30 or 90m."); inp.value = v ? fmt(v) : ""; return; }
-          r.h[i] = round15(parsed);
-          render();
-        });
-        inp.addEventListener("keydown", function(ev){
-          if(ev.key === "Enter" && !ev.ctrlKey && !ev.metaKey){
-            ev.preventDefault(); inp.blur();
-            var idx = state.rows.indexOf(r);
-            var nxt = state.rows[idx+1];
-            setTimeout(function(){
-              var t = nxt ? document.getElementById("c-"+nxt.id+"-"+i) : document.getElementById("c-"+r.id+"-"+Math.min(i+1,6));
-              if(t) t.focus();
-            },0);
-          }
-        });
-        row.appendChild(inp);
+        row.appendChild(isClock() ? clockCell(r,i,v,pr) : durCell(r,i,v,pr));
       });
 
       row.appendChild(el("div","rowtot", rowTotal(r) ? fmt(rowTotal(r)) : "–"));
@@ -473,9 +739,18 @@
     var sc = $("sugChip"), nv = visibleSugs().length;
     sc.hidden = state.privateMode || nv === 0;
     sc.textContent = nv + (nv === 1 ? " suggestion to review" : " suggestions to review");
+    var pf = profileFor(WORKDATES[0]);
+    var pc = $("profChip");
+    if(pc){
+      pc.textContent = pf.code;
+      pc.title = companyName(IT0001.bukrs) + " · " + pf.fields;
+      pc.className = pf.clock ? "chip blue" : "chip grey";
+    }
+    var co = $("coSel");
+    if(co && co.value !== IT0001.bukrs) co.value = IT0001.bukrs;
   }
 
-  function render(){ renderGrid(); renderCal(); renderSugs(); renderAbs(); renderMsgs(); renderKpis(); renderApprovals(); renderCats(); }
+  function render(){ renderGrid(); renderCal(); renderSugs(); renderAbs(); renderAllow(); renderMsgs(); renderKpis(); renderApprovals(); renderTeam(); renderCats(); }
 
   /* ---------- absences ---------- */
   function renderAbs(){
@@ -525,12 +800,133 @@
       : fmt(moved)+" h removed from "+DAYS[day]+", no day had free capacity.");
   }
 
+  /* ---------- allowances, wage types against a project ----------
+     Quantity and unit, never a value, except the bonus, which the project
+     owner creates with an amount. An allowance can exist on a day with no
+     hours, so nothing here depends on the grid. */
+  var alEdit = null;
+  function myAllow(){
+    return state.allow.filter(function(a){ return (a.onBehalf || IT0001.pernr) === IT0001.pernr; });
+  }
+  function allowLabel(a){
+    var w = wt(a.code);
+    return w.amount ? fmt(a.amount) + " EUR" : fmt(a.qty) + " " + w.unit;
+  }
+  function renderAllow(){
+    var box = $("allowList");
+    if(!box) return;
+    box.innerHTML = "";
+    var mine = myAllow();
+    $("allowCount").textContent = mine.length + (mine.length === 1 ? " allowance" : " allowances");
+    if(!mine.length){
+      box.appendChild(el("div","paused","No allowances recorded this week. Per diems, kilometres and shift allowances are recorded here, against a project and a date."));
+      return;
+    }
+    mine.slice().sort(function(x,y){ return x.day - y.day; }).forEach(function(a){
+      var w = wt(a.code);
+      var c = el("div","abscard" + (w.amount ? " bonus" : ""), "");
+      var h = el("div","h","");
+      h.appendChild(el("b","", w.name));
+      h.appendChild(el("span","chip " + (w.amount ? "green" : "grey"), allowLabel(a)));
+      c.appendChild(h);
+      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · wage type " + w.lgart));
+      if(a.note) c.appendChild(el("div","why", a.note));
+      if(a.by !== a.onBehalf) c.appendChild(el("div","why", "Recorded by " + a.byName + ", on behalf of the employee"));
+      if(w.amount) c.appendChild(el("div","why", "Amount in a customer field. ANZHL goes to CATS as 1."));
+      var acts = el("div","acts","");
+      var rm = btn("Remove","btn sm", function(){
+        if(!allowEditable(a)) return;
+        state.allow = state.allow.filter(function(x){ return x.id !== a.id; });
+        render(); toast(w.name + " removed.", "Undo", function(){ state.allow.push(a); render(); });
+      });
+      rm.disabled = !allowEditable(a);
+      if(w.amount) rm.title = "The bonus is removed by the project owner, on the team screen.";
+      acts.appendChild(rm);
+      c.appendChild(acts);
+      box.appendChild(c);
+    });
+  }
+  function allowEditable(a){
+    var w = wt(a.code);
+    if(state.submitted) return false;
+    if(!periodOpen(WORKDATES[a.day])) return false;
+    return !w.amount;
+  }
+  function openAllow(){
+    if(state.submitted){ toast("The week is submitted, allowances can't be changed."); return; }
+    if(weekPeriodClosed()){ toast("This week falls in a closed period."); return; }
+    alEdit = {id:"al"+(nextId++), day:0, p:state.rows.length ? state.rows[0].p : 0, code:wtFor()[0].code, qty:1, amount:0, note:"", by:IT0001.pernr, onBehalf:IT0001.pernr};
+    var sel = $("alCode");
+    sel.innerHTML = "";
+    wtFor().filter(function(w){ return w.selfEntry; }).forEach(function(w){
+      var o = document.createElement("option");
+      o.value = w.code; o.textContent = w.name + " (" + w.lgart + ")";
+      sel.appendChild(o);
+    });
+    alEdit.code = sel.value;
+    var pj = $("alProj");
+    pj.innerHTML = "";
+    PROJECTS.forEach(function(p,i){
+      var o = document.createElement("option");
+      o.value = String(i); o.textContent = p.code + " · " + p.name;
+      pj.appendChild(o);
+    });
+    pj.value = String(alEdit.p);
+    var dy = $("alDay");
+    dy.innerHTML = "";
+    DAYS.forEach(function(d,i){
+      var o = document.createElement("option");
+      o.value = String(i); o.textContent = d + (periodOpen(WORKDATES[i]) ? "" : " (period closed)");
+      o.disabled = !periodOpen(WORKDATES[i]);
+      dy.appendChild(o);
+    });
+    dy.value = "0";
+    syncAllowForm();
+    $("dlgAllow").showModal();
+  }
+  function syncAllowForm(){
+    var w = wt($("alCode").value);
+    $("alQty").value = "1";
+    $("alUnit").textContent = w.unit;
+    $("alNoteWrap").hidden = !w.noteLabel;
+    $("alNoteLbl").textContent = w.noteLabel || "Note";
+    $("alProjWrap").hidden = !w.needProj;
+    $("alHint").textContent = "Wage type " + w.lgart + ", quantity in ANZHL, unit " + w.unit + ". No value is calculated here, payroll values it.";
+  }
+  function saveAllow(){
+    var w = wt($("alCode").value);
+    var qty = parseDur($("alQty").value);
+    if(isNaN(qty) || qty <= 0){ toast("The quantity needs to be a number above zero."); return; }
+    state.allow.push({
+      id: alEdit.id,
+      day: +$("alDay").value,
+      p: w.needProj ? +$("alProj").value : 3,
+      code: w.code,
+      qty: qty,
+      amount: 0,
+      note: $("alNote").value.trim(),
+      by: IT0001.pernr,
+      onBehalf: IT0001.pernr,
+      byName: "self"
+    });
+    render();
+    toast(w.name + " recorded on " + DAYS[+$("alDay").value] + ".");
+  }
+
   /* ---------- CATS mapping screen ---------- */
   var MAP = [
     ["Employee recording the time","Personnel number","PERNR","cats",""],
     ["Day column in the grid","Work date","WORKDATE","cats","One entry per day, never aggregated to the week"],
     ["Cell value","Recorded hours","CATSHOURS","cats","Unit in UNIT, usually H"],
-    ["Start and end, when required","Time window","BEGUZ, ENDUZ","cats","Only when the country or the client requires it"],
+    ["Start and end, profile Z_BSRV","Time window","BEGUZ, ENDUZ","cats","Standard CATSDB fields, shown or hidden by the data entry profile, never by the application"],
+    ["Company of the employee","Organizational assignment","IT0001, field BUKRS","cats","Decides the data entry profile through ZTIME_COMPANY_CFG, read at the date of the entry"],
+    ["Data entry profile in force","CATS profile","customizing, Z_CONS or Z_BSRV","cats","Z_CONS records duration only, Z_BSRV records start and end with the duration computed"],
+    ["Allowance recorded against a project","Wage type","LGART","cats","Has to exist in T512Z and be authorised in the profile"],
+    ["Allowance quantity","Number, with unit","ANZHL, ZEINH","cats","Days, kilometres. The bonus goes in with ANZHL 1"],
+    ["Bonus amount","No field in CATSDB","customer field","ci","CATSDB is a quantity structure. CAT6 transfers quantity, not value, so reaching IT2010 BETRG needs an enhancement"],
+    ["Transfer to payroll","Standard transfer","CAT6 to IT2010","cats","No bespoke interface. CAT5 and CAT7 cover PS and CO"],
+    ["Recorded on behalf of someone","No equivalent","ON_BEHALF_OF","btp","Mass entry. The submitting user still lands in ERNAM, by standard behaviour"],
+    ["Period open or closed","No equivalent","ZTIME_PERIOD_CTRL","btp","Monthly, per company. Reopening is an HR action and is recorded"],
     ["Project and WBS of the row","Receiver WBS element","RPROJ","cats","Field with conversion, the interface shows the external mask"],
     ["Order, when the receiver is an order","Receiver order","RAUFNR","cats","Maintenance, CAPEX or internal orders"],
     ["Network and operation","Network and operation","RNPLNR, RAUFPL, RAPLZL","cats","Only with network planning"],
@@ -576,15 +972,21 @@
   function catsRecords(){
     var recs = [];
     var status = state.submitted ? "20" : "10";
+    var clock = isClock();
     state.rows.forEach(function(r){
       var pr = PROJECTS[r.p];
       r.h.forEach(function(v,i){
         if(!v) return;
+        var s = clock ? slot(r,i) : null;
         recs.push({
           PERNR: PERNR,
           WORKDATE: WORKDATES[i],
           CATSHOURS: fmt(v),
           UNIT: "H",
+          BEGUZ: s && s.b !== null ? fmtClock(s.b) : "",
+          ENDUZ: s && s.e !== null ? fmtClock(s.e) : "",
+          LGART: "",
+          ANZHL: "",
           LSTAR: pr.sap.lstar,
           RPROJ: pr.sap.rproj || "",
           SKOSTL: pr.sap.skostl,
@@ -592,6 +994,26 @@
           LTXA1: (r.desc || pr.act).slice(0,40),
           STATUS: status
         });
+      });
+    });
+    /* Allowances are CATS records too, with a wage type instead of hours. */
+    state.allow.forEach(function(a){
+      var w = wt(a.code), pr = PROJECTS[a.p];
+      recs.push({
+        PERNR: a.onBehalf || PERNR,
+        WORKDATE: WORKDATES[a.day],
+        CATSHOURS: "",
+        UNIT: w.amount ? "" : w.unit.toUpperCase().slice(0,3),
+        BEGUZ: "",
+        ENDUZ: "",
+        LGART: w.lgart,
+        ANZHL: w.amount ? "1.0" : fmt(a.qty),
+        LSTAR: pr.sap.lstar,
+        RPROJ: pr.sap.rproj || "",
+        SKOSTL: pr.sap.skostl,
+        RKOSTL: pr.sap.rkostl || "",
+        LTXA1: (a.note || w.name).slice(0,40),
+        STATUS: status
       });
     });
     return recs;
@@ -605,9 +1027,10 @@
     body.innerHTML = "";
     recs.forEach(function(rec){
       var tr = document.createElement("tr");
-      ["PERNR","WORKDATE","CATSHOURS","UNIT","LSTAR","RPROJ","SKOSTL","RKOSTL","LTXA1","STATUS"].forEach(function(k){
+      ["PERNR","WORKDATE","CATSHOURS","BEGUZ","ENDUZ","LGART","ANZHL","LSTAR","RPROJ","LTXA1","STATUS"].forEach(function(k){
         var td = td2(rec[k] || "–");
         if(k !== "LTXA1") td.className = "f";
+        if(k === "LGART" && rec[k]) td.className = "f wt";
         tr.appendChild(td);
       });
       body.appendChild(tr);
@@ -615,8 +1038,8 @@
     if(!recs.length){
       var tr = document.createElement("tr");
       var td = document.createElement("td");
-      td.colSpan = 10; td.style.color = "var(--ink-3)";
-      td.textContent = "No hours this week, so there are no records to generate.";
+      td.colSpan = 11; td.style.color = "var(--ink-3)";
+      td.textContent = "No hours and no allowances this week, so there are no records to generate.";
       tr.appendChild(td); body.appendChild(tr);
     }
     $("catsCount").textContent = recs.length + (recs.length === 1 ? " record generated" : " records generated");
@@ -626,11 +1049,22 @@
       "// Property names to confirm against the client's service metadata\n\n" +
       JSON.stringify({
         requestId: "ts-2026-W" + WEEKS[weekIdx].num + "-" + PERNR,
-        profile: "CONS_PT",
+        bukrs: IT0001.bukrs,
+        profile: profileFor(WORKDATES[0]).code,
+        period: {ym: periodFor(WORKDATES[0]).ym, open: periodOpen(WORKDATES[0])},
         release: state.submitted,
         records: recs,
+        customerFields: {
+          comment: "CATSDB has no amount field, so the bonus value travels here. CAT6 transfers quantity, not value, so writing IT2010 BETRG needs an enhancement",
+          bonus: state.allow.filter(function(a){ return wt(a.code).amount; }).map(function(a){
+            return {workdate: WORKDATES[a.day], lgart: wt(a.code).lgart, anzhl: "1.0", ZZAMOUNT: fmt(a.amount), ZZCURRENCY: "EUR", approvedBy: a.byName};
+          })
+        },
         btpOnly: {
           comment: "stays in the experience layer, never enters CATSDB",
+          onBehalfOf: state.massLog.slice(-8).map(function(e){
+            return {pernr: e.pernr, workdate: e.date, createdBy: e.createdBy, onBehalfOf: e.onBehalf};
+          }),
           origins: state.rows.filter(function(r){ return rowTotal(r) > 0; }).map(function(r){
             return {rproj: PROJECTS[r.p].sap.rproj || PROJECTS[r.p].sap.rkostl, origin: r.origin};
           }),
@@ -643,6 +1077,267 @@
       }, null, 2);
   }
 
+
+  /* ---------- team screen, mass entry ----------
+     The leader fills a grid of people by days, reviews it, and saves. The save
+     is partial on purpose: rows that fail validation stay on screen with their
+     reason, the rest are written. Cancelling ten rows because of one approved
+     absence is the fastest way to make people stop using this screen. */
+  function stagedOf(pernr){
+    if(!state.staged[pernr]) state.staged[pernr] = {sel:false, h:[0,0,0,0,0,0,0], err:""};
+    return state.staged[pernr];
+  }
+  function memberBlocked(m, day){ return !!m.abs[day]; }
+  function massProject(){ return +($("mProj") ? $("mProj").value : 0); }
+
+  function renderTeam(){
+    var wrap = $("teamGrid");
+    if(!wrap) return;
+    var leader = leaderById(state.leader);
+    var members = teamOf(state.leader);
+
+    $("teamScope").textContent = leader.label;
+    $("teamScopeNote").textContent = leader.kind === "proj"
+      ? "Project scope. Includes people who report elsewhere in the line but work on this project."
+      : "Line hierarchy, from IT0001 and the OM relationships.";
+    $("teamCount").textContent = members.length + (members.length === 1 ? " person" : " people");
+
+    /* project options, limited to the leader's scope */
+    var pj = $("mProj");
+    if(pj && !pj.dataset.for || (pj && pj.dataset.for !== state.leader)){
+      var keep = pj.value;
+      pj.innerHTML = "";
+      projectsOf(state.leader).forEach(function(i){
+        var o = document.createElement("option");
+        o.value = String(i); o.textContent = PROJECTS[i].code + " · " + PROJECTS[i].name;
+        pj.appendChild(o);
+      });
+      pj.dataset.for = state.leader;
+      if(keep && pj.querySelector('option[value="'+keep+'"]')) pj.value = keep;
+    }
+
+    wrap.innerHTML = "";
+    wrap.className = "tsgrid team";
+
+    var head = document.createElement("div");
+    head.className = "row head";
+    head.appendChild(el("div","","Employee"));
+    DAYS.forEach(function(d,i){ head.appendChild(el("div", i>4?"we":"", d)); });
+    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",""));
+    wrap.appendChild(head);
+
+    members.forEach(function(m){
+      var st = stagedOf(m.pernr);
+      var row = document.createElement("div");
+      row.className = "row" + (m.locked ? " locked" : "");
+
+      var meta = el("div","rowmeta","");
+      var p = el("div","p","");
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = st.sel;
+      cb.disabled = m.locked;
+      cb.setAttribute("aria-label","Select "+m.name);
+      cb.onchange = function(){ st.sel = cb.checked; renderTeam(); };
+      p.appendChild(cb);
+      p.appendChild(el("span","", m.name));
+      var code = document.createElement("code"); code.textContent = m.pernr; p.appendChild(code);
+      meta.appendChild(p);
+      var sub = m.role + " · " + m.bukrs + " · " + profileFor(WORKDATES[0], m.bukrs).code;
+      if(m.locked) sub += " · week already approved";
+      var s = el("div","s", sub);
+      if(m.locked) s.style.color = "var(--warn)";
+      meta.appendChild(s);
+      row.appendChild(meta);
+
+      st.h.forEach(function(v,i){
+        var inp = document.createElement("input");
+        inp.type = "text";
+        inp.className = "cell" + (i>4 ? " we" : "");
+        inp.value = v ? fmt(v) : "";
+        inp.inputMode = "decimal";
+        inp.setAttribute("aria-label","Hours for "+m.name+", "+DAYS[i]);
+        inp.disabled = m.locked || memberBlocked(m,i) || !periodOpen(WORKDATES[i], m.bukrs);
+        if(memberBlocked(m,i)){ inp.classList.add("abs"); inp.title = "Approved "+m.abs[i].toLowerCase(); }
+        if(!periodOpen(WORKDATES[i], m.bukrs)){ inp.classList.add("closed"); inp.title = "Closed period"; }
+        inp.addEventListener("change", function(){
+          var parsed = parseDur(inp.value);
+          if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”."); renderTeam(); return; }
+          st.h[i] = round15(parsed);
+          renderTeam();
+        });
+        row.appendChild(inp);
+      });
+
+      var tot = st.h.reduce(function(a,b){ return a+(b||0); },0);
+      row.appendChild(el("div","rowtot", tot ? fmt(tot) : "–"));
+      var act = el("div","rowact","");
+      if(st.err){
+        var flag = el("span","errdot","!");
+        flag.title = st.err;
+        act.appendChild(flag);
+      }
+      row.appendChild(act);
+      wrap.appendChild(row);
+    });
+
+    var sel = members.filter(function(m){ return stagedOf(m.pernr).sel; }).length;
+    var staged = members.reduce(function(a,m){ return a + stagedOf(m.pernr).h.reduce(function(x,y){ return x+(y||0); },0); },0);
+    $("mSel").textContent = sel + " selected";
+    $("mStaged").innerHTML = fmt(staged) + "<small> h staged</small>";
+    $("mSave").disabled = staged === 0;
+
+    renderMassLog();
+    renderBonusPanel();
+  }
+
+  function applyMass(){
+    var members = teamOf(state.leader).filter(function(m){ return stagedOf(m.pernr).sel && !m.locked; });
+    if(!members.length){ toast("Select at least one person first."); return; }
+    var dur = parseDur($("mDur").value);
+    if(isNaN(dur) || dur <= 0){ toast("Give a duration, for example 8 or 7.5."); return; }
+    var days = [];
+    Array.prototype.forEach.call(document.querySelectorAll(".mday input:checked"), function(c){ days.push(+c.value); });
+    if(!days.length){ toast("Pick at least one day."); return; }
+    var touched = 0;
+    members.forEach(function(m){
+      var st = stagedOf(m.pernr);
+      days.forEach(function(d){
+        if(memberBlocked(m,d) || !periodOpen(WORKDATES[d], m.bukrs)) return;
+        st.h[d] = round15(dur);
+        touched++;
+      });
+    });
+    renderTeam();
+    toast(touched + " cells filled for " + members.length + " people. Nothing is saved yet, review the grid first.");
+  }
+
+  function clearMass(){
+    Object.keys(state.staged).forEach(function(k){ state.staged[k] = {sel:false, h:[0,0,0,0,0,0,0], err:""}; });
+    renderTeam();
+  }
+
+  /* Partial save. Every row is validated on its own and the ones that pass are
+     written, with CREATED_BY as the leader and ON_BEHALF_OF as the employee. */
+  function saveMass(){
+    var leader = leaderById(state.leader);
+    var members = teamOf(state.leader);
+    var saved = 0, kept = 0, savedPeople = 0;
+    var pIdx = massProject();
+    members.forEach(function(m){
+      var st = stagedOf(m.pernr);
+      var total = st.h.reduce(function(a,b){ return a+(b||0); },0);
+      if(total === 0){ st.err = ""; return; }
+      var err = "";
+      if(m.locked) err = "Week already approved, the line was left untouched.";
+      else if(m.projs.indexOf(pIdx) === -1) err = m.name.split(" ")[0] + " is not allocated to " + PROJECTS[pIdx].code + ".";
+      else {
+        for(var d=0; d<7; d++){
+          if(!st.h[d]) continue;
+          if(memberBlocked(m,d)){ err = DAYS[d] + " has an approved " + m.abs[d].toLowerCase() + "."; break; }
+          if(!periodOpen(WORKDATES[d], m.bukrs)){ err = DAYS[d] + " falls in a closed period."; break; }
+          if(st.h[d] > 24){ err = DAYS[d] + " is above 24 hours."; break; }
+        }
+      }
+      if(err){ st.err = err; kept++; return; }
+      st.err = "";
+      for(var i=0; i<7; i++){
+        if(!st.h[i]) continue;
+        state.massLog.push({
+          pernr: m.pernr, name: m.name, date: WORKDATES[i], day: i, hours: st.h[i],
+          p: pIdx, createdBy: leader.name, onBehalf: m.pernr,
+          profile: profileFor(WORKDATES[i], m.bukrs).code
+        });
+        saved++;
+      }
+      savedPeople++;
+      state.staged[m.pernr] = {sel:false, h:[0,0,0,0,0,0,0], err:""};
+    });
+    renderTeam();
+    var who = savedPeople + (savedPeople === 1 ? " person" : " people");
+    var left = kept + (kept === 1 ? " line stayed" : " lines stayed");
+    if(saved && kept) toast(saved + " entries saved for " + who + ". " + left + " on screen with the reason.");
+    else if(saved) toast(saved + " entries saved for " + who + ", recorded on their behalf.");
+    else toast("Nothing was saved. Every line has a reason next to it.");
+  }
+
+  function renderMassLog(){
+    var box = $("massLog");
+    if(!box) return;
+    box.innerHTML = "";
+    $("massLogCount").textContent = state.massLog.length + (state.massLog.length === 1 ? " entry" : " entries");
+    if(!state.massLog.length){
+      box.appendChild(el("div","paused","Nothing recorded on behalf of the team yet."));
+      return;
+    }
+    state.massLog.slice(-12).reverse().forEach(function(e){
+      var c = el("div","abscard","");
+      var h = el("div","h","");
+      h.appendChild(el("b","", e.name));
+      h.appendChild(el("span","chip grey", fmt(e.hours) + " h"));
+      c.appendChild(h);
+      c.appendChild(el("div","why", DAYS[e.day] + " · " + PROJECTS[e.p].code + " · " + e.profile));
+      c.appendChild(el("div","why", "CREATED_BY " + e.createdBy + " · ON_BEHALF_OF " + e.onBehalf));
+      box.appendChild(c);
+    });
+  }
+
+  /* ---------- bonus, created by the project owner ----------
+     The only allowance carrying an amount and the only one the employee does
+     not record. Defining the value and approving are the same act, by the same
+     person, so there is no separate approval step. */
+  function renderBonusPanel(){
+    var panel = $("bonusPanel");
+    if(!panel) return;
+    var leader = leaderById(state.leader);
+    var owner = leader.kind === "proj";
+    panel.hidden = !owner;
+    if(!owner) return;
+    var sel = $("bWho");
+    var keep = sel.value;
+    sel.innerHTML = "";
+    teamOf(state.leader).forEach(function(m){
+      var o = document.createElement("option");
+      o.value = m.pernr; o.textContent = m.name;
+      sel.appendChild(o);
+    });
+    if(keep && sel.querySelector('option[value="'+keep+'"]')) sel.value = keep;
+    $("bProj").textContent = PROJECTS[leader.proj].code + " · " + PROJECTS[leader.proj].name;
+    var box = $("bonusList");
+    box.innerHTML = "";
+    var mine = state.allow.filter(function(a){ return wt(a.code).amount; });
+    if(!mine.length){ box.appendChild(el("div","paused","No bonus recorded on this project yet.")); return; }
+    mine.forEach(function(a){
+      var c = el("div","abscard bonus","");
+      var h = el("div","h","");
+      h.appendChild(el("b","", a.forName || "Employee"));
+      h.appendChild(el("span","chip green", fmt(a.amount) + " EUR"));
+      c.appendChild(h);
+      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · wage type " + wt(a.code).lgart));
+      c.appendChild(el("div","why", a.note));
+      c.appendChild(el("div","why", "Defined and approved by " + a.byName + ", in the same act"));
+      box.appendChild(c);
+    });
+  }
+  function saveBonus(){
+    var leader = leaderById(state.leader);
+    var amount = parseDur($("bAmount").value);
+    var note = $("bNote").value.trim();
+    var who = TEAM.filter(function(m){ return m.pernr === $("bWho").value; })[0];
+    if(!who){ toast("Pick who the bonus is for."); return; }
+    if(isNaN(amount) || amount <= 0){ toast("The amount needs to be a number above zero."); return; }
+    if(!note){ toast("The bonus needs a reason. It is the only trace of why the project carried this cost."); return; }
+    var day = 4;
+    for(var i=4; i>=0; i--){ if(periodOpen(WORKDATES[i], who.bukrs)){ day = i; break; } }
+    state.allow.push({
+      id:"al"+(nextId++), day:day, p:leader.proj, code:"BONUS", qty:1, amount:amount,
+      note:note, by:leader.id, onBehalf:who.pernr, byName:leader.name, forName:who.name
+    });
+    $("bAmount").value = ""; $("bNote").value = "";
+    render();
+    toast(fmt(amount) + " EUR bonus recorded for " + who.name + ", approved in the same act.");
+  }
 
   /* ---------- actions ---------- */
   function addRow(){
@@ -682,6 +1377,7 @@
   function saveCurrentWeek(){
     var w = WEEKS[weekIdx];
     w.rows = state.rows;
+    w.allow = state.allow;
     w.sugs = state.sugs;
     w.submitted = state.submitted;
     w.absences = ABSENCES;
@@ -693,6 +1389,7 @@
     DAYS = daysFor(WORKDATES);
     ABSENCES = w.absences;
     state.rows = w.rows;
+    state.allow = w.allow || (w.allow = []);
     state.sugs = w.sugs;
     state.submitted = w.submitted;
   }
@@ -714,6 +1411,28 @@
     render();
     toast("Allocation template applied to working days.", "Undo", function(){ location.reload(); });
   }
+  /* ---------- company switch, demo of the IT0001 derivation ----------
+     Changing the company is the same as opening the sheet as someone assigned
+     to the other one. Nothing else decides the layout. */
+  function seedClock(){
+    for(var d=0; d<7; d++){
+      var cursor = 8*60, lunched = false;
+      state.rows.forEach(function(r){
+        if(!r.h[d] || slot(r,d)) return;
+        if(!lunched && cursor >= 13*60){ cursor += 60; lunched = true; }
+        setSlot(r, d, {b:cursor, e:cursor + Math.round(r.h[d]*60)});
+        cursor += Math.round(r.h[d]*60);
+      });
+    }
+  }
+  function switchCompany(bukrs){
+    IT0001.bukrs = bukrs;
+    if(isClock()) seedClock();
+    render();
+    var pf = profileFor(WORKDATES[0]);
+    toast("IT0001 now reads " + bukrs + ". ZTIME_COMPANY_CFG maps it to " + pf.code + ": " + pf.fields.toLowerCase() + ".");
+  }
+
   function togglePrivate(){
     state.privateMode = !state.privateMode;
     var cap = $("capture");
@@ -1027,8 +1746,9 @@
     b.onclick = function(){
       var s = b.dataset.screen;
       Array.prototype.forEach.call(document.querySelectorAll(".nav button"), function(x){ x.setAttribute("aria-current", x === b ? "true" : "false"); });
-      ["semana","aprov","cats"].forEach(function(k){ $("screen-"+k).hidden = k !== s; });
+      ["semana","team","aprov","cats"].forEach(function(k){ $("screen-"+k).hidden = k !== s; });
       if(s === "cats") renderCats();
+      if(s === "team") renderTeam();
       window.scrollTo({top:0});
     };
   });
@@ -1347,6 +2067,37 @@
     else if(ev.key === "ArrowRight"){ ev.preventDefault(); changeWeek(1); }
     else if(ev.key === "?"){ ev.preventDefault(); $("dlgHelp").showModal(); }
   });
+
+  /* ---------- wiring: company, allowances, team ---------- */
+  (function(){
+    var sel = $("coSel");
+    if(sel){
+      sel.value = IT0001.bukrs;
+      sel.onchange = function(){ switchCompany(sel.value); };
+    }
+    var ls = $("leadSel");
+    if(ls){
+      LEADERS.forEach(function(l){
+        var o = document.createElement("option");
+        o.value = l.id; o.textContent = l.name + " · " + l.label;
+        ls.appendChild(o);
+      });
+      ls.value = state.leader;
+      ls.onchange = function(){
+        state.leader = ls.value;
+        var pj = $("mProj"); if(pj) pj.dataset.for = "";
+        clearMass();
+      };
+    }
+  })();
+  if($("allowAdd")) $("allowAdd").onclick = openAllow;
+  if($("alCode")) $("alCode").onchange = syncAllowForm;
+  if($("alSave")) $("alSave").onclick = function(){ saveAllow(); };
+  if($("alCancel")) $("alCancel").onclick = function(){ $("dlgAllow").close(); };
+  if($("mApply")) $("mApply").onclick = applyMass;
+  if($("mSave")) $("mSave").onclick = saveMass;
+  if($("mClear")) $("mClear").onclick = function(){ clearMass(); toast("Staged entries cleared. Nothing had been saved."); };
+  if($("bSave")) $("bSave").onclick = saveBonus;
 
   render();
 })();
