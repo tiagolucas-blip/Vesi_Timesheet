@@ -27,8 +27,9 @@ Princípio que governa todo o anexo: **o registo continua a ser standard SAP**. 
     favoritos, templates, rascunhos ainda não submetidos
               |
  3. API de registo de tempo do S/4HANA
-    WorkforceTimesheetService (entidade TimeSheetEntry) em cenário cloud
-    BAPI_CATIMESHEETMGR_INSERT / _CHANGE / _DELETE em cenário on premise
+    BAPI_CATIMESHEETMGR_INSERT / _CHANGE / _DELETE, único mecanismo de
+    integração com o CATS. Sem serviço OData nem WorkforceTimesheetService,
+    por decisão de arquitetura
               |
  4. CATSDB, a tabela de base do CATS
     estados, aprovação, campos cliente via include CI_CATSDB
@@ -202,14 +203,12 @@ Decisão de produto a tomar antes do desenvolvimento: chat dentro da aplicação
 - Libertar para aprovação: ação de submissão da semana
 - Aprovar e rejeitar: pelo canal standard, integrado com My Inbox e SAP Task Center, sem uma segunda caixa de entrada
 
-**Cenário cloud** `WorkforceTimesheetService`, entidade `TimeSheetEntry`. Confirmar os nomes exatos das propriedades nos metadados do serviço do cliente antes de gerar o modelo CAP, porque variam com a release.
-
-**Cenário on premise** `BAPI_CATIMESHEETMGR_INSERT`, `_CHANGE` e `_DELETE`, com `BAPI_TRANSACTION_COMMIT` explícito. Testar o comportamento de erro parcial no lote, que é a principal fonte de inconsistência nestas integrações.
+**Mecanismo único, BAPI** `BAPI_CATIMESHEETMGR_INSERT`, `_CHANGE` e `_DELETE`, com `BAPI_TRANSACTION_COMMIT` explícito. Sem WorkforceTimesheetService, sem OData, sem cenário alternativo por tipo de deployment: a integração com o CATS é sempre por esta via, cloud ou on premise. Testar o comportamento de erro parcial no lote, que é a principal fonte de inconsistência nestas integrações.
 
 **Robustez**
 - Idempotência por chave lógica `PERNR` mais `WORKDATE` mais objeto recetor mais `LSTAR`, com identificador de pedido gerado em BTP, para que um reenvio após timeout não duplique horas
 - Reconciliação diária entre a camada BTP e `CATSDB`, com relatório de divergências
-- Nenhuma escrita direta em `CATSDB`. Sempre pela API ou pela BAPI, porque só elas garantem as verificações e o trilho
+- Nenhuma escrita direta em `CATSDB`. Sempre pela BAPI, porque só ela garante as verificações e o trilho
 
 ---
 
@@ -231,7 +230,7 @@ Lista objetiva para a equipa funcional, antes do primeiro sprint:
 4. Existência e conteúdo de campos cliente em `CI_CATSDB`
 5. Objetos recetores em uso: só PEP, ou também ordens e redes
 6. Calendário de execução da transferência (`CATA` ou transações por componente)
-7. Release e nomes de propriedades do serviço de timesheet disponível
+7. Release do sistema e disponibilidade confirmada de `BAPI_CATIMESHEETMGR_INSERT` / `_CHANGE` / `_DELETE` no ambiente do cliente
 8. Política de estorno e de correção após transferência
 9. Consumidores a jusante do campo `LTXA1`
 10. Origem da capacidade diária, plano de trabalho ou regra própria, e tipos de ausência que fecham o dia

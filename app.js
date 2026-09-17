@@ -1060,9 +1060,9 @@
     }
     $("catsCount").textContent = recs.length + (recs.length === 1 ? " record generated" : " records generated");
     $("catsPayload").textContent =
-      "// Cloud scenario: WorkforceTimesheetService, entity TimeSheetEntry\n" +
-      "// On-premise scenario: BAPI_CATIMESHEETMGR_INSERT, table CATSRECORDS\n" +
-      "// Property names to confirm against the client's service metadata\n\n" +
+      "// Integration with CATS is BAPI only: BAPI_CATIMESHEETMGR_INSERT / _CHANGE / _DELETE,\n" +
+      "// with BAPI_TRANSACTION_COMMIT. No OData service, no WorkforceTimesheetService,\n" +
+      "// whether the target is cloud or on-premise\n\n" +
       JSON.stringify({
         requestId: "ts-2026-W" + WEEKS[weekIdx].num + "-" + PERNR,
         bukrs: IT0001.bukrs,

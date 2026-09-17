@@ -352,7 +352,7 @@ Alvo WCAG 2.2 nível AA, além do que o SAPUI5 já garante por controlo.
 | Tema | Horizon (`sap_horizon` e `sap_horizon_dark`), sem exceções |
 
 **Modelo de desenvolvimento recomendado**
-Fiori elements para os ecrãs de aprovação e de cobertura, onde o padrão é lista e detalhe. Freestyle SAPUI5 para E1 a E4, porque a grelha editável, o quick add e as sugestões estão fora do que as annotations cobrem. Backend em CAP, exposto em OData V4, com integração ao registo de tempo por API de timesheet do S/4HANA ou pelo Time Tracking do SuccessFactors.
+Fiori elements para os ecrãs de aprovação e de cobertura, onde o padrão é lista e detalhe. Freestyle SAPUI5 para E1 a E4, porque a grelha editável, o quick add e as sugestões estão fora do que as annotations cobrem. Backend em CAP, exposto em OData V4 para a interface, com integração ao registo de tempo por BAPI_CATIMESHEETMGR do S/4HANA (único mecanismo com o CATS, sem serviço OData alternativo) ou pelo Time Tracking do SuccessFactors quando o cliente não usa CATS.
 
 ---
 
