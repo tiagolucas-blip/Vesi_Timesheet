@@ -40,7 +40,7 @@ Everything below works, with no server and no real data.
 - The switch in the shellbar changes IT0001, which is the same as opening the sheet as someone assigned to the other company
 
 **Team leader mass entry**
-- Two scopes, both supported: line hierarchy from IT0001 and OM, and project team. Rui Tavares is the crossing case, he reports to Pedro Alves but works on the project Ana Ferreira owns
+- Scope is by project ownership only, never by line hierarchy: each project has one owner, and mass entry shows everyone allocated to that project regardless of who they report to in IT0001/OM. Rui Tavares is the example, he works on both Pedro Alves's project (AER-WFM) and Ana Ferreira's (BNK-2026)
 - Fill a project, a duration and the days, select people, apply. Nothing is saved until the leader reviews the grid
 - The save is partial on purpose: lines that fail keep their reason on screen, the rest are written
 - Every line keeps `CREATED_BY` and `ON_BEHALF_OF`. There is no self-confirmation step

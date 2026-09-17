@@ -96,37 +96,35 @@
   }
 
   /* ---------- team, for the leader's mass entry ----------
-     Two scopes coexist in consulting: the line hierarchy, from IT0001 and the
-     OM relationships, and the project team. Rui Tavares is the crossing case,
-     he reports to Pedro Alves but works on the project Ana Ferreira owns. */
+     Scope is strictly by project ownership, never by line management: each
+     project has one owner in LEADERS, and the team a leader sees in mass
+     entry is everyone allocated to that project, whatever their manager in
+     IT0001/OM is. Rui Tavares is the example: he works on Pedro Alves's
+     project (AER-WFM) and also on Ana Ferreira's (BNK-2026), independently
+     of who he reports to in the org chart. */
   var LEADERS = [
-    {id:"RN", name:"Ricardo Nunes", kind:"hier", label:"Hierarchy, SAP HCM team",      bukrs:"PT01"},
-    {id:"PA", name:"Pedro Alves",   kind:"hier", label:"Hierarchy, S/4HANA team",      bukrs:"PT01"},
-    {id:"AF", name:"Ana Ferreira",  kind:"proj", label:"Project team, BNK-2026", proj:0, bukrs:"PT01"},
-    {id:"CP", name:"Carlos Pinto",  kind:"hier", label:"Hierarchy, Building Service",  bukrs:"PT02"}
+    {id:"RN", name:"Ricardo Nunes", label:"Project owner, RTL-TT",  proj:1, bukrs:"PT01"},
+    {id:"PA", name:"Pedro Alves",   label:"Project owner, AER-WFM", proj:2, bukrs:"PT01"},
+    {id:"AF", name:"Ana Ferreira",  label:"Project owner, BNK-2026", proj:0, bukrs:"PT01"},
+    {id:"CP", name:"Carlos Pinto",  label:"Project owner, AXI-INT", proj:3, bukrs:"PT02"}
   ];
   var TEAM = [
-    {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", mgr:"RN", projs:[0,3], abs:{}},
-    {pernr:"00104502", name:"João Costa",     role:"Consultant",        bukrs:"PT01", mgr:"RN", projs:[0,1], abs:{4:"Vacation"}},
-    {pernr:"00104503", name:"Inês Braga",     role:"Junior consultant", bukrs:"PT01", mgr:"RN", projs:[1,3], abs:{}, locked:true},
-    {pernr:"00104504", name:"Rui Tavares",    role:"Consultant",        bukrs:"PT01", mgr:"PA", projs:[0,2], abs:{}},
-    {pernr:"00104505", name:"Sofia Marques",  role:"Architect",         bukrs:"PT01", mgr:"PA", projs:[2],   abs:{2:"Medical appointment"}},
-    {pernr:"00104510", name:"Nuno Dias",      role:"Technician",        bukrs:"PT02", mgr:"CP", projs:[3],   abs:{}},
-    {pernr:"00104511", name:"Hélder Rocha",   role:"Technician",        bukrs:"PT02", mgr:"CP", projs:[3],   abs:{}},
-    {pernr:"00104512", name:"Hugo Matos",     role:"Technician",        bukrs:"PT02", mgr:"CP", projs:[3],   abs:{1:"Vacation"}}
+    {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", projs:[0,3], abs:{}},
+    {pernr:"00104502", name:"João Costa",     role:"Consultant",        bukrs:"PT01", projs:[0,1], abs:{4:"Vacation"}},
+    {pernr:"00104503", name:"Inês Braga",     role:"Junior consultant", bukrs:"PT01", projs:[1,3], abs:{}, locked:true},
+    {pernr:"00104504", name:"Rui Tavares",    role:"Consultant",        bukrs:"PT01", projs:[0,2], abs:{}},
+    {pernr:"00104505", name:"Sofia Marques",  role:"Architect",         bukrs:"PT01", projs:[2],   abs:{2:"Medical appointment"}},
+    {pernr:"00104510", name:"Nuno Dias",      role:"Technician",        bukrs:"PT02", projs:[3],   abs:{}},
+    {pernr:"00104511", name:"Hélder Rocha",   role:"Technician",        bukrs:"PT02", projs:[3],   abs:{}},
+    {pernr:"00104512", name:"Hugo Matos",     role:"Technician",        bukrs:"PT02", projs:[3],   abs:{1:"Vacation"}}
   ];
   function leaderById(id){ return LEADERS.filter(function(l){ return l.id === id; })[0] || LEADERS[0]; }
   function teamOf(leaderId){
     var l = leaderById(leaderId);
-    if(l.kind === "proj") return TEAM.filter(function(m){ return m.projs.indexOf(l.proj) !== -1; });
-    return TEAM.filter(function(m){ return m.mgr === l.id; });
+    return TEAM.filter(function(m){ return m.projs.indexOf(l.proj) !== -1; });
   }
   function projectsOf(leaderId){
-    var l = leaderById(leaderId);
-    if(l.kind === "proj") return [l.proj];
-    var set = [];
-    teamOf(leaderId).forEach(function(m){ m.projs.forEach(function(p){ if(set.indexOf(p) === -1) set.push(p); }); });
-    return set.sort();
+    return [leaderById(leaderId).proj];
   }
 
   var WEEKDAY_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -1097,9 +1095,7 @@
     var members = teamOf(state.leader);
 
     $("teamScope").textContent = leader.label;
-    $("teamScopeNote").textContent = leader.kind === "proj"
-      ? "Project scope. Includes people who report elsewhere in the line but work on this project."
-      : "Line hierarchy, from IT0001 and the OM relationships.";
+    $("teamScopeNote").textContent = "Project team. Includes people who report elsewhere in the line but work on this project.";
     $("teamCount").textContent = members.length + (members.length === 1 ? " person" : " people");
 
     /* project options, limited to the leader's scope */
@@ -1286,14 +1282,14 @@
   /* ---------- bonus, created by the project owner ----------
      The only allowance carrying an amount and the only one the employee does
      not record. Defining the value and approving are the same act, by the same
-     person, so there is no separate approval step. */
+     person, so there is no separate approval step. Every leader in Team entry
+     is a project owner (scope is by project, never by line hierarchy), so the
+     panel is always available here. */
   function renderBonusPanel(){
     var panel = $("bonusPanel");
     if(!panel) return;
     var leader = leaderById(state.leader);
-    var owner = leader.kind === "proj";
-    panel.hidden = !owner;
-    if(!owner) return;
+    panel.hidden = false;
     var sel = $("bWho");
     var keep = sel.value;
     sel.innerHTML = "";
