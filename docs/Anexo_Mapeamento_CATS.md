@@ -29,7 +29,8 @@ Princípio que governa todo o anexo: **o registo continua a ser standard SAP**. 
  3. API de registo de tempo do S/4HANA
     BAPI_CATIMESHEETMGR_INSERT / _CHANGE / _DELETE, único mecanismo de
     integração com o CATS. Sem serviço OData nem WorkforceTimesheetService,
-    por decisão de arquitetura
+    por decisão de arquitetura. Invocada por um job assíncrono na camada 2,
+    nunca em linha com o pedido HTTP do utilizador
               |
  4. CATSDB, a tabela de base do CATS
     estados, aprovação, campos cliente via include CI_CATSDB
@@ -97,6 +98,7 @@ Três dados do protótipo não têm lugar no modelo CATS e a tentação de os fo
 | Estado técnico | Significado | Estado na UI | Editável |
 |---|---|---|---|
 | Registo apenas em BTP | Rascunho antes de submeter | `Rascunho` | Sim, livremente |
+| Job de submissão em fila, sem resposta da BAPI ainda | Pedido aceite, a aguardar confirmação | `A confirmar` | Não, à espera do job |
 | `STATUS` de entrada em processamento | Gravado no CATS, ainda não libertado | `Gravado` | Sim |
 | `STATUS` libertado para aprovação | Submetido, à espera do gestor | `Em aprovação` | Não, só por correção com `REFCOUNTER` |
 | `STATUS` aprovado | Aprovado, pronto a transferir | `Aprovado` | Não |
@@ -104,6 +106,8 @@ Três dados do protótipo não têm lugar no modelo CATS e a tentação de os fo
 | Rejeitado | Devolvido com motivo | `Rejeitado` | Sim, com o motivo visível junto à célula |
 
 O domínio de estados do CATS tem valores adicionais, nomeadamente para alterações após aprovação. **Confirmar no sistema do cliente os valores exatos do domínio antes de fixar a semântica visual**, porque o mapeamento dos chips depende disso e uma cor errada aqui destrói a confiança na aplicação.
+
+`A confirmar` não é um valor do domínio `STATUS` do CATS, é um estado só de BTP, do job assíncrono que chama a BAPI (ver secção 9). A interface tem de o distinguir visualmente de `Gravado`, porque só depois do job responder é que a semana passou mesmo a existir em CATSDB, linha a linha. Uma linha pode ficar `A confirmar` e a seguir `Rejeitado` sem nunca passar por `Gravado`, se a BAPI devolver erro para essa linha.
 
 Regra de UI que decorre do modelo: a partir de `Em aprovação`, editar não é alterar, é criar um registo de correção. A interface tem de o dizer em linguagem simples, por exemplo `esta alteração cria uma correção que volta a aprovação`, em vez de expor `REFCOUNTER`.
 
@@ -205,7 +209,10 @@ Decisão de produto a tomar antes do desenvolvimento: chat dentro da aplicação
 
 **Mecanismo único, BAPI** `BAPI_CATIMESHEETMGR_INSERT`, `_CHANGE` e `_DELETE`, com `BAPI_TRANSACTION_COMMIT` explícito. Sem WorkforceTimesheetService, sem OData, sem cenário alternativo por tipo de deployment: a integração com o CATS é sempre por esta via, cloud ou on premise. Testar o comportamento de erro parcial no lote, que é a principal fonte de inconsistência nestas integrações.
 
+**Síncrono ou assíncrono, decisão** A chamada BAPI em si é síncrona, mas o pedido HTTP do utilizador não fica à espera de `BAPI_TRANSACTION_COMMIT`. A submissão da semana entra numa fila de jobs na camada 2, o job é que chama a BAPI, e o resultado volta linha a linha para caber a gravação parcial que já é regra nesta aplicação. Razão: o mass entry pode submeter dezenas de linhas de uma vez, e isso por Cloud Connector até um sistema on premise arrisca o timeout do OData/Fiori numa chamada síncrona longa, além de bloquear o ecrã do líder de equipa até a última linha responder. O custo é mais peças a construir, fila com idempotência, e a interface deixa de prometer confirmação imediata: ver o estado `A confirmar` na secção 5.
+
 **Robustez**
+- Fila de jobs assíncrona para a chamada BAPI, para não bloquear o pedido do utilizador e para poder repetir em caso de indisponibilidade do Cloud Connector, sem duplicar o que já tiver sido confirmado
 - Idempotência por chave lógica `PERNR` mais `WORKDATE` mais objeto recetor mais `LSTAR`, com identificador de pedido gerado em BTP, para que um reenvio após timeout não duplique horas
 - Reconciliação diária entre a camada BTP e `CATSDB`, com relatório de divergências
 - Nenhuma escrita direta em `CATSDB`. Sempre pela BAPI, porque só ela garante as verificações e o trilho
@@ -231,11 +238,12 @@ Lista objetiva para a equipa funcional, antes do primeiro sprint:
 5. Objetos recetores em uso: só PEP, ou também ordens e redes
 6. Calendário de execução da transferência (`CATA` ou transações por componente)
 7. Release do sistema e disponibilidade confirmada de `BAPI_CATIMESHEETMGR_INSERT` / `_CHANGE` / `_DELETE` no ambiente do cliente
-8. Política de estorno e de correção após transferência
-9. Consumidores a jusante do campo `LTXA1`
-10. Origem da capacidade diária, plano de trabalho ou regra própria, e tipos de ausência que fecham o dia
-11. Disponibilidade do Joule no cliente e licenciamento, para decidir entre capacidade Joule e chat próprio
-12. Base legal e avaliação de impacto para a captura de sinais, com o DPO
+8. Latência e limites de timeout do Cloud Connector para o ambiente on premise, para dimensionar a fila de jobs e o tempo até `A confirmar` deixar de ser razoável mostrar como "a decorrer"
+9. Política de estorno e de correção após transferência
+10. Consumidores a jusante do campo `LTXA1`
+11. Origem da capacidade diária, plano de trabalho ou regra própria, e tipos de ausência que fecham o dia
+12. Disponibilidade do Joule no cliente e licenciamento, para decidir entre capacidade Joule e chat próprio
+13. Base legal e avaliação de impacto para a captura de sinais, com o DPO
 
 ---
 
