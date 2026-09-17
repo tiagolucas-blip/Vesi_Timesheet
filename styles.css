@@ -347,12 +347,21 @@
   .massbar .f span{text-transform:uppercase; letter-spacing:.08em; font-weight:600}
   .massbar .f.wide{flex:1 1 220px}
   .massbar select, .massbar input[type=text]{font:inherit; font-size:13px; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); max-width:100%}
-  .massbar input#mDur{width:90px}
+  .massbar input#mDur, .massbar input#mBeg, .massbar input#mEnd, .massbar input#mAllowQty{width:90px}
   .mdays{display:flex; gap:10px; flex-wrap:wrap; padding-top:3px}
   .mday{display:flex; align-items:center; gap:4px; font-size:13px; color:var(--ink-2); text-transform:none; letter-spacing:0; font-weight:400}
   .tsgrid.team{min-width:760px}
   .tsgrid.team .rowmeta .p{gap:8px}
   .tsgrid.team .rowmeta input[type=checkbox]{margin:0}
+  .cell.computed{background:var(--surface-3); color:var(--ink-3); cursor:not-allowed}
+
+  /* already-recorded, read-only grid */
+  .tsgrid.readonly .row{grid-template-columns:minmax(230px,1fr) repeat(7,58px) 70px 34px}
+  .tsgrid.readonly .rowmeta{padding:8px 10px; font-size:13px; font-weight:500}
+  .already-cell{display:flex; align-items:center; justify-content:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-2); border-left:1px solid var(--line-soft)}
+  .already-cell.we{background:var(--surface-2)}
+  .already-cell.full{background:var(--warn-soft); color:var(--warn); font-weight:600}
+  .already-cell.over{background:var(--crit-soft); color:var(--crit); font-weight:600}
   .errdot{display:grid; place-items:center; width:20px; height:20px; border-radius:50%; background:var(--crit-soft); color:var(--crit); font-weight:700; font-size:12px; cursor:help}
   .spacer{flex:1 1 auto}
   .maptbl td.wt{color:var(--accent-ink); font-weight:600}

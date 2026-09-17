@@ -109,14 +109,14 @@
     {id:"CP", name:"Carlos Pinto",  label:"Project owner, AXI-INT", proj:3, bukrs:"PT02"}
   ];
   var TEAM = [
-    {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", projs:[0,3], abs:{}},
-    {pernr:"00104502", name:"João Costa",     role:"Consultant",        bukrs:"PT01", projs:[0,1], abs:{4:"Vacation"}},
-    {pernr:"00104503", name:"Inês Braga",     role:"Junior consultant", bukrs:"PT01", projs:[1,3], abs:{}, locked:true},
-    {pernr:"00104504", name:"Rui Tavares",    role:"Consultant",        bukrs:"PT01", projs:[0,2], abs:{}},
-    {pernr:"00104505", name:"Sofia Marques",  role:"Architect",         bukrs:"PT01", projs:[2],   abs:{2:"Medical appointment"}},
-    {pernr:"00104510", name:"Nuno Dias",      role:"Technician",        bukrs:"PT02", projs:[3],   abs:{}},
-    {pernr:"00104511", name:"Hélder Rocha",   role:"Technician",        bukrs:"PT02", projs:[3],   abs:{}},
-    {pernr:"00104512", name:"Hugo Matos",     role:"Technician",        bukrs:"PT02", projs:[3],   abs:{1:"Vacation"}}
+    {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", projs:[0,3], abs:{}, already:[8,8,4,0,0,0,0]},
+    {pernr:"00104502", name:"João Costa",     role:"Consultant",        bukrs:"PT01", projs:[0,1], abs:{4:"Vacation"}, already:[4,4,4,4,0,0,0]},
+    {pernr:"00104503", name:"Inês Braga",     role:"Junior consultant", bukrs:"PT01", projs:[1,3], abs:{}, locked:true, already:[8,8,8,8,8,0,0]},
+    {pernr:"00104504", name:"Rui Tavares",    role:"Consultant",        bukrs:"PT01", projs:[0,2], abs:{}, already:[8,0,8,0,0,0,0]},
+    {pernr:"00104505", name:"Sofia Marques",  role:"Architect",         bukrs:"PT01", projs:[2],   abs:{2:"Medical appointment"}, already:[0,4,4,8,0,0,0]},
+    {pernr:"00104510", name:"Nuno Dias",      role:"Technician",        bukrs:"PT02", projs:[3],   abs:{}, already:[8,8,0,0,0,0,0]},
+    {pernr:"00104511", name:"Hélder Rocha",   role:"Technician",        bukrs:"PT02", projs:[3],   abs:{}, already:[0,0,8,8,8,0,0]},
+    {pernr:"00104512", name:"Hugo Matos",     role:"Technician",        bukrs:"PT02", projs:[3],   abs:{1:"Vacation"}, already:[8,0,8,8,0,0,0]}
   ];
   function leaderById(id){ return LEADERS.filter(function(l){ return l.id === id; })[0] || LEADERS[0]; }
   function teamOf(leaderId){
@@ -125,6 +125,17 @@
   }
   function projectsOf(leaderId){
     return [leaderById(leaderId).proj];
+  }
+  /* Hours the person already has recorded this week, from their own sheet or a
+     previous mass entry, so the leader can see day load before staging more.
+     Sample only: weeks already posted or submitted are treated as complete on
+     their working days, next week has nothing yet, and this week has the hand
+     authored gaps in TEAM[].already, deliberately including someone already
+     at capacity so the "day already full" case is visible without more clicks. */
+  function alreadyHoursFor(m, weekNum){
+    if(weekNum >= 39) return [0,0,0,0,0,0,0];
+    if(weekNum === 38) return m.already || [0,0,0,0,0,0,0];
+    return [0,1,2,3,4].reduce(function(acc,d){ acc[d] = m.abs[d] ? 0 : 8; return acc; }, [0,0,0,0,0,0,0]);
   }
 
   var WEEKDAY_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -238,6 +249,7 @@
     sugs: WEEKS[weekIdx].sugs,
     leader: "RN",
     staged: {},
+    stagedAllow: [],
     massLog: [],
     approvals:[
       {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false},
@@ -712,6 +724,10 @@
     $("weekLabel").textContent = weekLabelFor(WORKDATES, WEEKS[weekIdx].num);
     $("prevW").disabled = weekIdx === 0;
     $("nextW").disabled = weekIdx === WEEKS.length - 1;
+    /* the team screen has its own week navigator, kept in sync with this one */
+    if($("weekLabel2")) $("weekLabel2").textContent = weekLabelFor(WORKDATES, WEEKS[weekIdx].num);
+    if($("prevW2")) $("prevW2").disabled = weekIdx === 0;
+    if($("nextW2")) $("nextW2").disabled = weekIdx === WEEKS.length - 1;
     var tot = weekTotal(), proj = projTotal(), expect = weekCapacity();
     $("kTot").innerHTML = fmt(tot) + "<small> / " + fmt(expect) + " h</small>";
     var pct = expect ? Math.min(100, tot/expect*100) : 0;
@@ -830,7 +846,7 @@
       c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · wage type " + w.lgart));
       if(a.note) c.appendChild(el("div","why", a.note));
       if(a.by !== a.onBehalf) c.appendChild(el("div","why", "Recorded by " + a.byName + ", on behalf of the employee"));
-      if(w.amount) c.appendChild(el("div","why", "Amount in a customer field. ANZHL goes to CATS as 1."));
+      if(w.amount) c.appendChild(el("div","why", "Amount goes to CATSAMOUNT, native CATSDB field. ANZHL goes to CATS as 1."));
       var acts = el("div","acts","");
       var rm = btn("Remove","btn sm", function(){
         if(!allowEditable(a)) return;
@@ -921,7 +937,7 @@
     ["Data entry profile in force","CATS profile","customizing, Z_CONS or Z_BSRV","cats","Z_CONS records duration only, Z_BSRV records start and end with the duration computed"],
     ["Allowance recorded against a project","Wage type","LGART","cats","Has to exist in T512Z and be authorised in the profile"],
     ["Allowance quantity","Number, with unit","ANZHL, ZEINH","cats","Days, kilometres. The bonus goes in with ANZHL 1"],
-    ["Bonus amount","No field in CATSDB","customer field","ci","CATSDB is a quantity structure. CAT6 transfers quantity, not value, so reaching IT2010 BETRG needs an enhancement"],
+    ["Bonus amount","Amount","CATSAMOUNT","cats","Native CATSDB field, CURR 13.2. Confirm with the client whether the standard CAT6 transfer maps it to IT2010 BETRG, or whether that needs configuring"],
     ["Transfer to payroll","Standard transfer","CAT6 to IT2010","cats","No bespoke interface. CAT5 and CAT7 cover PS and CO"],
     ["Recorded on behalf of someone","No equivalent","ON_BEHALF_OF","btp","Mass entry. The submitting user still lands in ERNAM, by standard behaviour"],
     ["Period open or closed","No equivalent","ZTIME_PERIOD_CTRL","btp","Monthly, per company. Reopening is an HR action and is recorded"],
@@ -985,6 +1001,7 @@
           ENDUZ: s && s.e !== null ? fmtClock(s.e) : "",
           LGART: "",
           ANZHL: "",
+          CATSAMOUNT: "",
           LSTAR: pr.sap.lstar,
           RPROJ: pr.sap.rproj || "",
           SKOSTL: pr.sap.skostl,
@@ -1006,6 +1023,7 @@
         ENDUZ: "",
         LGART: w.lgart,
         ANZHL: w.amount ? "1.0" : fmt(a.qty),
+        CATSAMOUNT: w.amount ? fmt(a.amount) : "",
         LSTAR: pr.sap.lstar,
         RPROJ: pr.sap.rproj || "",
         SKOSTL: pr.sap.skostl,
@@ -1025,7 +1043,7 @@
     body.innerHTML = "";
     recs.forEach(function(rec){
       var tr = document.createElement("tr");
-      ["PERNR","WORKDATE","CATSHOURS","BEGUZ","ENDUZ","LGART","ANZHL","LSTAR","RPROJ","LTXA1","STATUS"].forEach(function(k){
+      ["PERNR","WORKDATE","CATSHOURS","BEGUZ","ENDUZ","LGART","ANZHL","CATSAMOUNT","LSTAR","RPROJ","LTXA1","STATUS"].forEach(function(k){
         var td = td2(rec[k] || "–");
         if(k !== "LTXA1") td.className = "f";
         if(k === "LGART" && rec[k]) td.className = "f wt";
@@ -1036,7 +1054,7 @@
     if(!recs.length){
       var tr = document.createElement("tr");
       var td = document.createElement("td");
-      td.colSpan = 11; td.style.color = "var(--ink-3)";
+      td.colSpan = 12; td.style.color = "var(--ink-3)";
       td.textContent = "No hours and no allowances this week, so there are no records to generate.";
       tr.appendChild(td); body.appendChild(tr);
     }
@@ -1052,12 +1070,7 @@
         period: {ym: periodFor(WORKDATES[0]).ym, open: periodOpen(WORKDATES[0])},
         release: state.submitted,
         records: recs,
-        customerFields: {
-          comment: "CATSDB has no amount field, so the bonus value travels here. CAT6 transfers quantity, not value, so writing IT2010 BETRG needs an enhancement",
-          bonus: state.allow.filter(function(a){ return wt(a.code).amount; }).map(function(a){
-            return {workdate: WORKDATES[a.day], lgart: wt(a.code).lgart, anzhl: "1.0", ZZAMOUNT: fmt(a.amount), ZZCURRENCY: "EUR", approvedBy: a.byName};
-          })
-        },
+        note: "CATSAMOUNT is a native CATSDB field (CURR 13,2), used above for the bonus. Confirm with the client whether the standard CAT6 transfer already maps it to IT2010 BETRG, or whether that mapping needs configuring, and which field carries the currency key alongside it",
         btpOnly: {
           comment: "stays in the experience layer, never enters CATSDB",
           onBehalfOf: state.massLog.slice(-8).map(function(e){
@@ -1082,11 +1095,55 @@
      reason, the rest are written. Cancelling ten rows because of one approved
      absence is the fastest way to make people stop using this screen. */
   function stagedOf(pernr){
-    if(!state.staged[pernr]) state.staged[pernr] = {sel:false, h:[0,0,0,0,0,0,0], err:""};
+    if(!state.staged[pernr]) state.staged[pernr] = {sel:false, h:[0,0,0,0,0,0,0], t:[null,null,null,null,null,null,null], err:""};
+    if(!state.staged[pernr].t) state.staged[pernr].t = [null,null,null,null,null,null,null];
     return state.staged[pernr];
   }
   function memberBlocked(m, day){ return !!m.abs[day]; }
   function massProject(){ return +($("mProj") ? $("mProj").value : 0); }
+
+  /* ---------- already recorded, read-only ----------
+     A second grid, next to the editable one: what each person already has
+     this week, so the leader can see day load before staging more, rather
+     than piecing it together from the log on the right. Combines the sample
+     "already" hours with whatever is staged but not yet saved, so it updates
+     live as the leader fills the grid below. */
+  function renderAlreadyGrid(members){
+    var wrap = $("alreadyGrid");
+    if(!wrap) return;
+    wrap.innerHTML = "";
+    wrap.className = "tsgrid team readonly";
+
+    var head = document.createElement("div");
+    head.className = "row head";
+    head.appendChild(el("div","","Employee"));
+    DAYS.forEach(function(d,i){ head.appendChild(el("div", i>4?"we":"", d)); });
+    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",""));
+    wrap.appendChild(head);
+
+    members.forEach(function(m){
+      var st = stagedOf(m.pernr);
+      var already = alreadyHoursFor(m, WEEKS[weekIdx].num);
+      var row = document.createElement("div");
+      row.className = "row";
+      row.appendChild(el("div","rowmeta", m.name));
+      var rowTotal = 0;
+      already.forEach(function(v,i){
+        var total = v + (st.h[i] || 0);
+        rowTotal += total;
+        var cls = "already-cell" + (i>4 ? " we" : "");
+        if(total > 8) cls += " over";
+        else if(total >= 8) cls += " full";
+        var cell = el("div", cls, total ? fmt(total) : "–");
+        if(st.h[i]) cell.title = fmt(v) + " h already · " + fmt(st.h[i]) + " h staged now";
+        row.appendChild(cell);
+      });
+      row.appendChild(el("div","rowtot", rowTotal ? fmt(rowTotal) : "–"));
+      row.appendChild(el("div","",""));
+      wrap.appendChild(row);
+    });
+  }
 
   function renderTeam(){
     var wrap = $("teamGrid");
@@ -1111,6 +1168,8 @@
       pj.dataset.for = state.leader;
       if(keep && pj.querySelector('option[value="'+keep+'"]')) pj.value = keep;
     }
+
+    renderAlreadyGrid(members);
 
     wrap.innerHTML = "";
     wrap.className = "tsgrid team";
@@ -1148,21 +1207,30 @@
       row.appendChild(meta);
 
       st.h.forEach(function(v,i){
+        var clock = profileFor(WORKDATES[i], m.bukrs).clock;
         var inp = document.createElement("input");
         inp.type = "text";
-        inp.className = "cell" + (i>4 ? " we" : "");
+        inp.className = "cell" + (i>4 ? " we" : "") + (clock ? " computed" : "");
         inp.value = v ? fmt(v) : "";
         inp.inputMode = "decimal";
-        inp.setAttribute("aria-label","Hours for "+m.name+", "+DAYS[i]);
-        inp.disabled = m.locked || memberBlocked(m,i) || !periodOpen(WORKDATES[i], m.bukrs);
+        inp.disabled = clock || m.locked || memberBlocked(m,i) || !periodOpen(WORKDATES[i], m.bukrs);
+        if(clock){
+          inp.title = "Z_BSRV records start and end. Use the Start/End fields above, for the people this applies to.";
+          inp.setAttribute("aria-label","Computed duration for "+m.name+", "+DAYS[i]);
+        } else {
+          inp.setAttribute("aria-label","Hours for "+m.name+", "+DAYS[i]);
+        }
         if(memberBlocked(m,i)){ inp.classList.add("abs"); inp.title = "Approved "+m.abs[i].toLowerCase(); }
         if(!periodOpen(WORKDATES[i], m.bukrs)){ inp.classList.add("closed"); inp.title = "Closed period"; }
-        inp.addEventListener("change", function(){
-          var parsed = parseDur(inp.value);
-          if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”."); renderTeam(); return; }
-          st.h[i] = round15(parsed);
-          renderTeam();
-        });
+        if(!clock){
+          inp.addEventListener("change", function(){
+            var parsed = parseDur(inp.value);
+            if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”."); renderTeam(); return; }
+            st.h[i] = round15(parsed);
+            st.t[i] = null;
+            renderTeam();
+          });
+        }
         row.appendChild(inp);
       });
 
@@ -1186,31 +1254,52 @@
 
     renderMassLog();
     renderBonusPanel();
+    renderMassAllowList();
   }
 
+  /* Fills duration for people on a duration profile, and start/end for people
+     on Z_BSRV, in the same click. A mixed selection (Carlos Pinto's team has
+     both) uses whichever field applies to each person; a cell whose profile
+     needs the field left blank is skipped, not guessed. */
   function applyMass(){
     var members = teamOf(state.leader).filter(function(m){ return stagedOf(m.pernr).sel && !m.locked; });
     if(!members.length){ toast("Select at least one person first."); return; }
     var dur = parseDur($("mDur").value);
-    if(isNaN(dur) || dur <= 0){ toast("Give a duration, for example 8 or 7.5."); return; }
+    var hasDur = !isNaN(dur) && dur > 0;
+    var bTxt = $("mBeg") ? $("mBeg").value : "", eTxt = $("mEnd") ? $("mEnd").value : "";
+    var b = parseClock(bTxt), e = parseClock(eTxt);
+    var hasClock = bTxt.trim() !== "" && eTxt.trim() !== "" && !isNaN(b) && !isNaN(e);
+    if(!hasDur && !hasClock){ toast("Give a duration, or a start and end time."); return; }
     var days = [];
-    Array.prototype.forEach.call(document.querySelectorAll(".mday input:checked"), function(c){ days.push(+c.value); });
+    Array.prototype.forEach.call(document.querySelectorAll(".mHoursDays input:checked"), function(c){ days.push(+c.value); });
     if(!days.length){ toast("Pick at least one day."); return; }
-    var touched = 0;
+    var touched = 0, skipped = 0;
     members.forEach(function(m){
       var st = stagedOf(m.pernr);
       days.forEach(function(d){
         if(memberBlocked(m,d) || !periodOpen(WORKDATES[d], m.bukrs)) return;
-        st.h[d] = round15(dur);
+        var clock = profileFor(WORKDATES[d], m.bukrs).clock;
+        if(clock){
+          if(!hasClock){ skipped++; return; }
+          st.t[d] = {b:b, e:e};
+          st.h[d] = slotHours(st.t[d]);
+        } else {
+          if(!hasDur){ skipped++; return; }
+          st.t[d] = null;
+          st.h[d] = round15(dur);
+        }
         touched++;
       });
     });
     renderTeam();
-    toast(touched + " cells filled for " + members.length + " people. Nothing is saved yet, review the grid first.");
+    var msg = touched + " cells filled for " + members.length + " people. Nothing is saved yet, review the grid first.";
+    if(skipped) msg += " " + skipped + " cell" + (skipped === 1 ? "" : "s") + " skipped, needs the other field for that profile.";
+    toast(msg);
   }
 
   function clearMass(){
-    Object.keys(state.staged).forEach(function(k){ state.staged[k] = {sel:false, h:[0,0,0,0,0,0,0], err:""}; });
+    Object.keys(state.staged).forEach(function(k){ state.staged[k] = {sel:false, h:[0,0,0,0,0,0,0], t:[null,null,null,null,null,null,null], err:""}; });
+    state.stagedAllow = [];
     renderTeam();
   }
 
@@ -1234,6 +1323,9 @@
           if(memberBlocked(m,d)){ err = DAYS[d] + " has an approved " + m.abs[d].toLowerCase() + "."; break; }
           if(!periodOpen(WORKDATES[d], m.bukrs)){ err = DAYS[d] + " falls in a closed period."; break; }
           if(st.h[d] > 24){ err = DAYS[d] + " is above 24 hours."; break; }
+          if(profileFor(WORKDATES[d], m.bukrs).clock && (!st.t[d] || st.t[d].b === null || st.t[d].e === null)){
+            err = DAYS[d] + " needs both a start and an end for " + m.name.split(" ")[0] + "."; break;
+          }
         }
       }
       if(err){ st.err = err; kept++; return; }
@@ -1241,14 +1333,16 @@
       for(var i=0; i<7; i++){
         if(!st.h[i]) continue;
         state.massLog.push({
+          kind: "hours",
           pernr: m.pernr, name: m.name, date: WORKDATES[i], day: i, hours: st.h[i],
           p: pIdx, createdBy: leader.name, onBehalf: m.pernr,
-          profile: profileFor(WORKDATES[i], m.bukrs).code
+          profile: profileFor(WORKDATES[i], m.bukrs).code,
+          beg: st.t[i] ? st.t[i].b : null, end: st.t[i] ? st.t[i].e : null
         });
         saved++;
       }
       savedPeople++;
-      state.staged[m.pernr] = {sel:false, h:[0,0,0,0,0,0,0], err:""};
+      state.staged[m.pernr] = {sel:false, h:[0,0,0,0,0,0,0], t:[null,null,null,null,null,null,null], err:""};
     });
     renderTeam();
     var who = savedPeople + (savedPeople === 1 ? " person" : " people");
@@ -1256,6 +1350,110 @@
     if(saved && kept) toast(saved + " entries saved for " + who + ". " + left + " on screen with the reason.");
     else if(saved) toast(saved + " entries saved for " + who + ", recorded on their behalf.");
     else toast("Nothing was saved. Every line has a reason next to it.");
+  }
+
+  /* ---------- allowances, mass entry ----------
+     Same partial, staged-then-saved pattern as hours, but the line items are
+     flat (an allowance is one occurrence, not a per-day grid cell), so
+     they're staged in a list instead of a second grid. The bonus wage type
+     never appears here, it stays the project owner's separate panel. */
+  function massWageTypes(){
+    /* the team can mix companies (Carlos Pinto has PT01 and PT02 people), so
+       the shift allowance is offered if anyone on the team could use it, not
+       just whoever happens to be first in the list */
+    var anyShiftCompany = teamOf(state.leader).some(function(m){ return m.bukrs === "PT02"; });
+    return WAGETYPES.filter(function(w){ return w.selfEntry && (w.code !== "TURNO" || anyShiftCompany); });
+  }
+  function syncMassAllowForm(){
+    var sel = $("mAllowCode");
+    if(!sel) return;
+    var w = wt(sel.value);
+    if(!w) return;
+    $("mAllowUnit").textContent = w.unit;
+    $("mAllowNoteWrap").hidden = !w.noteLabel;
+    $("mAllowNoteLbl").textContent = w.noteLabel || "Note";
+  }
+  function applyMassAllow(){
+    var members = teamOf(state.leader).filter(function(m){ return stagedOf(m.pernr).sel && !m.locked; });
+    if(!members.length){ toast("Select at least one person first."); return; }
+    var w = wt($("mAllowCode").value);
+    var qty = parseDur($("mAllowQty").value);
+    if(isNaN(qty) || qty <= 0){ toast("Give a quantity above zero."); return; }
+    var note = $("mAllowNote").value.trim();
+    if(w.noteLabel && !note){ toast(w.noteLabel + " is required for " + w.name + "."); return; }
+    var days = [];
+    Array.prototype.forEach.call(document.querySelectorAll(".mAllowDays input:checked"), function(c){ days.push(+c.value); });
+    if(!days.length){ toast("Pick at least one day."); return; }
+    var pIdx = w.needProj ? massProject() : 3;
+    var added = 0, skipped = 0;
+    members.forEach(function(m){
+      if(w.code === "TURNO" && m.bukrs !== "PT02"){ skipped++; return; }
+      days.forEach(function(d){
+        if(!periodOpen(WORKDATES[d], m.bukrs)) return;
+        state.stagedAllow.push({pernr:m.pernr, name:m.name, code:w.code, day:d, p:pIdx, qty:round15(qty), note:note});
+        added++;
+      });
+    });
+    renderTeam();
+    var msg = added + " allowance line" + (added === 1 ? "" : "s") + " staged for " + members.length + " people. Nothing is saved yet.";
+    if(skipped) msg += " " + skipped + " skipped, the shift allowance doesn't apply to their company.";
+    toast(msg);
+  }
+  function clearMassAllow(){
+    state.stagedAllow = [];
+    renderTeam();
+  }
+  function saveMassAllow(){
+    if(!state.stagedAllow.length){ toast("Nothing staged."); return; }
+    var leader = leaderById(state.leader);
+    state.stagedAllow.forEach(function(a){
+      state.massLog.push({
+        kind: "allowance",
+        pernr: a.pernr, name: a.name, date: WORKDATES[a.day], day: a.day,
+        code: a.code, qty: a.qty, note: a.note, p: a.p,
+        createdBy: leader.name, onBehalf: a.pernr
+      });
+    });
+    var n = state.stagedAllow.length;
+    state.stagedAllow = [];
+    renderTeam();
+    toast(n + " allowance " + (n === 1 ? "line" : "lines") + " saved, recorded on their behalf.");
+  }
+  function renderMassAllowList(){
+    var box = $("mAllowList");
+    if(!box) return;
+    /* wage type options, limited to what this leader's team can record */
+    var sel = $("mAllowCode");
+    if(sel && sel.dataset.for !== state.leader){
+      var keep = sel.value;
+      sel.innerHTML = "";
+      massWageTypes().forEach(function(w){
+        var o = document.createElement("option");
+        o.value = w.code; o.textContent = w.name + " (" + w.lgart + ")";
+        sel.appendChild(o);
+      });
+      sel.dataset.for = state.leader;
+      if(keep && sel.querySelector('option[value="'+keep+'"]')) sel.value = keep;
+      syncMassAllowForm();
+    }
+    $("mAllowStagedCount").textContent = state.stagedAllow.length + (state.stagedAllow.length === 1 ? " staged" : " staged");
+    $("mAllowSave").disabled = state.stagedAllow.length === 0;
+    box.innerHTML = "";
+    if(!state.stagedAllow.length){
+      box.appendChild(el("div","paused","Nothing staged yet."));
+      return;
+    }
+    state.stagedAllow.forEach(function(a){
+      var w = wt(a.code);
+      var c = el("div","abscard","");
+      var h = el("div","h","");
+      h.appendChild(el("b","", a.name));
+      h.appendChild(el("span","chip grey", fmt(a.qty) + " " + w.unit));
+      c.appendChild(h);
+      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · wage type " + w.lgart));
+      if(a.note) c.appendChild(el("div","why", a.note));
+      box.appendChild(c);
+    });
   }
 
   function renderMassLog(){
@@ -1271,9 +1469,18 @@
       var c = el("div","abscard","");
       var h = el("div","h","");
       h.appendChild(el("b","", e.name));
-      h.appendChild(el("span","chip grey", fmt(e.hours) + " h"));
-      c.appendChild(h);
-      c.appendChild(el("div","why", DAYS[e.day] + " · " + PROJECTS[e.p].code + " · " + e.profile));
+      if(e.kind === "allowance"){
+        var w = wt(e.code);
+        h.appendChild(el("span","chip grey", fmt(e.qty) + " " + w.unit));
+        c.appendChild(h);
+        c.appendChild(el("div","why", DAYS[e.day] + " · " + PROJECTS[e.p].code + " · " + w.name));
+      } else {
+        h.appendChild(el("span","chip grey", fmt(e.hours) + " h"));
+        c.appendChild(h);
+        var line = DAYS[e.day] + " · " + PROJECTS[e.p].code + " · " + e.profile;
+        if(e.beg !== null && e.beg !== undefined) line += " · " + fmtClock(e.beg) + "–" + fmtClock(e.end);
+        c.appendChild(el("div","why", line));
+      }
       c.appendChild(el("div","why", "CREATED_BY " + e.createdBy + " · ON_BEHALF_OF " + e.onBehalf));
       box.appendChild(c);
     });
@@ -1713,6 +1920,8 @@
   $("helpClose").onclick = function(){ $("dlgHelp").close(); };
   $("prevW").onclick = function(){ changeWeek(-1); };
   $("nextW").onclick = function(){ changeWeek(1); };
+  if($("prevW2")) $("prevW2").onclick = function(){ changeWeek(-1); };
+  if($("nextW2")) $("nextW2").onclick = function(){ changeWeek(1); };
 
   $("fTbl").onclick = function(){ setFmt(true); };
   $("fPay").onclick = function(){ setFmt(false); };
@@ -2094,6 +2303,10 @@
   if($("mSave")) $("mSave").onclick = saveMass;
   if($("mClear")) $("mClear").onclick = function(){ clearMass(); toast("Staged entries cleared. Nothing had been saved."); };
   if($("bSave")) $("bSave").onclick = saveBonus;
+  if($("mAllowCode")) $("mAllowCode").onchange = syncMassAllowForm;
+  if($("mAllowApply")) $("mAllowApply").onclick = applyMassAllow;
+  if($("mAllowSave")) $("mAllowSave").onclick = saveMassAllow;
+  if($("mAllowClear")) $("mAllowClear").onclick = function(){ clearMassAllow(); toast("Staged allowances cleared. Nothing had been saved."); };
 
   render();
 })();

@@ -41,9 +41,12 @@ Everything below works, with no server and no real data.
 
 **Team leader mass entry**
 - Scope is by project ownership only, never by line hierarchy: each project has one owner, and mass entry shows everyone allocated to that project regardless of who they report to in IT0001/OM. Rui Tavares is the example, he works on both Pedro Alves's project (AER-WFM) and Ana Ferreira's (BNK-2026)
-- Fill a project, a duration and the days, select people, apply. Nothing is saved until the leader reviews the grid
+- Has its own week navigator (same arrows and `←`/`→`), so switching weeks doesn't mean leaving the screen
+- A read-only grid shows what each person already has recorded this week, live as new hours are staged, so a day already at or past capacity is visible before saving anything on top of it
+- Fill a project, a duration or a start and end time, and the days, select people, apply. Duration fills people on a duration profile (`Z_CONS`), start/end fills people on `Z_BSRV`, in the same click, since a team can mix both companies. Nothing is saved until the leader reviews the grid
 - The save is partial on purpose: lines that fail keep their reason on screen, the rest are written
 - Every line keeps `CREATED_BY` and `ON_BEHALF_OF`. There is no self-confirmation step
+- Allowances can be mass entered too, staged as a list rather than a grid since each one is a single occurrence, not a per-day cell
 - The project owner records and approves the bonus in the same act, on the same screen
 
 **Period control**
@@ -65,7 +68,7 @@ Everything below works, with no server and no real data.
 - Field-by-field table, state chain through to transfer
 - Live generation of CATS records from the filled week, as a table or as a payload
 - Hours and allowances in the same record set: `CATSHOURS` with `BEGUZ` and `ENDUZ`, or `LGART` with `ANZHL`
-- The bonus amount travels in a customer field, because CATSDB is a quantity structure. `CAT6` transfers quantity, not value, so writing `IT2010 BETRG` needs an enhancement. The payload view shows this explicitly
+- The bonus amount goes to `CATSAMOUNT`, a native CATSDB field (CURR 13,2), not a customer-field workaround. Whether the standard `CAT6` transfer already maps it to `IT2010 BETRG` still needs confirming with the client
 
 ## Structure
 
@@ -107,8 +110,8 @@ There's no real data. Employee, projects, WBS, cost centers and absences are mad
 
 ## Known limits, by design
 
-- Week navigation is simulated, there's only one week
-- The bonus amount reaching `IT2010 BETRG` is shown as an open question in the payload, not solved. Two routes exist: a customer field in `CI_CATSDB` plus a BAdI on `CAT6`, or writing `IT2010` directly and leaving CATS out of the bonus
+- Week navigation covers four sample weeks (a posted one, one submitted, the current draft, and an upcoming empty one); going further back or forward than that is out of sample, not simulated
+- Whether the standard `CAT6` transfer maps `CATSAMOUNT` to `IT2010 BETRG` automatically, or needs configuring, is flagged as an open question in the payload, not solved
 - Without `ANTHROPIC_API_KEY` configured, the natural-language interpreter is deterministic, based on regular expressions. It recognizes duration, day and project prefix, and nothing else. See the next section to connect Claude
 - Each request to the assistant is independent, with no memory of the previous turn
 - There's no authentication or profiles, the user is fixed

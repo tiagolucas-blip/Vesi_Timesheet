@@ -167,7 +167,7 @@
         <div><code>E7</code><span>Bulk approval with exceptions singled out</span><em>Fiori elements List Report</em></div>
         <div><code>E10</code><span>Absences from the Leave Request, day blocking and partial capacity</span><em>read from Time Management</em></div>
         <div><code>E11</code><span>Conversational assistant with confirmation before saving</span><em>Joule capability</em></div>
-        <div><code>E12</code><span>Allowances against a project, wage type and quantity, bonus with an amount</span><em>CATSDB LGART and ANZHL</em></div>
+        <div><code>E12</code><span>Allowances against a project, wage type and quantity, bonus with an amount</span><em>CATSDB LGART, ANZHL and CATSAMOUNT</em></div>
         <div><code>E13</code><span>Start and end by data entry profile, derived from IT0001</span><em>BEGUZ and ENDUZ</em></div>
         <div><code>E14</code><span>Team leader mass entry with partial save and on-behalf-of trace</span><em>sap.ui.table with row states</em></div>
       </div>
@@ -179,7 +179,11 @@
   <section id="screen-team" hidden>
     <div class="pagehead">
       <div class="top">
-        <h1 style="font-size:19px; margin:0">Team entry</h1>
+        <div class="weeknav">
+          <button class="arrow" id="prevW2" aria-label="Previous week">&#8249;</button>
+          <span class="label" id="weekLabel2">Week 38, 14 to 20 Sep 2026</span>
+          <button class="arrow" id="nextW2" aria-label="Next week">&#8250;</button>
+        </div>
         <span class="chip blue" id="teamScope">Project team</span>
         <span class="chip grey" id="teamCount">0 people</span>
         <div class="spacer"></div>
@@ -199,13 +203,26 @@
       <div style="min-width:0; display:grid; gap:16px">
         <div class="panel">
           <header>
+            <h2>Already recorded this week</h2>
+            <span class="chip grey">Read-only</span>
+          </header>
+          <div class="tablescroll">
+            <div class="tsgrid team readonly" id="alreadyGrid"></div>
+          </div>
+          <div class="gridfoot"><span class="hint">From each person's own sheet or an earlier mass entry, plus whatever is staged below but not yet saved. Amber at 8h, red past it.</span></div>
+        </div>
+
+        <div class="panel">
+          <header>
             <h2>Fill several people at once</h2>
           </header>
           <div class="massbar">
             <label class="f"><span>Project</span><select id="mProj"></select></label>
             <label class="f"><span>Duration</span><input type="text" id="mDur" value="8" inputmode="decimal" placeholder="8"></label>
+            <label class="f"><span>Start, Z_BSRV</span><input type="text" id="mBeg" inputmode="numeric" placeholder="08:00"></label>
+            <label class="f"><span>End, Z_BSRV</span><input type="text" id="mEnd" inputmode="numeric" placeholder="17:00"></label>
             <div class="f mdayswrap"><span>Days</span>
-              <div class="mdays">
+              <div class="mdays mHoursDays">
                 <label class="mday"><input type="checkbox" value="0" checked>Mon</label>
                 <label class="mday"><input type="checkbox" value="1" checked>Tue</label>
                 <label class="mday"><input type="checkbox" value="2" checked>Wed</label>
@@ -221,7 +238,39 @@
           <div class="gridfoot">
             <button class="btn primary" id="mSave" disabled>Save staged entries</button>
             <button class="btn" id="mClear">Clear</button>
-            <span class="hint">Saving is partial. Lines that fail stay on screen with the reason.</span>
+            <span class="hint">Saving is partial. Lines that fail stay on screen with the reason. Duration fills people on a duration profile, Start/End fills people on Z_BSRV, in the same click.</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <header>
+            <h2>Allowances for selected people</h2>
+            <span class="chip grey" id="mAllowStagedCount">0 staged</span>
+          </header>
+          <div class="massbar">
+            <label class="f"><span>Wage type</span><select id="mAllowCode"></select></label>
+            <label class="f"><span>Quantity</span>
+              <div class="qtywrap"><input type="text" id="mAllowQty" inputmode="decimal" value="1"><span id="mAllowUnit">days</span></div>
+            </label>
+            <label class="f wide" id="mAllowNoteWrap"><span id="mAllowNoteLbl">Note</span><input type="text" id="mAllowNote" placeholder="Required for this allowance"></label>
+            <div class="f mdayswrap"><span>Days</span>
+              <div class="mdays mAllowDays">
+                <label class="mday"><input type="checkbox" value="0">Mon</label>
+                <label class="mday"><input type="checkbox" value="1">Tue</label>
+                <label class="mday"><input type="checkbox" value="2">Wed</label>
+                <label class="mday"><input type="checkbox" value="3">Thu</label>
+                <label class="mday"><input type="checkbox" value="4">Fri</label>
+                <label class="mday"><input type="checkbox" value="5">Sat</label>
+                <label class="mday"><input type="checkbox" value="6">Sun</label>
+              </div>
+            </div>
+            <button class="btn" id="mAllowApply">Stage for selected</button>
+          </div>
+          <div class="sugs" id="mAllowList"></div>
+          <div class="gridfoot">
+            <button class="btn primary" id="mAllowSave" disabled>Save staged allowances</button>
+            <button class="btn" id="mAllowClear">Clear</button>
+            <span class="hint">Uses the project chosen above. The bonus is recorded separately, in the panel below.</span>
           </div>
         </div>
 
@@ -345,7 +394,7 @@
         <table class="maptbl" id="catsTbl">
           <thead><tr>
             <th>PERNR</th><th>WORKDATE</th><th>CATSHOURS</th><th>BEGUZ</th><th>ENDUZ</th>
-            <th>LGART</th><th>ANZHL</th><th>LSTAR</th><th>RPROJ</th><th>LTXA1</th><th>STATUS</th>
+            <th>LGART</th><th>ANZHL</th><th>CATSAMOUNT</th><th>LSTAR</th><th>RPROJ</th><th>LTXA1</th><th>STATUS</th>
           </tr></thead>
           <tbody id="catsBody"></tbody>
         </table>
