@@ -132,6 +132,27 @@
   function projectsOf(leaderId){
     return [leaderById(leaderId).proj];
   }
+  /* Leaders own one project each, in one company: "acting as" only offers
+     leaders of the company IT0001 currently reads, the same rule Team
+     entry already applies to who counts as someone's team. */
+  function leadersForCompany(bukrs){
+    return LEADERS.filter(function(l){ return l.bukrs === bukrs; });
+  }
+  function renderLeaderOptions(){
+    var ls = $("leadSel");
+    if(!ls) return;
+    var opts = leadersForCompany(IT0001.bukrs);
+    if(opts.indexOf(leaderById(state.leader)) === -1 && opts.length){
+      state.leader = opts[0].id;
+    }
+    ls.innerHTML = "";
+    opts.forEach(function(l){
+      var o = document.createElement("option");
+      o.value = l.id; o.textContent = l.name + " · " + l.label;
+      ls.appendChild(o);
+    });
+    ls.value = state.leader;
+  }
   /* Hours the person already has recorded this week, from their own sheet or a
      previous mass entry, so the leader can see day load before staging more.
      Sample only: weeks already posted or submitted are treated as complete on
@@ -1700,6 +1721,8 @@
     WEEKS = bukrs === "PT02" ? WEEKS_PT02 : WEEKS_PT01;
     loadWeek(weekIdx);
     if(isClock()) seedClock();
+    renderLeaderOptions();
+    clearMass();
     render();
     var pf = profileFor(WORKDATES[0]);
     toast("IT0001 now reads " + bukrs + ". ZTIME_COMPANY_CFG maps it to " + pf.code + ": " + pf.fields.toLowerCase() + ".");
@@ -2351,12 +2374,7 @@
     }
     var ls = $("leadSel");
     if(ls){
-      LEADERS.forEach(function(l){
-        var o = document.createElement("option");
-        o.value = l.id; o.textContent = l.name + " · " + l.label;
-        ls.appendChild(o);
-      });
-      ls.value = state.leader;
+      renderLeaderOptions();
       ls.onchange = function(){
         state.leader = ls.value;
         var pj = $("mProj"); if(pj) pj.dataset.for = "";
