@@ -1280,32 +1280,62 @@
     });
   }
 
-  /* Same idea as renderAlreadyGrid, but for allowances: the Allowances tab
-     had nowhere to see what was already saved for the team this week short
-     of the on-behalf log on the right, which mixes hours and allowances
-     from every tab in one flat, unfiltered list. */
-  function renderAlreadyAllowList(members){
-    var box = $("alreadyAllowList");
-    if(!box) return;
-    var pernrs = members.map(function(m){ return m.pernr; });
-    var entries = state.massLog.filter(function(e){
-      return e.kind === "allowance" && pernrs.indexOf(e.pernr) !== -1 && WORKDATES.indexOf(e.date) !== -1;
-    });
-    box.innerHTML = "";
-    if(!entries.length){
-      box.appendChild(el("div","paused","No allowances recorded for this team yet."));
-      return;
-    }
-    entries.slice().sort(function(a,b){ return a.day - b.day; }).forEach(function(e){
-      var w = wt(e.code);
-      var c = el("div","abscard","");
-      var h = el("div","h","");
-      h.appendChild(el("b","", e.name));
-      h.appendChild(el("span","chip grey", fmt(e.qty) + " " + w.unit));
-      c.appendChild(h);
-      c.appendChild(el("div","why", DAYS[e.day] + " · " + w.name + " · " + PROJECTS[e.p].code));
-      if(e.note) c.appendChild(el("div","why", e.note));
-      box.appendChild(c);
+  /* One or more allowance lines for a single person/day cell, collapsed to
+     what fits a grid cell (total quantity, or a count when the lines don't
+     share a unit) with the full breakdown left for the title tooltip. Used
+     both for what's staged and for what's already saved, so the two grids
+     read the same way. */
+  function fmtAllowCell(lines){
+    if(!lines.length) return {text:"–", title:""};
+    var qty = lines.reduce(function(a,l){ return a + l.qty; }, 0);
+    var text = fmt(qty) + " " + (lines.length === 1 ? wt(lines[0].code).unit : "×" + lines.length);
+    var title = lines.map(function(l){
+      return wt(l.code).name + ": " + fmt(l.qty) + " " + wt(l.code).unit + " · " + PROJECTS[l.p].code + (l.note ? " (" + l.note + ")" : "");
+    }).join(", ");
+    return {text:text, title:title};
+  }
+
+  /* Same layout as renderAlreadyGrid (hours), so the leader reads both the
+     same way: a day-by-day grid instead of a flat card list. A cell can
+     still hide detail when a person has more than one wage type the same
+     day, that's what the tooltip is for. */
+  function renderAlreadyAllowGrid(members){
+    var wrap = $("alreadyAllowGrid");
+    if(!wrap) return;
+    wrap.innerHTML = "";
+    wrap.className = "tsgrid team readonly";
+
+    var head = document.createElement("div");
+    head.className = "row head";
+    head.appendChild(el("div","","Employee"));
+    DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
+    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",""));
+    wrap.appendChild(head);
+
+    members.forEach(function(m){
+      var entries = state.massLog.filter(function(e){
+        return e.kind === "allowance" && e.pernr === m.pernr && WORKDATES.indexOf(e.date) !== -1;
+      });
+      var row = document.createElement("div");
+      row.className = "row";
+      row.appendChild(el("div","rowmeta", m.name));
+      var units = {};
+      DAYS.forEach(function(d,i){
+        var lines = entries.filter(function(e){ return e.day === i; });
+        var info = fmtAllowCell(lines);
+        var cell = el("div","already-cell" + (i>4 ? " we" : ""), info.text);
+        if(lines.length){
+          cell.title = info.title;
+          lines.forEach(function(l){ units[wt(l.code).unit] = (units[wt(l.code).unit]||0) + l.qty; });
+        }
+        row.appendChild(cell);
+      });
+      var unitKeys = Object.keys(units);
+      var totTxt = unitKeys.length === 0 ? "–" : (unitKeys.length === 1 ? fmt(units[unitKeys[0]]) + " " + unitKeys[0] : entries.length + " lines");
+      row.appendChild(el("div","rowtot", totTxt));
+      row.appendChild(el("div","",""));
+      wrap.appendChild(row);
     });
   }
 
@@ -1334,7 +1364,7 @@
     }
 
     renderAlreadyGrid(members);
-    renderAlreadyAllowList(members);
+    renderAlreadyAllowGrid(members);
 
     wrap.innerHTML = "";
     var anyClock = members.some(function(m){ return profileFor(WORKDATES[0], m.bukrs).clock; });
@@ -1391,14 +1421,11 @@
              (not yet saved) for this person and day instead, so the leader
              sees it land here, not only in the list below. */
           var lines = state.stagedAllow.filter(function(a){ return a.pernr === m.pernr && a.day === i; });
-          var cell = el("div","allowcell" + (i>4 ? " we" : ""), "");
+          var info = fmtAllowCell(lines);
+          var cell = el("div","allowcell" + (i>4 ? " we" : ""), info.text);
           if(lines.length){
-            var qty = lines.reduce(function(a,l){ return a + l.qty; }, 0);
-            cell.textContent = fmt(qty) + " " + (lines.length === 1 ? wt(lines[0].code).unit : "×" + lines.length);
-            cell.title = lines.map(function(l){ return wt(l.code).name + ": " + fmt(l.qty) + " " + wt(l.code).unit + (l.note ? " (" + l.note + ")" : ""); }).join(", ") + " · staged, not saved";
+            cell.title = info.title + " · staged, not saved";
             cell.classList.add("pending");
-          } else {
-            cell.textContent = "–";
           }
           row.appendChild(cell);
           return;
@@ -2758,7 +2785,7 @@
        hours grid has nothing to say about allowances and vice versa. */
     var showAllow = tab === "allow";
     if($("alreadyHoursWrap")) $("alreadyHoursWrap").hidden = showAllow;
-    if($("alreadyAllowList")) $("alreadyAllowList").hidden = !showAllow;
+    if($("alreadyAllowWrap")) $("alreadyAllowWrap").hidden = !showAllow;
     if($("alreadyTitle")) $("alreadyTitle").textContent = showAllow ? "Allowances recorded this week" : "Already recorded this week";
     if($("alreadyHint")) $("alreadyHint").title = showAllow
       ? "Allowances already saved for this team this week, from each person's own sheet or an earlier mass entry."
