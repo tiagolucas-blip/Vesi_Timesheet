@@ -1385,6 +1385,24 @@
       row.appendChild(meta);
 
       st.h.forEach(function(v,i){
+        if(state.teamTab === "allow"){
+          /* The grid is shared across tabs so selection stays put, but on
+             Allowances it has nothing to do with hours: show what's staged
+             (not yet saved) for this person and day instead, so the leader
+             sees it land here, not only in the list below. */
+          var lines = state.stagedAllow.filter(function(a){ return a.pernr === m.pernr && a.day === i; });
+          var cell = el("div","allowcell" + (i>4 ? " we" : ""), "");
+          if(lines.length){
+            var qty = lines.reduce(function(a,l){ return a + l.qty; }, 0);
+            cell.textContent = fmt(qty) + " " + (lines.length === 1 ? wt(lines[0].code).unit : "×" + lines.length);
+            cell.title = lines.map(function(l){ return wt(l.code).name + ": " + fmt(l.qty) + " " + wt(l.code).unit + (l.note ? " (" + l.note + ")" : ""); }).join(", ") + " · staged, not saved";
+            cell.classList.add("pending");
+          } else {
+            cell.textContent = "–";
+          }
+          row.appendChild(cell);
+          return;
+        }
         var clock = profileFor(WORKDATES[i], m.bukrs).clock;
         if(clock){
           /* Z_BSRV is filled from the Start/End fields above, not per cell. An
@@ -1438,8 +1456,20 @@
         row.appendChild(inp);
       });
 
-      var tot = st.h.reduce(function(a,b){ return a+(b||0); },0);
-      row.appendChild(el("div","rowtot", tot ? fmt(tot) : "–"));
+      if(state.teamTab === "allow"){
+        var mLines = state.stagedAllow.filter(function(a){ return a.pernr === m.pernr; });
+        var totTxt = "–";
+        if(mLines.length){
+          var units = {};
+          mLines.forEach(function(l){ var u = wt(l.code).unit; units[u] = (units[u]||0) + l.qty; });
+          var unitKeys = Object.keys(units);
+          totTxt = unitKeys.length === 1 ? fmt(units[unitKeys[0]]) + " " + unitKeys[0] : mLines.length + " staged";
+        }
+        row.appendChild(el("div","rowtot", totTxt));
+      } else {
+        var tot = st.h.reduce(function(a,b){ return a+(b||0); },0);
+        row.appendChild(el("div","rowtot", tot ? fmt(tot) : "–"));
+      }
       var act = el("div","rowact","");
       if(st.err){
         var flag = el("span","errdot","!");
@@ -1453,7 +1483,12 @@
     var sel = members.filter(function(m){ return stagedOf(m.pernr).sel; }).length;
     var staged = members.reduce(function(a,m){ return a + stagedOf(m.pernr).h.reduce(function(x,y){ return x+(y||0); },0); },0);
     $("mSel").textContent = sel + " selected";
-    $("mStaged").innerHTML = fmt(staged) + "<small> h staged</small>";
+    if(state.teamTab === "allow"){
+      var n = state.stagedAllow.length;
+      $("mStaged").innerHTML = n + "<small> " + (n === 1 ? "line" : "lines") + " staged</small>";
+    } else {
+      $("mStaged").innerHTML = fmt(staged) + "<small> h staged</small>";
+    }
     $("mSave").disabled = staged === 0;
 
     renderMassLog();
@@ -2755,9 +2790,9 @@
     setPanelOpen("alreadyPanel", "alreadyTog", $("alreadyPanel").classList.contains("collapsed"));
   };
 
-  if($("ttHours")) $("ttHours").onclick = function(){ setTeamTab("hours"); };
-  if($("ttAllow")) $("ttAllow").onclick = function(){ setTeamTab("allow"); };
-  if($("ttBonus")) $("ttBonus").onclick = function(){ setTeamTab("bonus"); };
+  if($("ttHours")) $("ttHours").onclick = function(){ state.teamTab = "hours"; renderTeam(); };
+  if($("ttAllow")) $("ttAllow").onclick = function(){ state.teamTab = "allow"; renderTeam(); };
+  if($("ttBonus")) $("ttBonus").onclick = function(){ state.teamTab = "bonus"; renderTeam(); };
 
   render();
 })();
