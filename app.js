@@ -1308,23 +1308,32 @@
       st.h.forEach(function(v,i){
         var clock = profileFor(WORKDATES[i], m.bukrs).clock;
         if(clock){
-          /* Z_BSRV is filled from the Start/End fields above, not per cell, but
-             the leader still needs to see, per person and day, exactly what was
-             staged, project included, without waiting for the save log. */
-          var box = el("div","clockcell" + (i>4 ? " we" : ""), "");
+          /* Z_BSRV is filled from the Start/End fields above, not per cell. An
+             unstaged cell is just empty, not a form field waiting for input:
+             the only place to fill it is Apply to selected. Once staged, the
+             leader sees exactly what was recorded, project included, without
+             waiting for the save log. */
           var t = st.t[i];
+          if(!t){
+            var ph = el("div","cell computed" + (i>4 ? " we" : ""), "–");
+            ph.title = "Z_BSRV records start and end. Use the Start/End fields above, for the people this applies to.";
+            if(memberBlocked(m,i)){ ph.classList.add("abs"); ph.title = "Approved "+m.abs[i].toLowerCase(); }
+            if(!periodOpen(WORKDATES[i], m.bukrs)){ ph.classList.add("closed"); ph.title = "Closed period"; }
+            row.appendChild(ph);
+            return;
+          }
+          var box = el("div","clockcell" + (i>4 ? " we" : ""), "");
           ["b","e"].forEach(function(k){
             var tinp = document.createElement("input");
             tinp.type = "text";
             tinp.className = "tinp";
-            tinp.value = t ? fmtClock(t[k]) : "";
-            tinp.placeholder = k === "b" ? "start" : "end";
+            tinp.value = fmtClock(t[k]);
             tinp.disabled = true;
             tinp.setAttribute("aria-label", (k === "b" ? "Start time, " : "End time, ") + m.name + ", " + DAYS[i]);
             box.appendChild(tinp);
           });
           box.appendChild(el("div","cdur", v ? fmt(v) + " h" : "–"));
-          box.title = t ? (PROJECTS[leader.proj].code + " · " + fmtClock(t.b) + "–" + fmtClock(t.e)) : "Z_BSRV records start and end. Use the Start/End fields above, for the people this applies to.";
+          box.title = PROJECTS[leader.proj].code + " · " + fmtClock(t.b) + "–" + fmtClock(t.e);
           if(memberBlocked(m,i)){ box.classList.add("abs"); box.title = "Approved "+m.abs[i].toLowerCase(); }
           if(!periodOpen(WORKDATES[i], m.bukrs)){ box.classList.add("closed"); box.title = "Closed period"; }
           row.appendChild(box);
