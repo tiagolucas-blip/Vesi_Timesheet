@@ -2263,6 +2263,27 @@
     log.scrollTop = log.scrollHeight;
     return b;
   }
+  function sleep(ms){ return new Promise(function(resolve){ setTimeout(resolve, ms); }); }
+  /* A reply that lands the instant you hit send reads as canned, not
+     conversational. A short, slightly randomised pause plus a typing
+     bubble gives the exchange a human beat, matched to how long a person
+     takes to skim a message and start answering. */
+  function thinkingDelay(){ return sleep(450 + Math.random()*400); }
+  function showTyping(){
+    hideTyping();
+    var log = $("jlog");
+    var b = el("div","jmsg bot","");
+    b.id = "jtypingBubble";
+    var t = el("div","jtxt typing","");
+    t.appendChild(el("span","","")); t.appendChild(el("span","","")); t.appendChild(el("span","",""));
+    b.appendChild(t);
+    log.appendChild(b);
+    log.scrollTop = log.scrollHeight;
+  }
+  function hideTyping(){
+    var b = $("jtypingBubble");
+    if(b) b.remove();
+  }
   function botChips(list){
     var box = $("jchips");
     box.innerHTML = "";
@@ -2534,6 +2555,7 @@
     botSay("me", txt);
     botChips([]);
     chat.history.push({role:"user", content:txt});
+    showTyping();
 
     /* A card is already open waiting for confirmation: read this message as
        a correction to it first (checked here, ahead of Claude, so it holds
@@ -2542,13 +2564,17 @@
     if(chat.pending === "entry" && chat.draft){
       var fix = tryCorrectDraft(txt);
       if(fix){
+        await thinkingDelay();
+        hideTyping();
         offerEntry(fix.day, fix.dur, fix.p, fix.desc);
         chat.history.push({role:"assistant", content:"Updated the pending entry: " + fmt(fix.dur) + "h, " + PROJECTS[fix.p].name + ", " + DAYS[fix.day] + "."});
         return;
       }
     }
 
-    var intent = await askAssistant(txt);
+    var intentP = askAssistant(txt);
+    var intent = (await Promise.all([intentP, thinkingDelay()]))[0];
+    hideTyping();
     if(intent && botDispatch(intent)){
       chat.history.push({role:"assistant", content: intent.texto || ("Called " + intent.funcao + ".")});
       return;
