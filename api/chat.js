@@ -42,6 +42,7 @@ const FUNCTIONS = [
     }
   },
   { name: "consultar_semana", description: "Total registado, esperado e erros de validação", parameters: { type: "object", properties: {} } },
+  { name: "ir_para_equipa", description: "Mudar para o ecrã Team (mass entry), onde o líder lança horas, allowances ou bónus em massa para a equipa", parameters: { type: "object", properties: {} } },
   { name: "listar_ausencias", description: "Ausências da semana e capacidade por dia", parameters: { type: "object", properties: {} } },
   { name: "copiar_semana", description: "Copiar a estrutura da semana anterior, sem durações", parameters: { type: "object", properties: {} } },
   { name: "aplicar_sugestoes", description: "Aplicar as sugestões de confiança alta ainda por rever", parameters: { type: "object", properties: {} } },

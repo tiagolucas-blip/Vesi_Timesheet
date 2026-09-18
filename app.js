@@ -2324,8 +2324,13 @@
     botChips(["My absences","Submit the week"]);
   }
   function showHelp(){
-    botSay("bot","I can log hours, show the week's status, show your absences, copy last week, apply high-confidence suggestions, or submit the week. Just tell me what you need, in plain language, for example <span class=\"num\">2h BNK payroll testing yesterday</span>.");
+    botSay("bot","I can log hours, show the week's status, show your absences, copy last week, apply high-confidence suggestions, submit the week, or switch to Team (mass entry). Just tell me what you need, in plain language, for example <span class=\"num\">2h BNK payroll testing yesterday</span>.");
     botChips(["How many hours do I have?","My absences","Copy last week","Submit the week"]);
+  }
+  function goToTeamScreen(){
+    var b = document.querySelector('.nav button[data-screen="team"]');
+    if(b) b.click();
+    botSay("bot","Switched to Team (mass entry).");
   }
   function showSuggestionsPanel(){
     var vis = visibleSugs();
@@ -2482,6 +2487,7 @@
       case "listar_ausencias": showAbsences(); return true;
       case "consultar_semana": showWeekStatus(); return true;
       case "aplicar_sugestoes": offerApplyHighConfidence(); return true;
+      case "ir_para_equipa": goToTeamScreen(); return true;
       case "copiar_semana": offerCopyWeek(); return true;
       case "submeter_semana": offerSubmit(); return true;
       case "registar_horas":
@@ -2570,6 +2576,8 @@
     if(/copy|last week|previous week/.test(t)){ offerCopyWeek(); return; }
     /* submit */
     if(/submit|send the week|close the week/.test(t)){ offerSubmit(); return; }
+    /* team mass entry screen */
+    if(/mass entry|team entry|team screen|go to team|switch to team|open team/.test(t)){ goToTeamScreen(); return; }
 
     /* a request for every working day ("8h RTL-TT all days this week"),
        checked ahead of the single-day parser since it matches a duration
