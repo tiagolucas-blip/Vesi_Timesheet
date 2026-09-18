@@ -43,10 +43,36 @@ const FUNCTIONS = [
   },
   { name: "consultar_semana", description: "Total registado, esperado e erros de validação", parameters: { type: "object", properties: {} } },
   { name: "ir_para_equipa", description: "Mudar para o ecrã Team (mass entry), onde o líder lança horas, allowances ou bónus em massa para a equipa", parameters: { type: "object", properties: {} } },
+  { name: "ir_para_aprovacao", description: "Mudar para o ecrã Approval (manager), onde os timesheets da equipa são aprovados", parameters: { type: "object", properties: {} } },
+  { name: "ir_para_cats", description: "Mudar para o ecrã CATS mapping, a referência técnica do que cada ação grava no CATS/SAP", parameters: { type: "object", properties: {} } },
   { name: "listar_ausencias", description: "Ausências da semana e capacidade por dia", parameters: { type: "object", properties: {} } },
   { name: "copiar_semana", description: "Copiar a estrutura da semana anterior, sem durações", parameters: { type: "object", properties: {} } },
   { name: "aplicar_sugestoes", description: "Aplicar as sugestões de confiança alta ainda por rever", parameters: { type: "object", properties: {} } },
-  { name: "submeter_semana", description: "Libertar a semana para aprovação", parameters: { type: "object", properties: {} } }
+  { name: "submeter_semana", description: "Libertar a semana para aprovação", parameters: { type: "object", properties: {} } },
+  {
+    name: "registar_horas_equipa",
+    description: "Lançar horas em massa para um membro da equipa do líder atual (ecrã Team), ou para todos, contra o projeto do líder. Usar quando o pedido nomear outra pessoa, não quem está a escrever.",
+    parameters: {
+      type: "object",
+      properties: {
+        pessoa: { type: "string", description: "nome da pessoa da lista 'equipa' no contexto, ou 'todos' para a equipa toda" },
+        dia: { type: "string", description: "data ISO, YYYY-MM-DD" },
+        duracao_horas: { type: "number", description: "múltiplo de 0,25" }
+      },
+      required: ["pessoa", "dia", "duracao_horas"]
+    }
+  },
+  {
+    name: "aprovar",
+    description: "Aprovar, no ecrã Approval, o timesheet de uma pessoa da lista 'aprovacoes' no contexto, ou de todos os que não têm exceção. Nunca aprova uma linha com exceção, essa precisa de revisão individual no ecrã.",
+    parameters: {
+      type: "object",
+      properties: {
+        pessoa: { type: "string", description: "nome da pessoa da lista 'aprovacoes' no contexto, ou 'todos' para os timesheets sem exceção" }
+      },
+      required: ["pessoa"]
+    }
+  }
 ];
 
 function toClaudeTools() {
@@ -72,7 +98,9 @@ function buildSystemPrompt(contexto) {
     "Se o pedido não corresponder a nenhuma das funções (por exemplo, uma pergunta fora de âmbito), não chames nenhuma função e responde apenas em texto curto, em português de Portugal, sem inglês.",
     "Durações aceitam vírgula, dois pontos ou minutos, por exemplo 1,5, 1:30 ou 90m. Arredonda sempre a múltiplos de 15 minutos.",
     "O histórico da conversa, quando presente nas mensagens anteriores, mostra as tuas próprias respostas em texto simples, nunca uma chamada de função por resolver. Se o campo 'pedido_por_confirmar' do contexto estiver preenchido, há um cartão de confirmação em aberto no ecrã com esses dados exatos, ainda não gravado. Uma mensagem curta que só corrija parte disso (outro dia, outra duração, outro projeto) refere-se a esse mesmo pedido: chama 'registar_horas' outra vez, com o campo corrigido e os restantes exatamente como estavam em 'pedido_por_confirmar', em vez de pedires a frase toda de novo.",
-    "Contexto atual da semana, incluindo projetos onde a pessoa está alocada, ausências e capacidade por dia:",
+    "Além do próprio registo de horas, a app tem mais três ecrãs, e podes mudar para qualquer um deles com 'ir_para_equipa', 'ir_para_aprovacao' ou 'ir_para_cats'. Se a pessoa pedir para lançar horas em nome de outra pessoa (nomeando-a, nunca para si própria), usa 'registar_horas_equipa' com o nome exatamente como aparece na lista 'equipa' do contexto, ou 'todos' para a equipa toda; nunca inventes um nome fora dessa lista. Se pedir para aprovar um timesheet, usa 'aprovar' com o nome da lista 'aprovacoes', ou 'todos'; uma linha com 'warn' preenchido tem uma exceção e não é aprovável em massa, explica isso em vez de chamar a função para essa pessoa.",
+    "Fala como uma pessoa da equipa, não como um manual: frases curtas, diretas, sem repetir a pergunta antes de responder, sem “certamente!” nem floreados. Confirma o que vais fazer numa frase, não num parágrafo.",
+    "Contexto atual da semana, incluindo projetos onde a pessoa está alocada, ausências, capacidade por dia, a equipa do líder atual (se aplicável) e os timesheets pendentes de aprovação (se aplicável):",
     JSON.stringify(contexto || {}, null, 2)
   ].join("\n");
 }

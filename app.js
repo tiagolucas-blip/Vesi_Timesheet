@@ -2244,7 +2244,7 @@
     if(open){
       if(!chat.greeted){
         chat.greeted = true;
-        botSay("bot", "Hi Tiago. I can log hours, show the week's status, show your absences or submit the sheet. Tell me what you did, in plain language.");
+        botSay("bot", "Hi Tiago! I can log hours, for you or for the team, check the week, sort out absences, approve timesheets, or just take you to the right screen. What do you need?");
         botChips(["How many hours do I have?","My absences","2h BNK testing yesterday","Submit the week"]);
       }
       setTimeout(function(){ $("jinput").focus(); }, 60);
@@ -2345,14 +2345,17 @@
     botChips(["My absences","Submit the week"]);
   }
   function showHelp(){
-    botSay("bot","I can log hours, show the week's status, show your absences, copy last week, apply high-confidence suggestions, submit the week, or switch to Team (mass entry). Just tell me what you need, in plain language, for example <span class=\"num\">2h BNK payroll testing yesterday</span>.");
+    botSay("bot","A few things I can do: log your hours (<span class=\"num\">2h BNK payroll testing yesterday</span>), log for someone on your team (<span class=\"num\">4h for João today</span>), check the week or your absences, copy last week, apply high-confidence suggestions, submit the week, approve timesheets, or jump to Team, Approval or CATS mapping. Just say it in plain language.");
     botChips(["How many hours do I have?","My absences","Copy last week","Submit the week"]);
   }
-  function goToTeamScreen(){
-    var b = document.querySelector('.nav button[data-screen="team"]');
+  function goToScreen(key, label){
+    var b = document.querySelector('.nav button[data-screen="'+key+'"]');
     if(b) b.click();
-    botSay("bot","Switched to Team (mass entry).");
+    botSay("bot","Switched to "+label+".");
   }
+  function goToTeamScreen(){ goToScreen("team","Team (mass entry)"); }
+  function goToApprovalScreen(){ goToScreen("aprov","Approval (manager)"); }
+  function goToCatsScreen(){ goToScreen("cats","CATS mapping"); }
   function showSuggestionsPanel(){
     var vis = visibleSugs();
     botSay("bot", vis.length
@@ -2487,6 +2490,8 @@
             ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
             capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
             semana: {total: weekTotal(), esperado: weekCapacity(), erros: errors().length, submetida: state.submitted},
+            equipa: teamOf(state.leader).map(function(m){ return {nome: m.name, aprovado_bloqueado: !!m.locked}; }),
+            aprovacoes: state.approvals.map(function(a){ return {nome: a.who, tem_excecao: !!a.warn, nota: a.note || null, aprovado: !!a.approved}; }),
             pedido_por_confirmar: chat.pending === "entry" && chat.draft
               ? {dia: DAYS[chat.draft.day], duracao_horas: chat.draft.dur, projeto: PROJECTS[chat.draft.p].code.split("-")[0], descricao: chat.draft.desc}
               : null
@@ -2509,8 +2514,30 @@
       case "consultar_semana": showWeekStatus(); return true;
       case "aplicar_sugestoes": offerApplyHighConfidence(); return true;
       case "ir_para_equipa": goToTeamScreen(); return true;
+      case "ir_para_aprovacao": goToApprovalScreen(); return true;
+      case "ir_para_cats": goToCatsScreen(); return true;
       case "copiar_semana": offerCopyWeek(); return true;
       case "submeter_semana": offerSubmit(); return true;
+      case "registar_horas_equipa":
+        var ae = intent.argumentos || {};
+        var teamMembersE = teamOf(state.leader);
+        var targetsE = /^(todos|toda a equipa|equipa toda)$/i.test(String(ae.pessoa || "").trim())
+          ? teamMembersE
+          : teamMembersE.filter(function(m){ return m.name.toLowerCase().indexOf(String(ae.pessoa || "").toLowerCase()) !== -1; });
+        var dayIdxE = WORKDATES.indexOf(String(ae.dia || "").replace(/-/g,""));
+        var durE = round15(Number(ae.duracao_horas));
+        if(!targetsE.length || dayIdxE === -1 || !durE || durE <= 0){
+          botSay("bot", intent.texto || "I couldn't confirm who, which day or how many hours. Could you write it another way?");
+          botChips(["Help"]);
+          return true;
+        }
+        offerTeamEntry(targetsE, dayIdxE, durE);
+        return true;
+      case "aprovar":
+        var aa = intent.argumentos || {};
+        var isAll = /^(todos|toda a equipa|equipa toda)$/i.test(String(aa.pessoa || "").trim());
+        handleApprovalRequest(isAll ? "approve everyone" : "approve " + String(aa.pessoa || ""));
+        return true;
       case "registar_horas":
         var a = intent.argumentos || {};
         var dayIdx = WORKDATES.indexOf(String(a.dia || "").replace(/-/g,""));
@@ -2602,8 +2629,22 @@
     if(/copy|last week|previous week/.test(t)){ offerCopyWeek(); return; }
     /* submit */
     if(/submit|send the week|close the week/.test(t)){ offerSubmit(); return; }
-    /* team mass entry screen */
+    /* screen navigation */
     if(/mass entry|team entry|team screen|go to team|switch to team|open team/.test(t)){ goToTeamScreen(); return; }
+    if(/approval screen|go to approval|switch to approval|open approval/.test(t)){ goToApprovalScreen(); return; }
+    if(/cats mapping|cats screen|go to cats|switch to cats|open cats/.test(t)){ goToCatsScreen(); return; }
+
+    /* approve a timesheet, or the whole clean batch, from the Approval
+       screen's data, checked ahead of the self-entry parser since "approve"
+       never means a time entry */
+    if(/\bapprove\b/.test(t)){ handleApprovalRequest(txt); return; }
+
+    /* log hours for someone else's team, checked ahead of the self-entry
+       and whole-week parsers since a named target should never be read as
+       an entry for the person typing */
+    var teamMembers = teamOf(state.leader);
+    var tp = botParseTeamHours(txt, teamMembers);
+    if(tp){ offerTeamEntry(tp.members, tp.day, tp.dur); return; }
 
     /* a request for every working day ("8h RTL-TT all days this week"),
        checked ahead of the single-day parser since it matches a duration
@@ -2673,6 +2714,24 @@
   }
   var ALL_WEEK_RE = /\ball\s+days?\b|\bevery\s+day\b|\beach\s+day\b|\ball\s+week\b|\bwhole\s+week\b|\bfor\s+the\s+week\b/i;
 
+  /* Weekday token, "yesterday"/"today", or a calendar date, whichever is
+     found first. Returns null (no mention at all, caller keeps its own
+     default) or {day, match}, where day is -1 for a real date outside the
+     visible week, a signal the caller should treat as "can't place this". */
+  function matchDayMention(rest){
+    var m;
+    if((m = rest.match(/\byesterday\b/i))) return {day:1, match:m[0]};
+    if((m = rest.match(/\btoday\b/i))) return {day:2, match:m[0]};
+    var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+    for(var i=0; i<names.length; i++){
+      var re = new RegExp("\\b("+names[i]+")\\b","i");
+      if((m = rest.match(re))) return {day:i, match:m[0]};
+    }
+    var dmDate = parseDateMention(rest);
+    if(dmDate) return dmDate;
+    return null;
+  }
+
   /* assistant parser: duration, day and project */
   function botParse(txt){
     var rest = " " + txt + " ";
@@ -2681,28 +2740,146 @@
     rest = rest.replace(dm.match," ");
 
     var day = 2;
-    if(/\byesterday\b/i.test(rest)){ day = 1; rest = rest.replace(/\byesterday\b/i," "); }
-    else if(/\btoday\b/i.test(rest)){ day = 2; rest = rest.replace(/\btoday\b/i," "); }
-    else {
-      var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
-      var foundName = false;
-      for(var i=0; i<names.length; i++){
-        var re = new RegExp("\\b("+names[i]+")\\b","i");
-        if(re.test(rest)){ day = i; rest = rest.replace(re," "); foundName = true; break; }
-      }
-      if(!foundName){
-        var dmDate = parseDateMention(rest);
-        if(dmDate){
-          if(dmDate.day === -1) return null;
-          day = dmDate.day;
-          rest = rest.replace(dmDate.match," ");
-        }
-      }
+    var dayM = matchDayMention(rest);
+    if(dayM){
+      if(dayM.day === -1) return null;
+      day = dayM.day;
+      rest = rest.replace(dayM.match," ");
     }
     var pm = matchProject(rest);
     if(!pm) return null;
     rest = rest.replace(pm.match," ");
     return {dur:round15(dm.dur), day:day, p:pm.p, desc:rest.replace(/\s+/g," ").trim()};
+  }
+
+  /* "log 8h for João today" / "record 4h for everyone tomorrow": a mass
+     entry made through the assistant instead of the Team screen's own
+     form. Only fires when a colleague's name or "everyone"/"the team" is
+     explicitly present, so a normal self-entry never gets misread as one. */
+  function matchTeamTargets(rest, members){
+    var m = rest.match(/\bfor\s+(everyone|the\s+whole\s+team|the\s+team|all)\b/i);
+    if(m) return {list:members, match:m[0]};
+    for(var i=0; i<members.length; i++){
+      var first = members[i].name.split(" ")[0];
+      var re = new RegExp("\\bfor\\s+(the\\s+)?"+first+"\\b","i");
+      if((m = rest.match(re))) return {list:[members[i]], match:m[0]};
+    }
+    return null;
+  }
+  function botParseTeamHours(txt, members){
+    var rest = " " + txt + " ";
+    var dm = matchDuration(rest);
+    if(!dm || dm.dur <= 0) return null;
+    rest = rest.replace(dm.match," ");
+
+    var tgt = matchTeamTargets(rest, members);
+    if(!tgt) return null;
+    rest = rest.replace(tgt.match," ");
+
+    var day = 2;
+    var dayM = matchDayMention(rest);
+    if(dayM){
+      if(dayM.day === -1) return null;
+      day = dayM.day;
+    }
+    return {dur:round15(dm.dur), day:day, members:tgt.list};
+  }
+
+  /* Why a given member/day can't be staged, in the same words saveMass
+     itself would use, so a skip through the assistant reads the same as
+     one on screen. */
+  function teamEntrySkipReason(m, day, pIdx){
+    if(m.locked) return "week already approved";
+    if(m.projs.indexOf(pIdx) === -1) return "not allocated to that project";
+    if(memberBlocked(m, day)) return "approved " + (m.abs[day] || "absence").toLowerCase() + " that day";
+    if(!periodOpen(WORKDATES[day], m.bukrs)) return "period closed";
+    if(profileFor(WORKDATES[day], m.bukrs).clock) return "needs start/end, not a plain duration";
+    return "not eligible";
+  }
+  function offerTeamEntry(members, day, dur){
+    var leader = leaderById(state.leader);
+    var pIdx = leader.proj;
+    var pr = PROJECTS[pIdx];
+    var eligible = [], skipped = [];
+    members.forEach(function(m){
+      var blocked = m.locked || m.projs.indexOf(pIdx) === -1 || memberBlocked(m, day) || !periodOpen(WORKDATES[day], m.bukrs) || profileFor(WORKDATES[day], m.bukrs).clock;
+      if(blocked) skipped.push({m:m, reason:teamEntrySkipReason(m, day, pIdx)});
+      else eligible.push(m);
+    });
+    if(!eligible.length){
+      botSay("bot","Can't stage that: " + skipped.map(function(s){ return s.m.name.split(" ")[0] + " (" + s.reason + ")"; }).join(", ") + ".");
+      botChips(["How many hours do I have?","Help"]);
+      return;
+    }
+    var lines = eligible.map(function(m){ return [m.name, fmt(dur) + " h"]; });
+    if(skipped.length) lines.push(["Skipped", skipped.map(function(s){ return s.m.name.split(" ")[0] + " (" + s.reason + ")"; }).join(", ")]);
+    lines.push(["Day", DAYS[day]]);
+    lines.push(["Project", pr.name]);
+    botSay("bot","Stage and save this?", botCard(lines, "Stage and save", function(){
+      eligible.forEach(function(m){
+        var st = stagedOf(m.pernr);
+        st.t[day] = null;
+        st.h[day] = round15(dur);
+      });
+      renderTeam();
+      saveMass();
+      var names = eligible.map(function(m){ return m.name.split(" ")[0]; }).join(", ");
+      botSay("bot", fmt(dur) + " h staged and saved for " + names + ", " + DAYS[day] + ", " + pr.code + ".");
+      botChips(["How many hours do I have?","Help"]);
+    }));
+    chat.history.push({role:"assistant", content:"Proposed " + fmt(dur) + "h on " + DAYS[day] + " for " + eligible.map(function(m){return m.name;}).join(", ") + ". Waiting for confirmation."});
+  }
+
+  /* "approve João" / "approve everyone": mirrors exactly what the Approval
+     screen's own checkboxes + Approve button do, never more, so an
+     exception still can't be bulk-approved through the assistant either. */
+  function matchApprovalTargets(txt){
+    var t = txt.toLowerCase();
+    if(/\b(everyone|the\s+whole\s+team|the\s+team|all)\b/.test(t)) return {all:true};
+    var found = null;
+    state.approvals.forEach(function(a){
+      if(t.indexOf(a.who.split(" ")[0].toLowerCase()) !== -1) found = a;
+    });
+    return found ? {one:found} : null;
+  }
+  function handleApprovalRequest(txt){
+    var tgt = matchApprovalTargets(txt);
+    if(!tgt){
+      botSay("bot","Tell me who to approve, a name, or “approve everyone” for every timesheet without exceptions.");
+      botChips(["Help"]);
+      return;
+    }
+    if(tgt.all){
+      var clean = state.approvals.filter(function(a){ return !a.warn && !a.approved; });
+      if(!clean.length){
+        botSay("bot","Nothing to approve there, either everything's already approved or what's left has an exception that needs individual review.");
+        return;
+      }
+      botSay("bot","Approve these " + clean.length + " timesheets, no exceptions?", botCard(
+        clean.map(function(a){ return [a.who, fmt(a.tot) + " h"]; }),
+        "Approve all", function(){
+          clean.forEach(function(a){ a.approved = true; a.sel = false; });
+          renderApprovals();
+          botSay("bot", clean.length + " timesheets approved. Exceptions remain for individual review.");
+          botChips(["Help"]);
+        }
+      ));
+      return;
+    }
+    var a = tgt.one;
+    if(a.approved){ botSay("bot", a.who + "'s timesheet is already approved."); return; }
+    if(a.warn){
+      botSay("bot", a.who + "'s timesheet has an exception (" + a.note + ") and needs individual review on the Approval screen, that one can't be bulk-approved.");
+      return;
+    }
+    botSay("bot","Approve " + a.who + "'s timesheet?", botCard([
+      ["Project", a.proj], ["Total", fmt(a.tot) + " h"], ["In project", fmt(a.inproj) + " h"]
+    ], "Approve", function(){
+      a.approved = true; a.sel = false;
+      renderApprovals();
+      botSay("bot", a.who + "'s timesheet approved.");
+      botChips(["Help"]);
+    }));
   }
 
   /* Same reading as botParse, but for a request meant to repeat across every
