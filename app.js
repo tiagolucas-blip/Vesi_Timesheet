@@ -171,7 +171,11 @@
      covers a few weeks: a posted week, a submitted one, the current draft, and an
      upcoming one, so week navigation has something real to show. */
   var ABSTATUS = {approved:"Approved", pending:"Pending request"};
-  var WEEKS = [
+  /* Sample weeks are per company, keyed by the same num/start so the
+     week navigator stays aligned: switching IT0001 is opening the sheet
+     as someone assigned to that company, projects and absences included,
+     not just a different input layout. */
+  var WEEKS_PT01 = [
     { num:36, start:"20260831", submitted:true,
       absences:[],
       rows:[
@@ -225,6 +229,61 @@
       ]
     }
   ];
+  var WEEKS_PT02 = [
+    { num:36, start:"20260831", submitted:true,
+      absences:[],
+      rows:[
+        {id:501, p:4, desc:"Elevator preventive maintenance", h:[4,4,4,4,4,0,0], origin:"Manual"},
+        {id:502, p:3, desc:"Site safety briefing", h:[1,0,1,0,0,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[]
+    },
+    { num:37, start:"20260907", submitted:true,
+      absences:[
+        {id:"pb37a", day:3, type:"Medical appointment", awart:"0210", hours:2, status:"approved", src:"Request 4500205"}
+      ],
+      rows:[
+        {id:503, p:4, desc:"HVAC filter replacement round", h:[4,4,4,0,4,0,0], origin:"Manual"},
+        {id:504, p:4, desc:"Fire safety systems check", h:[0,0,0,3,0,0,0], origin:"Suggested"}
+      ],
+      allow:[],
+      sugs:[]
+    },
+    { num:38, start:"20260914", submitted:false,
+      absences:[
+        {id:"pb1", day:2, type:"Medical appointment", awart:"0210", hours:4, status:"approved", src:"Request 4500219"},
+        {id:"pb2", day:4, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500221"},
+        {id:"pb3", day:3, type:"Vacation", awart:"0100", hours:8, status:"pending", src:"Request 4500230"}
+      ],
+      rows:[
+        {id:511, p:4, desc:"Boiler room inspection", h:[3,4,0,2,0,0,0], origin:"Manual"},
+        {id:512, p:4, desc:"Elevator call-out repair", h:[2,0,3,0,0,0,0], origin:"Suggested"},
+        {id:513, p:3, desc:"", h:[1,0,0,1.5,0,0,0], origin:"Manual"}
+      ],
+      allow:[
+        {id:"pal1", day:0, p:4, code:"TURNO", qty:1,  amount:0, note:"", by:"00104567", onBehalf:"00104567"},
+        {id:"pal2", day:0, p:4, code:"KMS",   qty:42, amount:0, note:"Depot to hospital campus and back", by:"00104567", onBehalf:"00104567"}
+      ],
+      sugs:[
+        {id:"ps1", hours:2.5, day:2, p:4, why:"3 work orders closed in the maintenance log", conf:"hi", desc:"Follow-up repairs"},
+        {id:"ps2", hours:1.5, day:3, p:4, why:"12 changes in the maintenance ticket system", conf:"hi", desc:"HVAC configuration"},
+        {id:"ps3", hours:2, day:4, p:4, why:"4 tickets handled in Cloud ALM", conf:"mid", desc:"Post-inspection fixes"},
+        {id:"ps4", hours:1, day:4, p:3, why:"Block with no attributable signal", conf:"low", desc:""}
+      ]
+    },
+    { num:39, start:"20260921", submitted:false,
+      absences:[
+        {id:"pb39a", day:0, type:"Vacation", awart:"0100", hours:8, status:"pending", src:"Request 4500255"}
+      ],
+      rows:[],
+      allow:[],
+      sugs:[
+        {id:"ps5", hours:2, day:1, p:4, why:"2 work orders on the maintenance calendar", conf:"hi", desc:"Facilities steering follow-up"}
+      ]
+    }
+  ];
+  var WEEKS = WEEKS_PT01;
   var weekIdx = 2;
   var ABSENCES = WEEKS[weekIdx].absences;
   WORKDATES = datesFor(WEEKS[weekIdx].start);
@@ -1635,7 +1694,11 @@
     }
   }
   function switchCompany(bukrs){
+    if(bukrs === IT0001.bukrs) return;
+    saveCurrentWeek();
     IT0001.bukrs = bukrs;
+    WEEKS = bukrs === "PT02" ? WEEKS_PT02 : WEEKS_PT01;
+    loadWeek(weekIdx);
     if(isClock()) seedClock();
     render();
     var pf = profileFor(WORKDATES[0]);
