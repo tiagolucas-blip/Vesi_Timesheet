@@ -12,7 +12,7 @@ body = (ROOT / "body.html").read_text(encoding="utf-8").strip()
 
 TITLE = "Timesheet Fiori Prototype"
 FONTS = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
-         'family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600'
+         'family=Poppins:wght@600;700;800&family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600'
          '&family=IBM+Plex+Mono:wght@400;500&display=swap">')
 
 index = f"""<!doctype html>

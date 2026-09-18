@@ -9,7 +9,7 @@
     --crit:#AE1717; --crit-soft:#FBE5E5;
     --shadow:0 1px 2px rgba(22,33,45,.08), 0 8px 24px rgba(22,33,45,.06);
     --radius:6px;
-    --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+    --f-display:"Poppins","Archivo","Helvetica Neue",Arial,sans-serif;
     --f-body:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
     --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
   }
@@ -82,8 +82,8 @@
   .pagehead .top{display:flex; align-items:center; gap:12px; flex-wrap:wrap}
   .weeknav{display:flex; align-items:center; gap:4px}
   .weeknav .label{font-family:var(--f-display); font-size:17px; font-weight:600; padding:0 6px}
-  .arrow{width:30px; height:30px; border-radius:var(--radius); border:1px solid var(--line); background:var(--surface); color:var(--ink-2); display:grid; place-items:center}
-  .arrow:hover{background:var(--surface-2)}
+  .arrow{width:30px; height:30px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--brand-mark); font-weight:700; display:grid; place-items:center}
+  .arrow:hover{background:var(--surface-2); border-color:var(--brand-mark)}
   .chip{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; border-radius:999px; padding:3px 10px; border:1px solid transparent}
   .chip.blue{background:var(--accent-soft); color:var(--accent-ink); border-color:var(--accent-soft)}
   .chip.green{background:var(--good-soft); color:var(--good)}
@@ -132,7 +132,7 @@
   .cell::placeholder{color:transparent}
   .rowtot{border-left:1px solid var(--line-soft); display:grid; place-items:center; text-align:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-weight:500}
   .rowact{display:grid; place-items:center}
-  .rowact button{background:none; border:none; color:var(--ink-3); font-size:16px; line-height:1; padding:4px; border-radius:4px}
+  .rowact button{background:none; border:none; color:var(--ink-3); font-size:16px; line-height:1; padding:4px; border-radius:50%}
   .rowact button:hover{color:var(--crit); background:var(--crit-soft)}
   .row.totals{background:var(--surface-2); border-bottom:none; border-top:1px solid var(--line); font-weight:600}
   .row.totals .rowmeta{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); align-content:center}
