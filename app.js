@@ -2,15 +2,21 @@
   "use strict";
 
   var DAYS = [];
+  /* bukrs ties a project to the company it belongs to, so staffing stays
+     thematically consistent: a payroll or WFM engagement is consulting
+     work (PT01), a facilities engagement is building solutions (PT02).
+     null means shared, open internal work, not tied to either theme. */
   var PROJECTS = [
-    {code:"BNK-2026", wbs:"BNK-2026.1.3", name:"Banking, Payroll and ECP", act:"Functional consulting", proj:true,
+    {code:"BNK-2026", wbs:"BNK-2026.1.3", name:"Banking, Payroll and ECP", act:"Functional consulting", proj:true, bukrs:"PT01",
      sap:{rproj:"BNK-2026.1.3", lstar:"CONS01", skostl:"PT4010", rkostl:"", aufnr:""}},
-    {code:"RTL-TT", wbs:"RTL-TT.2.1", name:"Retail, Time Tracking", act:"Functional consulting", proj:true,
+    {code:"RTL-TT", wbs:"RTL-TT.2.1", name:"Retail, Time Tracking", act:"Functional consulting", proj:true, bukrs:"PT01",
      sap:{rproj:"RTL-TT.2.1", lstar:"CONS01", skostl:"PT4010", rkostl:"", aufnr:""}},
-    {code:"AER-WFM", wbs:"AER-WFM.4.2", name:"Airports, WFM rollout", act:"Project management", proj:true,
+    {code:"AER-WFM", wbs:"AER-WFM.4.2", name:"Airports, WFM rollout", act:"Project management", proj:true, bukrs:"PT01",
      sap:{rproj:"AER-WFM.4.2", lstar:"PMGT01", skostl:"PT4010", rkostl:"", aufnr:""}},
-    {code:"AXI-INT", wbs:"", name:"Internal, pre-sales and training", act:"Administrative", proj:false,
-     sap:{rproj:"", lstar:"ADMIN1", skostl:"PT4010", rkostl:"PT4010", aufnr:""}}
+    {code:"AXI-INT", wbs:"", name:"Internal, pre-sales and training", act:"Administrative", proj:false, bukrs:null,
+     sap:{rproj:"", lstar:"ADMIN1", skostl:"PT4010", rkostl:"PT4010", aufnr:""}},
+    {code:"HSP-FAC", wbs:"HSP-FAC.1.1", name:"Hospital campus, facilities maintenance", act:"Field service", proj:true, bukrs:"PT02",
+     sap:{rproj:"HSP-FAC.1.1", lstar:"MAINT01", skostl:"PT4010", rkostl:"", aufnr:""}}
   ];
   var PERNR = "00104567";
   var WORKDATES = [];
@@ -25,11 +31,11 @@
      is controlled by the profile, not by code in this application. */
   var COMPANIES = [
     {bukrs:"PT01", name:"Consulting and digital services"},
-    {bukrs:"PT02", name:"Building service and maintenance"}
+    {bukrs:"PT02", name:"Building solutions and maintenance"}
   ];
   var PROFILES = {
-    Z_CONS:{code:"Z_CONS", name:"Consultants",      clock:false, overnight:false, fields:"Date, project, duration"},
-    Z_BSRV:{code:"Z_BSRV", name:"Building Service", clock:true,  overnight:true,  fields:"Date, project, start, end, computed duration"}
+    Z_CONS:{code:"Z_CONS", name:"Consultants",       clock:false, overnight:false, fields:"Date, project, duration"},
+    Z_BSRV:{code:"Z_BSRV", name:"Building Solutions", clock:true,  overnight:true,  fields:"Date, project, start, end, computed duration"}
   };
   var ZTIME_COMPANY_CFG = [
     {bukrs:"PT01", begda:"20200101", endda:"99991231", profile:"Z_CONS"},
@@ -106,7 +112,7 @@
     {id:"RN", name:"Ricardo Nunes", label:"Project owner, RTL-TT",  proj:1, bukrs:"PT01"},
     {id:"PA", name:"Pedro Alves",   label:"Project owner, AER-WFM", proj:2, bukrs:"PT01"},
     {id:"AF", name:"Ana Ferreira",  label:"Project owner, BNK-2026", proj:0, bukrs:"PT01"},
-    {id:"CP", name:"Carlos Pinto",  label:"Project owner, AXI-INT", proj:3, bukrs:"PT02"}
+    {id:"CP", name:"Carlos Pinto",  label:"Project owner, HSP-FAC", proj:4, bukrs:"PT02"}
   ];
   var TEAM = [
     {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", projs:[0,3], abs:{}, already:[8,8,4,0,0,0,0]},
@@ -114,9 +120,9 @@
     {pernr:"00104503", name:"Inês Braga",     role:"Junior consultant", bukrs:"PT01", projs:[1,3], abs:{}, locked:true, already:[8,8,8,8,8,0,0]},
     {pernr:"00104504", name:"Rui Tavares",    role:"Consultant",        bukrs:"PT01", projs:[0,2], abs:{}, already:[8,0,8,0,0,0,0]},
     {pernr:"00104505", name:"Sofia Marques",  role:"Architect",         bukrs:"PT01", projs:[2],   abs:{2:"Medical appointment"}, already:[0,4,4,8,0,0,0]},
-    {pernr:"00104510", name:"Nuno Dias",      role:"Technician",        bukrs:"PT02", projs:[3],   abs:{}, already:[8,8,0,0,0,0,0]},
-    {pernr:"00104511", name:"Hélder Rocha",   role:"Technician",        bukrs:"PT02", projs:[3],   abs:{}, already:[0,0,8,8,8,0,0]},
-    {pernr:"00104512", name:"Hugo Matos",     role:"Technician",        bukrs:"PT02", projs:[3],   abs:{1:"Vacation"}, already:[8,0,8,8,0,0,0]}
+    {pernr:"00104510", name:"Nuno Dias",      role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[8,8,0,0,0,0,0]},
+    {pernr:"00104511", name:"Hélder Rocha",   role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[0,0,8,8,8,0,0]},
+    {pernr:"00104512", name:"Hugo Matos",     role:"Technician",        bukrs:"PT02", projs:[4],   abs:{1:"Vacation"}, already:[8,0,8,8,0,0,0]}
   ];
   function leaderById(id){ return LEADERS.filter(function(l){ return l.id === id; })[0] || LEADERS[0]; }
   function teamOf(leaderId){
