@@ -160,9 +160,20 @@
      authored gaps in TEAM[].already, deliberately including someone already
      at capacity so the "day already full" case is visible without more clicks. */
   function alreadyHoursFor(m, weekNum){
-    if(weekNum >= 39) return [0,0,0,0,0,0,0];
-    if(weekNum === 38) return m.already || [0,0,0,0,0,0,0];
-    return [0,1,2,3,4].reduce(function(acc,d){ acc[d] = m.abs[d] ? 0 : 8; return acc; }, [0,0,0,0,0,0,0]);
+    var base;
+    if(weekNum >= 39) base = [0,0,0,0,0,0,0];
+    else if(weekNum === 38) base = (m.already || [0,0,0,0,0,0,0]).slice();
+    else base = [0,1,2,3,4].reduce(function(acc,d){ acc[d] = m.abs[d] ? 0 : 8; return acc; }, [0,0,0,0,0,0,0]);
+    /* the sample "already" figures are a static baseline and never move;
+       without this, saving a mass entry made the read-only grid look like
+       the save had been lost the moment it succeeded, since staged (now 0)
+       was the only thing that had ever added to that baseline. */
+    state.massLog.forEach(function(e){
+      if(e.kind !== "hours" || e.pernr !== m.pernr) return;
+      var idx = WORKDATES.indexOf(e.date);
+      if(idx !== -1) base[idx] += e.hours;
+    });
+    return base;
   }
 
   var WEEKDAY_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
