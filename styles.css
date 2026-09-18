@@ -281,6 +281,8 @@
   .payload{font-family:var(--f-mono); font-size:12px; white-space:pre; overflow-x:auto; padding:14px; margin:0; color:var(--ink-2); background:var(--surface-2); border-top:1px solid var(--line-soft); line-height:1.6}
   /* ausências */
   .row.head div{display:grid; gap:2px}
+  .row.head .dname, .row.head .dnum{white-space:nowrap}
+  .row.head .dnum{font-weight:400; opacity:.75}
   .dayabs{font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); background:var(--surface-3); border-radius:3px; padding:1px 3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; border:none}
   .dayabs.full{background:var(--crit-soft); color:var(--crit)}
   .dayabs.pend{background:var(--warn-soft); color:var(--warn)}

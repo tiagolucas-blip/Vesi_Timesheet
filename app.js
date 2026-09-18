@@ -192,6 +192,14 @@
   function daysFor(dates){
     return dates.map(function(wd,i){ return WEEKDAY_ABBR[i] + " " + (+wd.slice(6,8)); });
   }
+  /* Builds the weekday name and date number as two separate lines, always,
+     so every column header wraps the same way regardless of how wide each
+     abbreviation happens to render (natural text wrap broke that: some
+     day+number pairs fit one line, others didn't, at the same 58px width). */
+  function appendDayLabel(cell, i){
+    cell.appendChild(el("span","dname", WEEKDAY_ABBR[i]));
+    cell.appendChild(el("span","dnum", "" + (+WORKDATES[i].slice(6,8))));
+  }
   function weekLabelFor(dates, num){
     var s = dates[0], e = dates[6];
     var sD = +s.slice(6,8), sM = +s.slice(4,6)-1, eD = +e.slice(6,8), eM = +e.slice(4,6)-1, y = s.slice(0,4);
@@ -609,7 +617,7 @@
     head.appendChild(el("div","","Project, WBS and activity"));
     DAYS.forEach(function(d,i){
       var c = el("div", i>4?"we":"", "");
-      c.appendChild(el("span","", d));
+      appendDayLabel(c, i);
       var ap = absOn(i,"approved")[0], pe = absOn(i,"pending")[0];
       if(ap) c.appendChild(dayAbsBadge(ap, capacity(i) === 0 ? ap.type : "half day", capacity(i) === 0 ? " full" : ""));
       else if(pe) c.appendChild(dayAbsBadge(pe, "pending", " pend"));
@@ -1244,7 +1252,7 @@
     var head = document.createElement("div");
     head.className = "row head";
     head.appendChild(el("div","","Employee"));
-    DAYS.forEach(function(d,i){ head.appendChild(el("div", i>4?"we":"", d)); });
+    DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
     head.appendChild(el("div","","Total"));
     head.appendChild(el("div","",""));
     wrap.appendChild(head);
@@ -1343,7 +1351,7 @@
     var head = document.createElement("div");
     head.className = "row head";
     head.appendChild(el("div","","Employee"));
-    DAYS.forEach(function(d,i){ head.appendChild(el("div", i>4?"we":"", d)); });
+    DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
     head.appendChild(el("div","","Total"));
     head.appendChild(el("div","",""));
     wrap.appendChild(head);
