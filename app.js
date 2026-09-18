@@ -1258,7 +1258,8 @@
     renderAlreadyGrid(members);
 
     wrap.innerHTML = "";
-    wrap.className = "tsgrid team";
+    var anyClock = members.some(function(m){ return profileFor(WORKDATES[0], m.bukrs).clock; });
+    wrap.className = "tsgrid team" + (anyClock ? " clock" : "");
 
     var head = document.createElement("div");
     head.className = "row head";
@@ -1294,29 +1295,46 @@
 
       st.h.forEach(function(v,i){
         var clock = profileFor(WORKDATES[i], m.bukrs).clock;
+        if(clock){
+          /* Z_BSRV is filled from the Start/End fields above, not per cell, but
+             the leader still needs to see, per person and day, exactly what was
+             staged, project included, without waiting for the save log. */
+          var box = el("div","clockcell" + (i>4 ? " we" : ""), "");
+          var t = st.t[i];
+          ["b","e"].forEach(function(k){
+            var tinp = document.createElement("input");
+            tinp.type = "text";
+            tinp.className = "tinp";
+            tinp.value = t ? fmtClock(t[k]) : "";
+            tinp.placeholder = k === "b" ? "start" : "end";
+            tinp.disabled = true;
+            tinp.setAttribute("aria-label", (k === "b" ? "Start time, " : "End time, ") + m.name + ", " + DAYS[i]);
+            box.appendChild(tinp);
+          });
+          box.appendChild(el("div","cdur", v ? fmt(v) + " h" : "–"));
+          box.title = t ? (PROJECTS[leader.proj].code + " · " + fmtClock(t.b) + "–" + fmtClock(t.e)) : "Z_BSRV records start and end. Use the Start/End fields above, for the people this applies to.";
+          if(memberBlocked(m,i)){ box.classList.add("abs"); box.title = "Approved "+m.abs[i].toLowerCase(); }
+          if(!periodOpen(WORKDATES[i], m.bukrs)){ box.classList.add("closed"); box.title = "Closed period"; }
+          row.appendChild(box);
+          return;
+        }
         var inp = document.createElement("input");
         inp.type = "text";
-        inp.className = "cell" + (i>4 ? " we" : "") + (clock ? " computed" : "");
+        inp.className = "cell" + (i>4 ? " we" : "");
         inp.value = v ? fmt(v) : "";
         inp.inputMode = "decimal";
-        inp.disabled = clock || m.locked || memberBlocked(m,i) || !periodOpen(WORKDATES[i], m.bukrs);
-        if(clock){
-          inp.title = "Z_BSRV records start and end. Use the Start/End fields above, for the people this applies to.";
-          inp.setAttribute("aria-label","Computed duration for "+m.name+", "+DAYS[i]);
-        } else {
-          inp.setAttribute("aria-label","Hours for "+m.name+", "+DAYS[i]);
-        }
+        inp.disabled = m.locked || memberBlocked(m,i) || !periodOpen(WORKDATES[i], m.bukrs);
+        inp.title = v ? (PROJECTS[leader.proj].code + " · " + fmt(v) + " h") : "";
+        inp.setAttribute("aria-label","Hours for "+m.name+", "+DAYS[i]);
         if(memberBlocked(m,i)){ inp.classList.add("abs"); inp.title = "Approved "+m.abs[i].toLowerCase(); }
         if(!periodOpen(WORKDATES[i], m.bukrs)){ inp.classList.add("closed"); inp.title = "Closed period"; }
-        if(!clock){
-          inp.addEventListener("change", function(){
-            var parsed = parseDur(inp.value);
-            if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”."); renderTeam(); return; }
-            st.h[i] = round15(parsed);
-            st.t[i] = null;
-            renderTeam();
-          });
-        }
+        inp.addEventListener("change", function(){
+          var parsed = parseDur(inp.value);
+          if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”."); renderTeam(); return; }
+          st.h[i] = round15(parsed);
+          st.t[i] = null;
+          renderTeam();
+        });
         row.appendChild(inp);
       });
 
