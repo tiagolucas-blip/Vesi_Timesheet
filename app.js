@@ -2524,14 +2524,22 @@
         var targetsE = /^(todos|toda a equipa|equipa toda)$/i.test(String(ae.pessoa || "").trim())
           ? teamMembersE
           : teamMembersE.filter(function(m){ return m.name.toLowerCase().indexOf(String(ae.pessoa || "").toLowerCase()) !== -1; });
-        var dayIdxE = WORKDATES.indexOf(String(ae.dia || "").replace(/-/g,""));
-        var durE = round15(Number(ae.duracao_horas));
-        if(!targetsE.length || dayIdxE === -1 || !durE || durE <= 0){
-          botSay("bot", intent.texto || "I couldn't confirm who, which day or how many hours. Could you write it another way?");
+        var rawDaysE = Array.isArray(ae.dias) && ae.dias.length ? ae.dias : (ae.dia ? [ae.dia] : []);
+        var daysE = rawDaysE
+          .map(function(d){ return WORKDATES.indexOf(String(d).replace(/-/g,"")); })
+          .filter(function(i){ return i !== -1; });
+        var clockE = null;
+        if(ae.hora_inicio && ae.hora_fim){
+          var bE = parseClock(ae.hora_inicio), eE = parseClock(ae.hora_fim);
+          if(!isNaN(bE) && bE !== null && !isNaN(eE) && eE !== null) clockE = {b:bE, e:eE};
+        }
+        var durE = clockE ? null : round15(Number(ae.duracao_horas));
+        if(!targetsE.length || !daysE.length || (!clockE && (!durE || durE <= 0))){
+          botSay("bot", intent.texto || "I couldn't confirm who, which day(s) or the hours. Could you write it another way?");
           botChips(["Help"]);
           return true;
         }
-        offerTeamEntry(targetsE, dayIdxE, durE);
+        offerTeamEntry(targetsE, daysE, durE, clockE);
         return true;
       case "aprovar":
         var aa = intent.argumentos || {};
@@ -2657,7 +2665,7 @@
        an entry for the person typing */
     var teamMembers = teamOf(state.leader);
     var tp = botParseTeamHours(txt, teamMembers);
-    if(tp){ offerTeamEntry(tp.members, tp.day, tp.dur); return; }
+    if(tp){ offerTeamEntry(tp.members, tp.days, tp.dur, tp.clock); return; }
 
     /* a request for every working day ("8h RTL-TT all days this week"),
        checked ahead of the single-day parser since it matches a duration
@@ -2779,68 +2787,123 @@
     }
     return null;
   }
+  /* "from 08:00 till 14:00" / "08:00 to 14h00": a clock window, for
+     Z_BSRV people, read before falling back to a plain duration so it
+     isn't misread as one (a bare "08:00" would otherwise parse as an
+     8-hour duration through matchDuration's H:MM pattern). */
+  function matchClockRange(rest){
+    var m = rest.match(/\bfrom\s+(\d{1,2}(?:[:.h]\d{2})?)\s*(?:to|till|until|-|–)\s*(\d{1,2}(?:[:.h]\d{2})?)\b/i);
+    if(!m) return null;
+    var b = parseClock(m[1]), e = parseClock(m[2]);
+    if(b === null || e === null || isNaN(b) || isNaN(e)) return null;
+    return {b:b, e:e, match:m[0]};
+  }
+
+  /* "September 16, 17 and 18" / "Monday, Tuesday and Wednesday": more than
+     one day in the same request. Falls back to matchDayMention (single
+     day, or today by default) when no list is found. */
+  function matchDaysMention(rest){
+    var monthListRe = new RegExp("\\b("+MONTHS.join("|")+")\\s+(\\d{1,2}(?:\\s*(?:,|and)\\s*\\d{1,2})*)\\b","i");
+    var mm = rest.match(monthListRe);
+    if(mm){
+      var month = MONTHS.indexOf(mm[1].toLowerCase())+1;
+      var nums = mm[2].match(/\d{1,2}/g).map(Number);
+      var days = [];
+      nums.forEach(function(dd){
+        for(var i=0; i<WORKDATES.length; i++){
+          if(+WORKDATES[i].slice(6,8) === dd && +WORKDATES[i].slice(4,6) === month){ days.push(i); break; }
+        }
+      });
+      if(days.length) return {days:days};
+    }
+    var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+    var found = [];
+    names.forEach(function(n,i){
+      var re = new RegExp("\\b"+n+"\\b","gi"), m2;
+      while((m2 = re.exec(rest))) found.push({i:i, idx:m2.index});
+    });
+    if(found.length){
+      found.sort(function(a,b){ return a.idx - b.idx; });
+      var seen = {}, days2 = [];
+      found.forEach(function(f){ if(!seen[f.i]){ seen[f.i] = true; days2.push(f.i); } });
+      return {days:days2};
+    }
+    var single = matchDayMention(rest);
+    if(single) return single.day === -1 ? {invalid:true} : {days:[single.day]};
+    return null;
+  }
+
   function botParseTeamHours(txt, members){
     var rest = " " + txt + " ";
-    var dm = matchDuration(rest);
-    if(!dm || dm.dur <= 0) return null;
-    rest = rest.replace(dm.match," ");
+    var clock = matchClockRange(rest);
+    var dm = null;
+    if(clock){ rest = rest.replace(clock.match," "); }
+    else {
+      dm = matchDuration(rest);
+      if(!dm || dm.dur <= 0) return null;
+      rest = rest.replace(dm.match," ");
+    }
 
     var tgt = matchTeamTargets(rest, members);
     if(!tgt) return null;
     rest = rest.replace(tgt.match," ");
 
-    var day = 2;
-    var dayM = matchDayMention(rest);
-    if(dayM){
-      if(dayM.day === -1) return null;
-      day = dayM.day;
-    }
-    return {dur:round15(dm.dur), day:day, members:tgt.list};
+    var dmn = matchDaysMention(rest);
+    if(dmn && dmn.invalid) return null;
+    var days = dmn ? dmn.days : [2];
+    return {members:tgt.list, days:days, dur: clock ? null : round15(dm.dur), clock:clock};
   }
 
-  /* Why a given member/day can't be staged, in the same words saveMass
-     itself would use, so a skip through the assistant reads the same as
-     one on screen. */
-  function teamEntrySkipReason(m, day, pIdx){
-    if(m.locked) return "week already approved";
-    if(m.projs.indexOf(pIdx) === -1) return "not allocated to that project";
-    if(memberBlocked(m, day)) return "approved " + (m.abs[day] || "absence").toLowerCase() + " that day";
-    if(!periodOpen(WORKDATES[day], m.bukrs)) return "period closed";
-    if(profileFor(WORKDATES[day], m.bukrs).clock) return "needs start/end, not a plain duration";
-    return "not eligible";
-  }
-  function offerTeamEntry(members, day, dur){
+  /* Drives the same form the Team screen's "Fill several people at once"
+     panel uses (project, duration or start/end, day checkboxes, then
+     Apply and Save), so a chat-staged entry goes through exactly the same
+     validation as a manually staged one, mixed clock/duration teams and
+     absences/closed periods included, instead of a second copy of that
+     logic that could drift from the real one. */
+  function offerTeamEntry(members, days, dur, clock){
     var leader = leaderById(state.leader);
     var pIdx = leader.proj;
     var pr = PROJECTS[pIdx];
-    var eligible = [], skipped = [];
-    members.forEach(function(m){
-      var blocked = m.locked || m.projs.indexOf(pIdx) === -1 || memberBlocked(m, day) || !periodOpen(WORKDATES[day], m.bukrs) || profileFor(WORKDATES[day], m.bukrs).clock;
-      if(blocked) skipped.push({m:m, reason:teamEntrySkipReason(m, day, pIdx)});
-      else eligible.push(m);
-    });
-    if(!eligible.length){
-      botSay("bot","Can't stage that: " + skipped.map(function(s){ return s.m.name.split(" ")[0] + " (" + s.reason + ")"; }).join(", ") + ".");
+    var locked = members.filter(function(m){ return m.locked; });
+    var selected = members.filter(function(m){ return !m.locked; });
+    if(!selected.length){
+      botSay("bot","Can't stage that: " + locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ") + ".");
       botChips(["How many hours do I have?","Help"]);
       return;
     }
-    var lines = eligible.map(function(m){ return [m.name, fmt(dur) + " h"]; });
-    if(skipped.length) lines.push(["Skipped", skipped.map(function(s){ return s.m.name.split(" ")[0] + " (" + s.reason + ")"; }).join(", ")]);
-    lines.push(["Day", DAYS[day]]);
-    lines.push(["Project", pr.name]);
+    var dayLabel = days.map(function(d){ return DAYS[d]; }).join(", ");
+    var amountLabel = clock ? (fmtClock(clock.b) + "–" + fmtClock(clock.e)) : (fmt(dur) + " h");
+    var lines = [
+      ["People", selected.map(function(m){ return m.name; }).join(", ")],
+      ["Days", dayLabel],
+      [clock ? "Time" : "Duration each", amountLabel],
+      ["Project", pr.name]
+    ];
+    if(locked.length) lines.push(["Skipped", locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ")]);
     botSay("bot","Stage and save this?", botCard(lines, "Stage and save", function(){
-      eligible.forEach(function(m){
-        var st = stagedOf(m.pernr);
-        st.t[day] = null;
-        st.h[day] = round15(dur);
+      teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
+      selected.forEach(function(m){ stagedOf(m.pernr).sel = true; });
+      if($("mDur")) $("mDur").value = clock ? "" : String(dur);
+      if($("mBeg")) $("mBeg").value = clock ? fmtClock(clock.b) : "";
+      if($("mEnd")) $("mEnd").value = clock ? fmtClock(clock.e) : "";
+      Array.prototype.forEach.call(document.querySelectorAll(".mHoursDays input"), function(c){
+        c.checked = days.indexOf(+c.value) !== -1;
       });
-      renderTeam();
+      var beforeLog = state.massLog.length;
+      applyMass();
       saveMass();
-      var names = eligible.map(function(m){ return m.name.split(" ")[0]; }).join(", ");
-      botSay("bot", fmt(dur) + " h staged and saved for " + names + ", " + DAYS[day] + ", " + pr.code + ".");
+      var savedPernrs = {};
+      state.massLog.slice(beforeLog).forEach(function(e){ savedPernrs[e.pernr] = true; });
+      var saved = selected.filter(function(m){ return savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
+      var notSaved = selected.filter(function(m){ return !savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
+      var msg = saved.length
+        ? "Staged and saved for " + saved.join(", ") + ", " + dayLabel + ", " + pr.code + "."
+        : "Nothing was actually saved.";
+      if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it this way (wrong profile for that field, absence, or closed period), the reason is on the Team screen.";
+      botSay("bot", msg);
       botChips(["How many hours do I have?","Help"]);
     }));
-    chat.history.push({role:"assistant", content:"Proposed " + fmt(dur) + "h on " + DAYS[day] + " for " + eligible.map(function(m){return m.name;}).join(", ") + ". Waiting for confirmation."});
+    chat.history.push({role:"assistant", content:"Proposed " + amountLabel + " on " + dayLabel + " for " + selected.map(function(m){return m.name;}).join(", ") + ". Waiting for confirmation."});
   }
 
   /* "approve João" / "approve everyone": mirrors exactly what the Approval

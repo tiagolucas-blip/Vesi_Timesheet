@@ -56,10 +56,13 @@ const FUNCTIONS = [
       type: "object",
       properties: {
         pessoa: { type: "string", description: "nome da pessoa da lista 'equipa' no contexto, ou 'todos' para a equipa toda" },
-        dia: { type: "string", description: "data ISO, YYYY-MM-DD" },
-        duracao_horas: { type: "number", description: "múltiplo de 0,25" }
+        dia: { type: "string", description: "data ISO, YYYY-MM-DD, para um único dia" },
+        dias: { type: "array", items: { type: "string" }, description: "lista de datas ISO, YYYY-MM-DD, quando o pedido cobrir mais do que um dia; usar em vez de 'dia'" },
+        duracao_horas: { type: "number", description: "múltiplo de 0,25. Usar para quem regista por duração simples (a maioria); não usar junto com hora_inicio/hora_fim" },
+        hora_inicio: { type: "string", description: "HH:MM, só para quem regista por relógio (perfil Z_BSRV); usar em vez de duracao_horas" },
+        hora_fim: { type: "string", description: "HH:MM, só para quem regista por relógio (perfil Z_BSRV)" }
       },
-      required: ["pessoa", "dia", "duracao_horas"]
+      required: ["pessoa"]
     }
   },
   {
@@ -98,7 +101,7 @@ function buildSystemPrompt(contexto) {
     "Se o pedido não corresponder a nenhuma das funções (por exemplo, uma pergunta fora de âmbito), não chames nenhuma função e responde apenas em texto curto, em português de Portugal, sem inglês.",
     "Durações aceitam vírgula, dois pontos ou minutos, por exemplo 1,5, 1:30 ou 90m. Arredonda sempre a múltiplos de 15 minutos.",
     "O histórico da conversa, quando presente nas mensagens anteriores, mostra as tuas próprias respostas em texto simples, nunca uma chamada de função por resolver. Se o campo 'pedido_por_confirmar' do contexto estiver preenchido, há um cartão de confirmação em aberto no ecrã com esses dados exatos, ainda não gravado. Uma mensagem curta que só corrija parte disso (outro dia, outra duração, outro projeto) refere-se a esse mesmo pedido: chama 'registar_horas' outra vez, com o campo corrigido e os restantes exatamente como estavam em 'pedido_por_confirmar', em vez de pedires a frase toda de novo.",
-    "Além do próprio registo de horas, a app tem mais três ecrãs, e podes mudar para qualquer um deles com 'ir_para_equipa', 'ir_para_aprovacao' ou 'ir_para_cats'. Se a pessoa pedir para lançar horas em nome de outra pessoa (nomeando-a, nunca para si própria), usa 'registar_horas_equipa' com o nome exatamente como aparece na lista 'equipa' do contexto, ou 'todos' para a equipa toda; nunca inventes um nome fora dessa lista. Se pedir para aprovar um timesheet, usa 'aprovar' com o nome da lista 'aprovacoes', ou 'todos'; uma linha com 'warn' preenchido tem uma exceção e não é aprovável em massa, explica isso em vez de chamar a função para essa pessoa.",
+    "Além do próprio registo de horas, a app tem mais três ecrãs, e podes mudar para qualquer um deles com 'ir_para_equipa', 'ir_para_aprovacao' ou 'ir_para_cats'. Se a pessoa pedir para lançar horas em nome de outra pessoa (nomeando-a, nunca para si própria), usa 'registar_horas_equipa' com o nome exatamente como aparece na lista 'equipa' do contexto, ou 'todos' para a equipa toda; nunca inventes um nome fora dessa lista. Usa 'dias' (lista) em vez de 'dia' quando o pedido cobrir mais do que uma data. A maioria das pessoas regista por duração simples ('duracao_horas'); só usa 'hora_inicio'/'hora_fim' quando o pedido der explicitamente uma janela de horas ('das 8 às 14', 'from 08:00 to 14:00'), nunca os dois ao mesmo tempo. Se pedir para aprovar um timesheet, usa 'aprovar' com o nome da lista 'aprovacoes', ou 'todos'; uma linha com 'warn' preenchido tem uma exceção e não é aprovável em massa, explica isso em vez de chamar a função para essa pessoa.",
     "Fala como uma pessoa da equipa, não como um manual: frases curtas, diretas, sem repetir a pergunta antes de responder, sem “certamente!” nem floreados. Confirma o que vais fazer numa frase, não num parágrafo.",
     "Contexto atual da semana, incluindo projetos onde a pessoa está alocada, ausências, capacidade por dia, a equipa do líder atual (se aplicável) e os timesheets pendentes de aprovação (se aplicável):",
     JSON.stringify(contexto || {}, null, 2)
