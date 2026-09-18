@@ -170,13 +170,14 @@
         <div class="panel collapsed" id="alreadyPanel">
           <header>
             <button type="button" class="pTog" id="alreadyTog" aria-expanded="false" aria-label="Expand already recorded">&#9656;</button>
-            <h2>Already recorded this week</h2>
+            <h2 id="alreadyTitle">Already recorded this week</h2>
             <span class="chip grey">Read-only</span>
           </header>
-          <div class="tablescroll">
+          <div class="tablescroll" id="alreadyHoursWrap">
             <div class="tsgrid team readonly" id="alreadyGrid"></div>
           </div>
-          <div class="gridfoot"><button type="button" class="hinttip" title="From each person's own sheet or an earlier mass entry, plus whatever is staged below but not yet saved. Amber at 8h, red past it.">?</button></div>
+          <div class="sugs" id="alreadyAllowList" hidden></div>
+          <div class="gridfoot"><button type="button" class="hinttip" id="alreadyHint" title="From each person's own sheet or an earlier mass entry, plus whatever is staged below but not yet saved. Amber at 8h, red past it.">?</button></div>
         </div>
 
         <div class="seg teamtabs" role="group" aria-label="Mass entry section">

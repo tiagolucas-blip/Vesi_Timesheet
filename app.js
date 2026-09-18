@@ -1272,6 +1272,35 @@
     });
   }
 
+  /* Same idea as renderAlreadyGrid, but for allowances: the Allowances tab
+     had nowhere to see what was already saved for the team this week short
+     of the on-behalf log on the right, which mixes hours and allowances
+     from every tab in one flat, unfiltered list. */
+  function renderAlreadyAllowList(members){
+    var box = $("alreadyAllowList");
+    if(!box) return;
+    var pernrs = members.map(function(m){ return m.pernr; });
+    var entries = state.massLog.filter(function(e){
+      return e.kind === "allowance" && pernrs.indexOf(e.pernr) !== -1 && WORKDATES.indexOf(e.date) !== -1;
+    });
+    box.innerHTML = "";
+    if(!entries.length){
+      box.appendChild(el("div","paused","No allowances recorded for this team yet."));
+      return;
+    }
+    entries.slice().sort(function(a,b){ return a.day - b.day; }).forEach(function(e){
+      var w = wt(e.code);
+      var c = el("div","abscard","");
+      var h = el("div","h","");
+      h.appendChild(el("b","", e.name));
+      h.appendChild(el("span","chip grey", fmt(e.qty) + " " + w.unit));
+      c.appendChild(h);
+      c.appendChild(el("div","why", DAYS[e.day] + " · " + w.name + " · " + PROJECTS[e.p].code));
+      if(e.note) c.appendChild(el("div","why", e.note));
+      box.appendChild(c);
+    });
+  }
+
   function renderTeam(){
     var wrap = $("teamGrid");
     if(!wrap) return;
@@ -1297,6 +1326,7 @@
     }
 
     renderAlreadyGrid(members);
+    renderAlreadyAllowList(members);
 
     wrap.innerHTML = "";
     var anyClock = members.some(function(m){ return profileFor(WORKDATES[0], m.bukrs).clock; });
@@ -2681,6 +2711,15 @@
       var b = $(buttons[k]);
       if(b) b.setAttribute("aria-pressed", k === tab ? "true" : "false");
     });
+    /* "Already recorded" switches what it shows with the active tab: the
+       hours grid has nothing to say about allowances and vice versa. */
+    var showAllow = tab === "allow";
+    if($("alreadyHoursWrap")) $("alreadyHoursWrap").hidden = showAllow;
+    if($("alreadyAllowList")) $("alreadyAllowList").hidden = !showAllow;
+    if($("alreadyTitle")) $("alreadyTitle").textContent = showAllow ? "Allowances recorded this week" : "Already recorded this week";
+    if($("alreadyHint")) $("alreadyHint").title = showAllow
+      ? "Allowances already saved for this team this week, from each person's own sheet or an earlier mass entry."
+      : "From each person's own sheet or an earlier mass entry, plus whatever is staged below but not yet saved. Amber at 8h, red past it.";
   }
 
   if($("allowAdd")) $("allowAdd").onclick = openAllow;
