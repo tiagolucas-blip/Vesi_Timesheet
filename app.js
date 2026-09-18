@@ -2616,6 +2616,19 @@
   function botHandleLocal(txt){
     var t = txt.toLowerCase();
 
+    /* greeting, no task in it: a short human reply, not the parsing-failure
+       message. Checked as a whole-message match so "hi, log 2h BNK today"
+       still falls through to the real parsers below. */
+    if(/^\s*(hi|hello|hey|hiya|good (morning|afternoon|evening)|ol[aá]|oi|bom dia|boa tarde|boa noite)[!.,\s]*$/i.test(txt)){
+      var greetings = [
+        "Hey! What do you need, logging hours, checking the week, or something else?",
+        "Hi there. Tell me what you need and I'll sort it.",
+        "Hello! Hours to log, or something to check?"
+      ];
+      botSay("bot", greetings[Math.floor(Math.random()*greetings.length)]);
+      botChips(["How many hours do I have?","My absences","Help"]);
+      return;
+    }
     /* help */
     if(/\bhelp\b|what can you do|what do you do|how does this work/.test(t)){ showHelp(); return; }
     /* absences */
