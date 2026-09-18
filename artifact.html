@@ -51,18 +51,11 @@
           <div class="bar"><i id="kProjBar" class="ok" style="width:0%"></i></div>
         </div>
         <div class="kpi">
-          <span class="k">Absences</span>
-          <span class="v" id="kAbs">0.0<small> h deducted</small></span>
-        </div>
-        <div class="kpi">
-          <span class="k">Empty working days</span>
-          <span class="v" id="kZero">0</span>
-        </div>
-        <div class="kpi">
           <span class="k">Validation</span>
           <span class="v" style="font-size:15px" id="kVal">No errors</span>
         </div>
       </div>
+      <p class="kpinote" id="kExtra">0.0 h absences deducted &middot; 0 empty working days</p>
     </div>
 
     <div class="cols">
@@ -84,13 +77,13 @@
               <button class="btn" id="addRow">Add row</button>
               <button class="btn" id="copyWeek">Copy previous week <kbd>C</kbd></button>
               <button class="btn" id="tplBtn">Apply template</button>
-              <span class="hint">Accepts <span class="num">1.5</span> &middot; <span class="num">1:30</span> &middot; <span class="num">90m</span>. Enter moves down, Tab moves across.</span>
+              <button type="button" class="hinttip" title="Accepts 1.5 · 1:30 · 90m. Enter moves down, Tab moves across.">?</button>
             </div>
           </div>
 
           <div id="viewCal" hidden>
             <div class="calscroll"><div class="cal" id="cal"></div></div>
-            <div class="gridfoot"><span class="hint">Click an empty slot to log time that day. Absences and public holidays are not editable.</span></div>
+            <div class="gridfoot"><button type="button" class="hinttip" title="Click an empty slot to log time that day. Absences and public holidays are not editable.">?</button></div>
           </div>
         </div>
 
@@ -101,21 +94,10 @@
       </div>
 
       <div style="display:grid; gap:16px; min-width:0">
-      <aside class="panel" id="absPanel">
-        <header>
-          <h2>Absences this week</h2>
-          <span class="chip grey">Leave Request</span>
-        </header>
-        <div class="sugs" id="absList"></div>
-        <div class="privacy">
-          Absences are read from the leave request and cannot be edited here. An approved full day closes that day to time entry; a half day reduces capacity.
-        </div>
-      </aside>
-
       <aside class="panel" id="allowPanel">
         <header>
           <h2>Allowances</h2>
-          <span class="chip grey" id="allowCount">0 allowances</span>
+          <span class="chip grey" id="allowCount" style="margin-left:auto">0 allowances</span>
         </header>
         <div class="sugs" id="allowList"></div>
         <div class="gridfoot">
@@ -128,6 +110,7 @@
 
       <aside class="panel" id="sugPanel">
         <header>
+          <button type="button" class="pTog" id="sugTog" aria-expanded="true" aria-label="Collapse suggestions">&#9662;</button>
           <h2>Suggestions this week</h2>
           <button class="btn sm" id="acceptHi">Accept high-confidence ones</button>
         </header>
@@ -140,8 +123,8 @@
       </div>
     </div>
 
-    <div class="specmap">
-      <h2>How this prototype maps to the specification</h2>
+    <details class="specmap">
+      <summary><h2>How this prototype maps to the specification</h2></summary>
       <p>Each screen below corresponds to a section of the specification document, so refinement with the development team happens on the same vocabulary.</p>
       <div class="maplist">
         <div><code>E1</code><span>Weekly grid with inline editing, day and row totals, copy week</span><em>sap.ui.table.Table</em></div>
@@ -157,7 +140,7 @@
         <div><code>E13</code><span>Start and end by data entry profile, derived from IT0001</span><em>BEGUZ and ENDUZ</em></div>
         <div><code>E14</code><span>Team leader mass entry with partial save and on-behalf-of trace</span><em>sap.ui.table with row states</em></div>
       </div>
-    </div>
+    </details>
   </section>
 
 
@@ -187,18 +170,34 @@
 
     <div class="cols">
       <div style="min-width:0; display:grid; gap:16px">
-        <div class="panel">
+        <div class="panel collapsed" id="alreadyPanel">
           <header>
+            <button type="button" class="pTog" id="alreadyTog" aria-expanded="false" aria-label="Expand already recorded">&#9656;</button>
             <h2>Already recorded this week</h2>
             <span class="chip grey">Read-only</span>
           </header>
           <div class="tablescroll">
             <div class="tsgrid team readonly" id="alreadyGrid"></div>
           </div>
-          <div class="gridfoot"><span class="hint">From each person's own sheet or an earlier mass entry, plus whatever is staged below but not yet saved. Amber at 8h, red past it.</span></div>
+          <div class="gridfoot"><button type="button" class="hinttip" title="From each person's own sheet or an earlier mass entry, plus whatever is staged below but not yet saved. Amber at 8h, red past it.">?</button></div>
         </div>
 
-        <div class="panel">
+        <div class="seg teamtabs" role="group" aria-label="Mass entry section">
+          <button id="ttHours" aria-pressed="true">Hours</button>
+          <button id="ttAllow" aria-pressed="false">Allowances</button>
+          <button id="ttBonus" aria-pressed="false">Bonus</button>
+        </div>
+
+        <div class="panel" id="teamGridPanel">
+          <header>
+            <h2>Team</h2>
+          </header>
+          <div class="tablescroll">
+            <div class="tsgrid team" id="teamGrid"></div>
+          </div>
+        </div>
+
+        <div class="panel" id="hoursPanel">
           <header>
             <h2>Fill several people at once</h2>
           </header>
@@ -220,17 +219,14 @@
             </div>
             <button class="btn" id="mApply">Apply to selected</button>
           </div>
-          <div class="tablescroll">
-            <div class="tsgrid team" id="teamGrid"></div>
-          </div>
           <div class="gridfoot">
             <button class="btn primary" id="mSave" disabled>Save staged entries</button>
             <button class="btn" id="mClear">Clear</button>
-            <span class="hint">Saving is partial. Lines that fail stay on screen with the reason. Duration fills people on a duration profile, Start/End fills people on Z_BSRV, in the same click.</span>
+            <button type="button" class="hinttip" title="Saving is partial. Lines that fail stay on screen with the reason. Duration fills people on a duration profile, Start/End fills people on Z_BSRV, in the same click.">?</button>
           </div>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="teamAllowPanel" hidden>
           <header>
             <h2>Allowances for selected people</h2>
             <span class="chip grey" id="mAllowStagedCount">0 staged</span>
@@ -258,7 +254,7 @@
           <div class="gridfoot">
             <button class="btn primary" id="mAllowSave" disabled>Save staged allowances</button>
             <button class="btn" id="mAllowClear">Clear</button>
-            <span class="hint">Uses the project chosen above. The bonus is recorded separately, in the panel below.</span>
+            <button type="button" class="hinttip" title="Uses the project chosen above. The bonus is recorded separately, in the Bonus tab.">?</button>
           </div>
         </div>
 
@@ -326,7 +322,7 @@
           <tbody id="apBody"></tbody>
         </table>
       </div>
-      <div class="gridfoot"><span class="hint">Bulk approval is only available for rows without warnings. Rejection requires a reason, per the SAP standard.</span></div>
+      <div class="gridfoot"><button type="button" class="hinttip" title="Bulk approval is only available for rows without warnings. Rejection requires a reason, per the SAP standard.">?</button></div>
     </div>
   </section>
 
@@ -390,7 +386,7 @@
         </table>
       </div>
       <pre class="payload" id="catsPayload" hidden></pre>
-      <div class="gridfoot"><span class="hint">Generated live from the grid on the <strong>My week</strong> screen. <span class="num">LTXA1</span> is truncated to 40 characters, the field's real limit.</span></div>
+      <div class="gridfoot"><button type="button" class="hinttip" title="Generated live from the grid on the My week screen. LTXA1 is truncated to 40 characters, the field's real limit.">?</button></div>
     </div>
   </section>
 </div>
@@ -437,6 +433,7 @@
 </form></dialog>
 
 <div class="toasts" id="toasts"></div>
+<div class="abstip" id="absTip" hidden></div>
 
 <!-- dialogs -->
 <dialog id="dlgQuick"><form class="dlg" method="dialog">
