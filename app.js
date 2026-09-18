@@ -1259,7 +1259,15 @@
 
     wrap.innerHTML = "";
     var anyClock = members.some(function(m){ return profileFor(WORKDATES[0], m.bukrs).clock; });
+    var anyDur = members.some(function(m){ return !profileFor(WORKDATES[0], m.bukrs).clock; });
     wrap.className = "tsgrid team" + (anyClock ? " clock" : "");
+    /* Only show the fields this team can actually use: an all-Z_CONS team has
+       nothing to do with Start/End, an all-Z_BSRV team has nothing to do with
+       Duration. Both stayed visible regardless before, which read as broken
+       when neither field did anything for the team on screen. */
+    if($("mDurWrap")) $("mDurWrap").hidden = !anyDur;
+    if($("mBegWrap")) $("mBegWrap").hidden = !anyClock;
+    if($("mEndWrap")) $("mEndWrap").hidden = !anyClock;
 
     var head = document.createElement("div");
     head.className = "row head";
@@ -1287,6 +1295,10 @@
       var code = document.createElement("code"); code.textContent = m.pernr; p.appendChild(code);
       meta.appendChild(p);
       var sub = m.role + " · " + m.bukrs + " · " + profileFor(WORKDATES[0], m.bukrs).code;
+      var absDays = Object.keys(m.abs).map(Number).sort(function(a,b){ return a-b; });
+      if(absDays.length){
+        sub += " · " + absDays.map(function(d){ return DAYS[d] + " " + m.abs[d].toLowerCase(); }).join(", ");
+      }
       if(m.locked) sub += " · week already approved";
       var s = el("div","s", sub);
       if(m.locked) s.style.color = "var(--warn)";
