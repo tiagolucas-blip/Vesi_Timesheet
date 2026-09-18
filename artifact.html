@@ -94,29 +94,17 @@
       </div>
 
       <div style="display:grid; gap:16px; min-width:0">
-      <aside class="panel" id="absAllowPanel">
+      <aside class="panel" id="allowPanel">
         <header>
-          <div class="seg" role="group" aria-label="Absences or allowances">
-            <button id="vAbsTab" aria-pressed="true">Absences</button>
-            <button id="vAllowTab" aria-pressed="false">Allowances</button>
-          </div>
-          <span class="chip grey" id="absCountChip" style="margin-left:auto">0 absences</span>
-          <span class="chip grey" id="allowCount" hidden>0 allowances</span>
+          <h2>Allowances</h2>
+          <span class="chip grey" id="allowCount" style="margin-left:auto">0 allowances</span>
         </header>
-        <div id="absBody">
-          <div class="sugs" id="absList"></div>
-          <div class="privacy">
-            Absences are read from the leave request and cannot be edited here. An approved full day closes that day to time entry; a half day reduces capacity.
-          </div>
+        <div class="sugs" id="allowList"></div>
+        <div class="gridfoot">
+          <button class="btn" id="allowAdd">Add allowance</button>
         </div>
-        <div id="allowBody" hidden>
-          <div class="sugs" id="allowList"></div>
-          <div class="gridfoot">
-            <button class="btn" id="allowAdd">Add allowance</button>
-          </div>
-          <div class="privacy">
-            Per diems, kilometres and shift allowances are recorded against a project and a date, as quantity and unit. No value is calculated here. The project bonus is the exception: it carries an amount and only the project owner records it.
-          </div>
+        <div class="privacy">
+          Per diems, kilometres and shift allowances are recorded against a project and a date, as quantity and unit. No value is calculated here. The project bonus is the exception: it carries an amount and only the project owner records it.
         </div>
       </aside>
 
@@ -445,6 +433,7 @@
 </form></dialog>
 
 <div class="toasts" id="toasts"></div>
+<div class="abstip" id="absTip" hidden></div>
 
 <!-- dialogs -->
 <dialog id="dlgQuick"><form class="dlg" method="dialog">

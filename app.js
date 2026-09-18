@@ -337,11 +337,10 @@
     staged: {},
     stagedAllow: [],
     massLog: [],
-    /* pure display state, not part of the timesheet data: which side-panel
-       tab is showing, which mass-entry tab is showing, and whether the
-       person has manually opened/closed Suggestions this session (null =
-       follow the automatic empty/non-empty guess) */
-    absAllowTab: "abs",
+    /* pure display state, not part of the timesheet data: which mass-entry
+       tab is showing, and whether the person has manually opened/closed
+       Suggestions this session (null = follow the automatic empty/non-empty
+       guess) */
     teamTab: "hours",
     sugManualOpen: null,
     approvals:[
@@ -601,8 +600,8 @@
       var c = el("div", i>4?"we":"", "");
       c.appendChild(el("span","", d));
       var ap = absOn(i,"approved")[0], pe = absOn(i,"pending")[0];
-      if(ap) c.appendChild(el("span","dayabs" + (capacity(i) === 0 ? " full" : ""), capacity(i) === 0 ? ap.type : "half day"));
-      else if(pe) c.appendChild(el("span","dayabs pend", "pending"));
+      if(ap) c.appendChild(dayAbsBadge(ap, capacity(i) === 0 ? ap.type : "half day", capacity(i) === 0 ? " full" : ""));
+      else if(pe) c.appendChild(dayAbsBadge(pe, "pending", " pend"));
       head.appendChild(c);
     });
     head.appendChild(el("div","","Total"));
@@ -862,34 +861,52 @@
     if(co && co.value !== IT0001.bukrs) co.value = IT0001.bukrs;
   }
 
-  function render(){ renderGrid(); renderCal(); renderSugs(); renderAbs(); renderAllow(); renderMsgs(); renderKpis(); renderApprovals(); renderTeam(); renderCats(); }
+  function render(){ renderGrid(); renderCal(); renderSugs(); renderAllow(); renderMsgs(); renderKpis(); renderApprovals(); renderTeam(); renderCats(); }
 
-  /* ---------- absences ---------- */
-  function renderAbs(){
-    var box = $("absList");
-    if(!box) return;
-    if($("absCountChip")) $("absCountChip").textContent = ABSENCES.length + (ABSENCES.length === 1 ? " absence" : " absences");
-    box.innerHTML = "";
-    if(!ABSENCES.length){
-      box.appendChild(el("div","paused","No absences this week."));
-      return;
-    }
-    ABSENCES.forEach(function(a){
-      var c = el("div","abscard" + (a.status === "pending" ? " pend" : ""), "");
-      var h = el("div","h","");
-      h.appendChild(el("b","", a.type));
-      h.appendChild(el("span","chip " + (a.status === "approved" ? "grey" : "amber"), ABSTATUS[a.status]));
-      c.appendChild(h);
-      c.appendChild(el("div","why", DAYS[a.day] + " · " + fmt(a.hours) + " h · AWART " + a.awart));
-      c.appendChild(el("div","why", a.src + " · Leave Request, read-only"));
-      if(a.status === "pending"){
-        var acts = el("div","acts","");
-        acts.appendChild(btn("Simulate approval","btn sm", function(){ approveAbsence(a); }));
-        c.appendChild(acts);
-      }
-      box.appendChild(c);
-    });
+  /* ---------- absences: a badge on the grid's day header, detail on hover ----------
+     Used to be a permanent side panel listing every absence, open or not.
+     The grid already marks which days are affected; hovering (or focusing,
+     for keyboard use) the badge is enough to see the full card, including
+     the pending ones' approval action, without reserving screen space for
+     it when nobody's looking. */
+  var absTipTimer = null;
+  function dayAbsBadge(a, label, extraClass){
+    var b = el("button","dayabs" + extraClass, label);
+    b.type = "button";
+    b.setAttribute("aria-label", a.type + ", " + DAYS[a.day] + ", " + ABSTATUS[a.status].toLowerCase());
+    b.onmouseenter = function(){ showAbsTip(a, b); };
+    b.onmouseleave = hideAbsTip;
+    b.onfocus = function(){ showAbsTip(a, b); };
+    b.onblur = hideAbsTip;
+    return b;
   }
+  function showAbsTip(a, anchorEl){
+    clearTimeout(absTipTimer);
+    var tip = $("absTip");
+    if(!tip) return;
+    tip.innerHTML = "";
+    var c = el("div","abscard" + (a.status === "pending" ? " pend" : ""), "");
+    var h = el("div","h","");
+    h.appendChild(el("b","", a.type));
+    h.appendChild(el("span","chip " + (a.status === "approved" ? "grey" : "amber"), ABSTATUS[a.status]));
+    c.appendChild(h);
+    c.appendChild(el("div","why", DAYS[a.day] + " · " + fmt(a.hours) + " h · AWART " + a.awart));
+    c.appendChild(el("div","why", a.src + " · Leave Request, read-only"));
+    if(a.status === "pending"){
+      var acts = el("div","acts","");
+      acts.appendChild(btn("Simulate approval","btn sm", function(){ hideAbsTipNow(); approveAbsence(a); }));
+      c.appendChild(acts);
+    }
+    tip.appendChild(c);
+    tip.hidden = false;
+    var r = anchorEl.getBoundingClientRect();
+    tip.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 268)) + "px";
+    tip.style.top = (r.bottom + 6) + "px";
+    tip.onmouseenter = function(){ clearTimeout(absTipTimer); };
+    tip.onmouseleave = hideAbsTip;
+  }
+  function hideAbsTip(){ absTipTimer = setTimeout(hideAbsTipNow, 150); }
+  function hideAbsTipNow(){ clearTimeout(absTipTimer); var t = $("absTip"); if(t) t.hidden = true; }
   function approveAbsence(a){
     a.status = "approved";
     var moved = dayTotal(a.day);
@@ -2641,16 +2658,6 @@
     t.textContent = open ? "▾" : "▸";
     t.setAttribute("aria-expanded", open ? "true" : "false");
   }
-  function setAbsAllowTab(tab){
-    state.absAllowTab = tab;
-    var showAbs = tab === "abs";
-    if($("absBody")) $("absBody").hidden = !showAbs;
-    if($("allowBody")) $("allowBody").hidden = showAbs;
-    if($("vAbsTab")) $("vAbsTab").setAttribute("aria-pressed", showAbs ? "true" : "false");
-    if($("vAllowTab")) $("vAllowTab").setAttribute("aria-pressed", showAbs ? "false" : "true");
-    if($("absCountChip")) $("absCountChip").hidden = !showAbs;
-    if($("allowCount")) $("allowCount").hidden = showAbs;
-  }
   function setTeamTab(tab){
     state.teamTab = tab;
     var panels = {hours:"hoursPanel", allow:"teamAllowPanel", bonus:"bonusPanel"};
@@ -2679,13 +2686,9 @@
   if($("mAllowClear")) $("mAllowClear").onclick = function(){ clearMassAllow(); toast("Staged allowances cleared. Nothing had been saved."); };
 
   /* ---------- collapsible panels and in-screen tabs ----------
-     Pure display state: which side-panel tab and which mass-entry tab is
-     showing, and a panel's collapsed state, none of it part of the
-     timesheet data, so it lives on state.* but never touches WEEKS. */
-  if($("vAbsTab")) $("vAbsTab").onclick = function(){ setAbsAllowTab("abs"); };
-  if($("vAllowTab")) $("vAllowTab").onclick = function(){ setAbsAllowTab("allow"); };
-  setAbsAllowTab(state.absAllowTab);
-
+     Pure display state: which mass-entry tab is showing, and a panel's
+     collapsed state, none of it part of the timesheet data, so it lives on
+     state.* but never touches WEEKS. */
   if($("sugTog")) $("sugTog").onclick = function(){
     state.sugManualOpen = $("sugPanel").classList.contains("collapsed");
     setPanelOpen("sugPanel", "sugTog", state.sugManualOpen);

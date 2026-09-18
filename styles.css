@@ -281,9 +281,14 @@
   .payload{font-family:var(--f-mono); font-size:12px; white-space:pre; overflow-x:auto; padding:14px; margin:0; color:var(--ink-2); background:var(--surface-2); border-top:1px solid var(--line-soft); line-height:1.6}
   /* ausências */
   .row.head div{display:grid; gap:2px}
-  .dayabs{font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); background:var(--surface-3); border-radius:3px; padding:1px 3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .dayabs{font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-2); background:var(--surface-3); border-radius:3px; padding:1px 3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; border:none}
   .dayabs.full{background:var(--crit-soft); color:var(--crit)}
   .dayabs.pend{background:var(--warn-soft); color:var(--warn)}
+  .dayabs:hover, .dayabs:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+  /* hover/focus detail for a day's absence, replaces the side panel that used to always show this */
+  .abstip{position:fixed; z-index:60; width:260px}
+  .abstip .abscard{box-shadow:0 10px 28px rgba(0,0,0,.18)}
   .cell.abs{background:repeating-linear-gradient(135deg,var(--surface-3),var(--surface-3) 4px,var(--surface-2) 4px,var(--surface-2) 8px); cursor:not-allowed}
   .row.totals .t.off{color:var(--ink-3)}
   .blk.abs.pend{border-left-color:var(--warn)}
