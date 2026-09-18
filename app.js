@@ -2090,7 +2090,7 @@
   });
 
   /* ---------- conversational assistant, Joule pattern ---------- */
-  var chat = {pending:null, greeted:false};
+  var chat = {pending:null, greeted:false, draft:null, history:[]};
 
   function botToggle(force){
     var p = $("joulePanel");
@@ -2138,12 +2138,14 @@
     var acts = el("div","acts","");
     acts.appendChild(btn(confirmLabel,"btn sm primary", function(){
       chat.pending = null;
+      chat.draft = null;
       acts.innerHTML = "";
       acts.appendChild(el("span","chip green","confirmed"));
       onConfirm();
     }));
     acts.appendChild(btn("Cancel","btn sm", function(){
       chat.pending = null;
+      chat.draft = null;
       acts.innerHTML = "";
       acts.appendChild(el("span","chip grey","cancelled"));
       botSay("bot","No problem, I didn't save anything.");
@@ -2234,6 +2236,7 @@
       warn = "This entry leaves the day at " + fmt(dayTotal(day) + dur) + " h, above the capacity of " + fmt(capacity(day)) + " h. It will raise an error at submission.";
     }
     chat.pending = "entry";
+    chat.draft = {day:day, dur:dur, p:pIdx, desc:desc};
     botSay("bot","Confirm this entry?", botCard([
       ["Day", DAYS[day]],
       ["Duration", fmt(dur) + " h"],
@@ -2264,11 +2267,15 @@
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           mensagem: txt,
+          historico: chat.history.slice(0, -1).slice(-12),
           contexto: {
             projetos: PROJECTS.map(function(p,i){ return {codigo: p.code.split("-")[0], nome: p.name, indice: i}; }),
             ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
             capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
-            semana: {total: weekTotal(), esperado: weekCapacity(), erros: errors().length, submetida: state.submitted}
+            semana: {total: weekTotal(), esperado: weekCapacity(), erros: errors().length, submetida: state.submitted},
+            pedido_por_confirmar: chat.pending === "entry" && chat.draft
+              ? {dia: DAYS[chat.draft.day], duracao_horas: chat.draft.dur, projeto: PROJECTS[chat.draft.p].code.split("-")[0], descricao: chat.draft.desc}
+              : null
           }
         })
       });
@@ -2318,14 +2325,33 @@
     if(!txt || !txt.trim()) return;
     botSay("me", txt);
     botChips([]);
+    chat.history.push({role:"user", content:txt});
+
+    /* A card is already open waiting for confirmation: read this message as
+       a correction to it first (checked here, ahead of Claude, so it holds
+       even when the language model isn't configured or doesn't pick up on
+       the open card from context alone). */
+    if(chat.pending === "entry" && chat.draft){
+      var fix = tryCorrectDraft(txt);
+      if(fix){
+        offerEntry(fix.day, fix.dur, fix.p, fix.desc);
+        chat.history.push({role:"assistant", content:"Updated the pending entry: " + fmt(fix.dur) + "h, " + PROJECTS[fix.p].name + ", " + DAYS[fix.day] + "."});
+        return;
+      }
+    }
 
     var intent = await askAssistant(txt);
-    if(intent && botDispatch(intent)) return;
+    if(intent && botDispatch(intent)){
+      chat.history.push({role:"assistant", content: intent.texto || ("Called " + intent.funcao + ".")});
+      return;
+    }
 
     botHandleLocal(txt);
   }
 
-  /* local regex interpreter, used when Claude isn't configured or fails */
+  /* local regex interpreter, used when Claude isn't configured or fails.
+     The pending-entry correction is checked earlier, in botHandle, ahead of
+     Claude, so it isn't repeated here. */
   function botHandleLocal(txt){
     var t = txt.toLowerCase();
 
@@ -2348,9 +2374,30 @@
     if(!p){
       botSay("bot","I couldn't understand what to record. Write the duration and the project, for example <span class=\"num\">2h BNK payroll testing yesterday</span>. I can also show the week's status or your absences.");
       botChips(["How many hours do I have?","My absences","Help"]);
+      chat.history.push({role:"assistant", content:"Couldn't parse a duration and project from that message."});
       return;
     }
     offerEntry(p.day, p.dur, p.p, p.desc);
+    chat.history.push({role:"assistant", content:"Proposed an entry: " + fmt(p.dur) + "h, " + PROJECTS[p.p].name + ", " + DAYS[p.day] + ". Waiting for confirmation."});
+  }
+
+  /* Weekday names and "yesterday"/"today" only cover a relative reading of
+     the visible week. A calendar date ("September 15", "15 Sep", "15/09")
+     needs to be matched against WORKDATES instead. Returns the day index if
+     the date falls in the visible week, -1 if it's a real date outside it,
+     or null if nothing date-shaped was found at all. */
+  var MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+  function parseDateMention(rest){
+    var m, dd, mm;
+    if((m = rest.match(/\b(\d{1,2})[\/\-](\d{1,2})\b/))){ dd = +m[1]; mm = +m[2]; }
+    else if((m = rest.match(new RegExp("\\b("+MONTHS.join("|")+")\\s+(\\d{1,2})\\b","i")))){ mm = MONTHS.indexOf(m[1].toLowerCase())+1; dd = +m[2]; }
+    else if((m = rest.match(new RegExp("\\b(\\d{1,2})\\s+("+MONTHS.join("|")+")\\b","i")))){ dd = +m[1]; mm = MONTHS.indexOf(m[2].toLowerCase())+1; }
+    else return null;
+    var day = -1;
+    for(var i=0; i<WORKDATES.length; i++){
+      if(+WORKDATES[i].slice(6,8) === dd && +WORKDATES[i].slice(4,6) === mm){ day = i; break; }
+    }
+    return {day:day, match:m[0]};
   }
 
   /* assistant parser: duration, day and project */
@@ -2367,9 +2414,18 @@
     else if(/\btoday\b/i.test(rest)){ day = 2; rest = rest.replace(/\btoday\b/i," "); }
     else {
       var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+      var foundName = false;
       for(var i=0; i<names.length; i++){
         var re = new RegExp("\\b("+names[i]+")\\b","i");
-        if(re.test(rest)){ day = i; rest = rest.replace(re," "); break; }
+        if(re.test(rest)){ day = i; rest = rest.replace(re," "); foundName = true; break; }
+      }
+      if(!foundName){
+        var dm = parseDateMention(rest);
+        if(dm){
+          if(dm.day === -1) return null;
+          day = dm.day;
+          rest = rest.replace(dm.match," ");
+        }
       }
     }
     var pIdx = -1;
@@ -2379,6 +2435,41 @@
     });
     if(pIdx === -1) return null;
     return {dur:round15(dur), day:day, p:pIdx, desc:rest.replace(/\s+/g," ").trim()};
+  }
+
+  /* A card is already open for chat.draft: read this message for just the
+     part that changes (a different day, duration or project), and keep the
+     rest of the draft as it was, instead of demanding the whole sentence
+     again. Returns null if nothing recognizable was found, so the caller can
+     fall through to every other interpretation. */
+  function tryCorrectDraft(txt){
+    var rest = " " + txt + " ", m;
+    var draft = chat.draft, day = draft.day, dur = draft.dur, pIdx = draft.p, changed = false;
+
+    if(/\byesterday\b/i.test(rest)){ day = 1; changed = true; }
+    else if(/\btoday\b/i.test(rest)){ day = 2; changed = true; }
+    else {
+      var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+      for(var i=0; i<names.length && !changed; i++){
+        if(new RegExp("\\b("+names[i]+")\\b","i").test(rest)){ day = i; changed = true; }
+      }
+      if(!changed){
+        var dm = parseDateMention(rest);
+        if(dm && dm.day !== -1){ day = dm.day; changed = true; }
+      }
+    }
+
+    if((m = rest.match(/(\d+(?:[.,]\d+)?)\s*h\b/i))){ dur = parseDur(m[1]); changed = true; }
+    else if((m = rest.match(/(\d{1,2}):(\d{2})/))){ dur = parseDur(m[0]); changed = true; }
+    else if((m = rest.match(/(\d+)\s*m(?:in)?\b/i))){ dur = parseDur(m[1]+"m"); changed = true; }
+
+    PROJECTS.forEach(function(pr,i){
+      var key = pr.code.split("-")[0];
+      if(new RegExp("\\b"+key+"\\b","i").test(rest)){ pIdx = i; changed = true; }
+    });
+
+    if(!changed) return null;
+    return {day:day, dur:round15(dur), p:pIdx, desc:draft.desc};
   }
 
   $("jouleFab").onclick = function(){ botToggle(); };

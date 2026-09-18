@@ -57,9 +57,21 @@ function buildSystemPrompt(contexto) {
     "Nunca inventas projetos, dias ou horas fora do que está no contexto abaixo. Se não reconheceres o projeto pedido, não chames nenhuma função e explica, em texto curto, quais os projetos disponíveis.",
     "Se o pedido não corresponder a nenhuma das funções (por exemplo, uma pergunta fora de âmbito), não chames nenhuma função e responde apenas em texto curto, em português de Portugal, sem inglês.",
     "Durações aceitam vírgula, dois pontos ou minutos, por exemplo 1,5, 1:30 ou 90m. Arredonda sempre a múltiplos de 15 minutos.",
+    "O histórico da conversa, quando presente nas mensagens anteriores, mostra as tuas próprias respostas em texto simples, nunca uma chamada de função por resolver. Se o campo 'pedido_por_confirmar' do contexto estiver preenchido, há um cartão de confirmação em aberto no ecrã com esses dados exatos, ainda não gravado. Uma mensagem curta que só corrija parte disso (outro dia, outra duração, outro projeto) refere-se a esse mesmo pedido: chama 'registar_horas' outra vez, com o campo corrigido e os restantes exatamente como estavam em 'pedido_por_confirmar', em vez de pedires a frase toda de novo.",
     "Contexto atual da semana, incluindo projetos onde a pessoa está alocada, ausências e capacidade por dia:",
     JSON.stringify(contexto || {}, null, 2)
   ].join("\n");
+}
+
+/* Trusts nothing from the client: keeps only well-formed {role, content}
+   pairs, role restricted to user/assistant, content capped in length, and
+   the whole list capped in size, before it goes anywhere near the prompt. */
+function sanitizeHistorico(historico) {
+  if (!Array.isArray(historico)) return [];
+  return historico
+    .filter((h) => h && (h.role === "user" || h.role === "assistant") && typeof h.content === "string")
+    .slice(-12)
+    .map((h) => ({ role: h.role, content: h.content.slice(0, 600) }));
 }
 
 export default async function handler(req, res) {
@@ -76,7 +88,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { mensagem, contexto } = req.body || {};
+  const { mensagem, contexto, historico } = req.body || {};
   if (!mensagem || typeof mensagem !== "string") {
     res.status(400).json({ error: "mensagem em falta" });
     return;
@@ -92,7 +104,7 @@ export default async function handler(req, res) {
       tools: toClaudeTools(),
       tool_choice: { type: "auto" },
       output_config: { effort: "low" },
-      messages: [{ role: "user", content: mensagem }]
+      messages: [...sanitizeHistorico(historico), { role: "user", content: mensagem }]
     });
 
     const toolUse = response.content.find((b) => b.type === "tool_use");
