@@ -2,7 +2,8 @@
     --ground:#F1F4F7; --surface:#FFFFFF; --surface-2:#F7F9FB; --surface-3:#EDF1F5;
     --line:#D3DBE3; --line-soft:#E4EAF0;
     --ink:#16212D; --ink-2:#4B5B6B; --ink-3:#7D8B99;
-    --accent:#0064D9; --accent-ink:#00417F; --accent-soft:#E2EEFC;
+    --accent:#1E3A7A; --accent-ink:#12224A; --accent-soft:#E7ECF7;
+    --brand-mark:#D2392F;
     --good:#1E7A44; --good-soft:#E1F2E8;
     --warn:#A85700; --warn-soft:#FBEEDC;
     --crit:#AE1717; --crit-soft:#FBE5E5;
@@ -17,7 +18,8 @@
       --ground:#0F151B; --surface:#1A2128; --surface-2:#212A32; --surface-3:#273240;
       --line:#33404C; --line-soft:#2A3540;
       --ink:#E7EDF3; --ink-2:#A9B7C3; --ink-3:#7F8E9C;
-      --accent:#5AAAFF; --accent-ink:#B9D9FF; --accent-soft:#132840;
+      --accent:#7C9BE0; --accent-ink:#C7D6F5; --accent-soft:#1C2C4C;
+      --brand-mark:#FF6F63;
       --good:#56C085; --good-soft:#13291D;
       --warn:#E79139; --warn-soft:#2E2113;
       --crit:#FF8585; --crit-soft:#2E1616;
@@ -28,7 +30,8 @@
     --ground:#0F151B; --surface:#1A2128; --surface-2:#212A32; --surface-3:#273240;
     --line:#33404C; --line-soft:#2A3540;
     --ink:#E7EDF3; --ink-2:#A9B7C3; --ink-3:#7F8E9C;
-    --accent:#5AAAFF; --accent-ink:#B9D9FF; --accent-soft:#132840;
+    --accent:#7C9BE0; --accent-ink:#C7D6F5; --accent-soft:#1C2C4C;
+    --brand-mark:#FF6F63;
     --good:#56C085; --good-soft:#13291D;
     --warn:#E79139; --warn-soft:#2E2113;
     --crit:#FF8585; --crit-soft:#2E1616;
@@ -51,7 +54,8 @@
     padding:10px 16px;
   }
   .brand{display:flex; align-items:baseline; gap:9px; margin-right:auto}
-  .brand strong{font-family:var(--f-display); font-size:15px; font-weight:600; letter-spacing:-.01em}
+  .brand strong{font-family:var(--f-display); font-size:15px; font-weight:600; letter-spacing:-.01em; color:var(--accent-ink); display:inline-flex; align-items:baseline; gap:6px}
+  .brand strong::before{content:""; display:inline-block; width:7px; height:7px; border-radius:1px; background:var(--brand-mark); transform:translateY(-1px)}
   .brand span{font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em}
   .capture{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line-soft); border-radius:999px; padding:4px 10px 4px 8px}
   .dot{width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 0 3px var(--good-soft)}
