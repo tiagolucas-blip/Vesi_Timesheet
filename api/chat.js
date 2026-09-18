@@ -28,6 +28,19 @@ const FUNCTIONS = [
       required: ["dia", "duracao_horas", "projeto"]
     }
   },
+  {
+    name: "registar_horas_semana",
+    description: "Registar a mesma duração em todos os dias úteis da semana visível (segunda a sexta), contra um projeto onde a pessoa está alocada. Usar quando o pedido cobrir a semana toda, não um único dia.",
+    parameters: {
+      type: "object",
+      properties: {
+        duracao_horas: { type: "number", description: "múltiplo de 0,25, aplicada a cada dia" },
+        projeto: { type: "string", description: "código do projeto, apenas da lista fornecida" },
+        descricao: { type: "string", maxLength: 300 }
+      },
+      required: ["duracao_horas", "projeto"]
+    }
+  },
   { name: "consultar_semana", description: "Total registado, esperado e erros de validação", parameters: { type: "object", properties: {} } },
   { name: "listar_ausencias", description: "Ausências da semana e capacidade por dia", parameters: { type: "object", properties: {} } },
   { name: "copiar_semana", description: "Copiar a estrutura da semana anterior, sem durações", parameters: { type: "object", properties: {} } },

@@ -2090,7 +2090,7 @@
   });
 
   /* ---------- conversational assistant, Joule pattern ---------- */
-  var chat = {pending:null, greeted:false, draft:null, history:[]};
+  var chat = {pending:null, greeted:false, draft:null, draftWeek:null, history:[]};
 
   function botToggle(force){
     var p = $("joulePanel");
@@ -2139,6 +2139,7 @@
     acts.appendChild(btn(confirmLabel,"btn sm primary", function(){
       chat.pending = null;
       chat.draft = null;
+      chat.draftWeek = null;
       acts.innerHTML = "";
       acts.appendChild(el("span","chip green","confirmed"));
       onConfirm();
@@ -2146,6 +2147,7 @@
     acts.appendChild(btn("Cancel","btn sm", function(){
       chat.pending = null;
       chat.draft = null;
+      chat.draftWeek = null;
       acts.innerHTML = "";
       acts.appendChild(el("span","chip grey","cancelled"));
       botSay("bot","No problem, I didn't save anything.");
@@ -2256,6 +2258,48 @@
       botChips(["Submit the week","My absences"]);
     }, warn));
   }
+  /* Same idea as offerEntry, but for "8h RTL-TT all days this week": one
+     duration, repeated on every working day, skipping days with an approved
+     absence instead of shifting the whole request like offerEntry does for a
+     single blocked day. */
+  function offerEntryWeek(days, dur, pIdx, desc){
+    var pr = PROJECTS[pIdx];
+    var applicable = days.filter(function(d){ return !isBlocked(d); });
+    var blocked = days.filter(function(d){ return isBlocked(d); });
+    if(!applicable.length){
+      botSay("bot","Every day in that range has an approved absence. I didn't record anything.");
+      return;
+    }
+    var over = applicable.filter(function(d){ return dur > capacity(d) - dayTotal(d); });
+    var warn = over.length
+      ? "This leaves " + over.map(function(d){ return DAYS[d]; }).join(", ") + " above capacity. It will raise an error at submission."
+      : null;
+    var daysLabel = applicable.map(function(d){ return DAYS[d]; }).join(", ")
+      + (blocked.length ? " (" + blocked.map(function(d){ return DAYS[d]; }).join(", ") + " skipped, approved absence)" : "");
+
+    chat.pending = "entryWeek";
+    chat.draftWeek = {days:applicable, dur:dur, p:pIdx, desc:desc};
+    botSay("bot","Confirm this entry?", botCard([
+      ["Days", daysLabel],
+      ["Duration per day", fmt(dur) + " h"],
+      ["Total", fmt(dur * applicable.length) + " h"],
+      ["Project", pr.name],
+      ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
+      ["Activity type", pr.sap.lstar + ", " + pr.act],
+      ["Description", desc || "(to be filled in)"],
+      ["Origin", "Joule"]
+    ], "Save", function(){
+      var row = state.rows.filter(function(r){ return r.p === pIdx; })[0];
+      if(!row){ row = {id:nextId++, p:pIdx, desc:desc, h:[0,0,0,0,0,0,0], origin:"Joule"}; state.rows.push(row); }
+      if(desc) row.desc = desc;
+      row.origin = "Joule";
+      applicable.forEach(function(d){ row.h[d] += dur; });
+      render();
+      botSay("bot", fmt(dur) + " h saved on " + applicable.length + (applicable.length === 1 ? " day" : " days")
+        + " (" + fmt(dur * applicable.length) + " h total), " + pr.code + ". " + weekSummaryText());
+      botChips(["Submit the week","My absences"]);
+    }, warn));
+  }
 
   /* asks Claude, at /api/chat, to interpret the text and choose a function.
      Returns null on any failure (no key configured, network, engine error),
@@ -2310,6 +2354,20 @@
           return true;
         }
         offerEntry(dayIdx, dur, pIdx, a.descricao || "");
+        return true;
+      case "registar_horas_semana":
+        var aw = intent.argumentos || {};
+        var pIdxW = -1;
+        PROJECTS.forEach(function(pr,i){
+          if(pr.code.toLowerCase().indexOf(String(aw.projeto || "").toLowerCase()) === 0) pIdxW = i;
+        });
+        var durW = round15(Number(aw.duracao_horas));
+        if(pIdxW === -1 || !durW || durW <= 0){
+          botSay("bot", intent.texto || "I couldn't confirm all the details for that entry. Could you write it another way?");
+          botChips(["How many hours do I have?","My absences"]);
+          return true;
+        }
+        offerEntryWeek([0,1,2,3,4], durW, pIdxW, aw.descricao || "");
         return true;
       default:
         if(intent.texto){
@@ -2369,6 +2427,18 @@
     /* submit */
     if(/submit|send the week|close the week/.test(t)){ offerSubmit(); return; }
 
+    /* a request for every working day ("8h RTL-TT all days this week"),
+       checked ahead of the single-day parser since it matches a duration
+       and a project too and would otherwise just default to "today" */
+    if(ALL_WEEK_RE.test(t)){
+      var pw = botParseWeek(txt);
+      if(pw){
+        offerEntryWeek(pw.days, pw.dur, pw.p, pw.desc);
+        chat.history.push({role:"assistant", content:"Proposed " + fmt(pw.dur) + "h/day, " + PROJECTS[pw.p].name + ", every working day this week. Waiting for confirmation."});
+        return;
+      }
+    }
+
     /* time entry, reuses the same parser as quick add */
     var p = botParse(txt);
     if(!p){
@@ -2400,14 +2470,37 @@
     return {day:day, match:m[0]};
   }
 
+  /* Duration token: "8h", "8 hours", "1:30", "90m" or a bare number, matched
+     as a WHOLE token so nothing leaks into the description afterwards — the
+     bare "h" pattern used to match only "8 h" out of "8 hours" and leave
+     "ours" behind in the text. */
+  function matchDuration(rest){
+    var m;
+    if((m = rest.match(/(\d+(?:[.,]\d+)?)\s*h(?:ours?|rs?)?\b/i))) return {dur:parseDur(m[1]), match:m[0]};
+    if((m = rest.match(/(\d{1,2}):(\d{2})\b/))) return {dur:parseDur(m[0]), match:m[0]};
+    if((m = rest.match(/(\d+)\s*m(?:in(?:ute)?s?)?\b/i))) return {dur:parseDur(m[1]+"m"), match:m[0]};
+    if((m = rest.match(/\s(\d+(?:[.,]\d+)?)\s/))) return {dur:parseDur(m[1]), match:m[0]};
+    return null;
+  }
+  /* Project code, plus any WBS suffix attached to it ("RTL-TT.2.1"), so that
+     doesn't leak into the description either. */
+  function matchProject(rest){
+    var found = null;
+    PROJECTS.forEach(function(pr,i){
+      var key = pr.code.split("-")[0];
+      var m = rest.match(new RegExp("\\b"+key+"[\\w.\\-]*","i"));
+      if(m) found = {p:i, match:m[0]};
+    });
+    return found;
+  }
+  var ALL_WEEK_RE = /\ball\s+days?\b|\bevery\s+day\b|\beach\s+day\b|\ball\s+week\b|\bwhole\s+week\b|\bfor\s+the\s+week\b/i;
+
   /* assistant parser: duration, day and project */
   function botParse(txt){
-    var rest = " " + txt + " ", m, dur = NaN;
-    if((m = rest.match(/(\d+(?:[.,]\d+)?)\s*h/i))){ dur = parseDur(m[1]); rest = rest.replace(m[0]," "); }
-    else if((m = rest.match(/(\d{1,2}):(\d{2})/))){ dur = parseDur(m[0]); rest = rest.replace(m[0]," "); }
-    else if((m = rest.match(/(\d+)\s*m(?:in)?\b/i))){ dur = parseDur(m[1]+"m"); rest = rest.replace(m[0]," "); }
-    else if((m = rest.match(/\s(\d+(?:[.,]\d+)?)\s/))){ dur = parseDur(m[1]); rest = rest.replace(m[0]," "); }
-    if(isNaN(dur) || dur <= 0) return null;
+    var rest = " " + txt + " ";
+    var dm = matchDuration(rest);
+    if(!dm || dm.dur <= 0) return null;
+    rest = rest.replace(dm.match," ");
 
     var day = 2;
     if(/\byesterday\b/i.test(rest)){ day = 1; rest = rest.replace(/\byesterday\b/i," "); }
@@ -2420,53 +2513,66 @@
         if(re.test(rest)){ day = i; rest = rest.replace(re," "); foundName = true; break; }
       }
       if(!foundName){
-        var dm = parseDateMention(rest);
-        if(dm){
-          if(dm.day === -1) return null;
-          day = dm.day;
-          rest = rest.replace(dm.match," ");
+        var dmDate = parseDateMention(rest);
+        if(dmDate){
+          if(dmDate.day === -1) return null;
+          day = dmDate.day;
+          rest = rest.replace(dmDate.match," ");
         }
       }
     }
-    var pIdx = -1;
-    PROJECTS.forEach(function(pr,i){
-      var key = pr.code.split("-")[0];
-      if(new RegExp("\\b"+key+"\\b","i").test(rest)){ pIdx = i; rest = rest.replace(new RegExp(key+"[\\w-]*","i")," "); }
-    });
-    if(pIdx === -1) return null;
-    return {dur:round15(dur), day:day, p:pIdx, desc:rest.replace(/\s+/g," ").trim()};
+    var pm = matchProject(rest);
+    if(!pm) return null;
+    rest = rest.replace(pm.match," ");
+    return {dur:round15(dm.dur), day:day, p:pm.p, desc:rest.replace(/\s+/g," ").trim()};
+  }
+
+  /* Same reading as botParse, but for a request meant to repeat across every
+     working day of the visible week ("8h RTL-TT all days this week"),
+     instead of the one day botParse would default to. */
+  function botParseWeek(txt){
+    var rest = " " + txt + " ";
+    var dm = matchDuration(rest);
+    if(!dm || dm.dur <= 0) return null;
+    rest = rest.replace(dm.match," ").replace(ALL_WEEK_RE," ").replace(/\bthis\s+week\b|\bthe\s+week\b/gi," ");
+    var pm = matchProject(rest);
+    if(!pm) return null;
+    rest = rest.replace(pm.match," ");
+    return {dur:round15(dm.dur), days:[0,1,2,3,4], p:pm.p, desc:rest.replace(/\s+/g," ").trim()};
   }
 
   /* A card is already open for chat.draft: read this message for just the
      part that changes (a different day, duration or project), and keep the
      rest of the draft as it was, instead of demanding the whole sentence
      again. Returns null if nothing recognizable was found, so the caller can
-     fall through to every other interpretation. */
+     fall through to every other interpretation. Duration deliberately skips
+     the bare-number fallback matchDuration has for a fresh request: on a
+     short correction like "actually September 16", that fallback would
+     misread the "16" as a duration instead of leaving it to the date match. */
   function tryCorrectDraft(txt){
     var rest = " " + txt + " ", m;
     var draft = chat.draft, day = draft.day, dur = draft.dur, pIdx = draft.p, changed = false;
 
-    if(/\byesterday\b/i.test(rest)){ day = 1; changed = true; }
-    else if(/\btoday\b/i.test(rest)){ day = 2; changed = true; }
+    if(/\byesterday\b/i.test(rest)){ day = 1; changed = true; rest = rest.replace(/\byesterday\b/i," "); }
+    else if(/\btoday\b/i.test(rest)){ day = 2; changed = true; rest = rest.replace(/\btoday\b/i," "); }
     else {
       var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
       for(var i=0; i<names.length && !changed; i++){
-        if(new RegExp("\\b("+names[i]+")\\b","i").test(rest)){ day = i; changed = true; }
+        var re = new RegExp("\\b("+names[i]+")\\b","i");
+        if(re.test(rest)){ day = i; changed = true; rest = rest.replace(re," "); }
       }
       if(!changed){
         var dm = parseDateMention(rest);
-        if(dm && dm.day !== -1){ day = dm.day; changed = true; }
+        if(dm && dm.day !== -1){ day = dm.day; changed = true; rest = rest.replace(dm.match," "); }
       }
     }
 
-    if((m = rest.match(/(\d+(?:[.,]\d+)?)\s*h\b/i))){ dur = parseDur(m[1]); changed = true; }
-    else if((m = rest.match(/(\d{1,2}):(\d{2})/))){ dur = parseDur(m[0]); changed = true; }
-    else if((m = rest.match(/(\d+)\s*m(?:in)?\b/i))){ dur = parseDur(m[1]+"m"); changed = true; }
+    if((m = rest.match(/(\d+(?:[.,]\d+)?)\s*h(?:ours?|rs?)?\b/i))){ dur = parseDur(m[1]); changed = true; }
+    else if((m = rest.match(/(\d{1,2}):(\d{2})\b/))){ dur = parseDur(m[0]); changed = true; }
+    else if((m = rest.match(/(\d+)\s*m(?:in(?:ute)?s?)?\b/i))){ dur = parseDur(m[1]+"m"); changed = true; }
 
-    PROJECTS.forEach(function(pr,i){
-      var key = pr.code.split("-")[0];
-      if(new RegExp("\\b"+key+"\\b","i").test(rest)){ pIdx = i; changed = true; }
-    });
+    var pm = matchProject(rest);
+    if(pm){ pIdx = pm.p; changed = true; }
 
     if(!changed) return null;
     return {day:day, dur:round15(dur), p:pIdx, desc:draft.desc};
