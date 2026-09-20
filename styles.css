@@ -172,7 +172,6 @@
   .blk b{font-weight:600; display:block; font-family:var(--f-mono)}
   .blk.nb{border-left-color:var(--ink-3); background:var(--surface-3); color:var(--ink-2)}
   .blk.abs{border-left-color:var(--ink-3); background:repeating-linear-gradient(135deg,var(--surface-3),var(--surface-3) 5px,var(--surface-2) 5px,var(--surface-2) 10px); color:var(--ink-3); cursor:default}
-  .blk.ext{border-left-color:var(--warn); background:var(--warn-soft); color:var(--warn); border-style:none none none solid}
   .calfree{border:1px dashed var(--line); border-radius:4px; background:transparent; color:var(--ink-3); font-size:11px; min-height:30px; text-align:center}
   .calfree:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
 

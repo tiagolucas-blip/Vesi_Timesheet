@@ -713,13 +713,6 @@
         ab.title = a.src + ", AWART " + a.awart;
         col.appendChild(ab);
       });
-      if(d === 1){
-        var ext = document.createElement("button");
-        ext.className = "blk ext";
-        ext.innerHTML = "<b>1.0 h</b>Project committee, external client · convert";
-        ext.onclick = (function(day){ return function(){ openQuick("1h AER project committee", day); }; })(d);
-        col.appendChild(ext);
-      }
       state.rows.forEach(function(r){
         var v = r.h[d];
         if(!v) return;
