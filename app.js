@@ -2569,6 +2569,23 @@
         var isAll = /^(todos|toda a equipa|equipa toda)$/i.test(String(aa.pessoa || "").trim());
         handleApprovalRequest(isAll ? "approve everyone" : "approve " + String(aa.pessoa || ""));
         return true;
+      case "registar_allowance_equipa":
+        var al = intent.argumentos || {};
+        var teamMembersAl = teamOf(state.leader);
+        var targetsAl = /^(todos|toda a equipa|equipa toda)$/i.test(String(al.pessoa || "").trim())
+          ? teamMembersAl
+          : teamMembersAl.filter(function(m){ return m.name.toLowerCase().indexOf(String(al.pessoa || "").toLowerCase()) !== -1; });
+        var wAl = wt(al.rubrica);
+        var rawDaysAl = Array.isArray(al.dias) && al.dias.length ? al.dias : (al.dia ? [al.dia] : []);
+        var daysAl = rawDaysAl.map(function(d){ return resolveDayArg(d); }).filter(function(i){ return i !== -1; });
+        var qtyAl = round15(Number(al.quantidade));
+        if(!targetsAl.length || !wAl || !daysAl.length || !qtyAl || qtyAl <= 0){
+          botSay("bot", intent.texto || "Não consegui confirmar quem, a rubrica, os dias ou a quantidade. Pode escrever de outra forma?");
+          botChips(["Help"]);
+          return true;
+        }
+        offerTeamAllowance(targetsAl, daysAl, al.rubrica, qtyAl, String(al.nota || "").trim());
+        return true;
       case "registar_horas":
         var a = intent.argumentos || {};
         var dayIdx = resolveDayArg(a.dia);
@@ -2683,10 +2700,16 @@
        never means a time entry */
     if(/\bapprove\b/.test(t)){ handleApprovalRequest(txt); return; }
 
-    /* log hours for someone else's team, checked ahead of the self-entry
-       and whole-week parsers since a named target should never be read as
-       an entry for the person typing */
+    /* log hours or an allowance for someone else's team, checked ahead of
+       the self-entry and whole-week parsers since a named target should
+       never be read as an entry for the person typing. Allowance first,
+       since a distinctive wage-type word ("per diem", "km") is a much
+       safer signal than the bare-number fallback the hours parser falls
+       back to, which would otherwise misread "2 km" as "2 hours". */
     var teamMembers = teamOf(state.leader);
+    var ta = botParseTeamAllowance(txt, teamMembers);
+    if(ta){ offerTeamAllowance(ta.members, ta.days, ta.code, ta.qty, ta.note); return; }
+
     var tp = botParseTeamHours(txt, teamMembers);
     if(tp){ offerTeamEntry(tp.members, tp.days, tp.dur, tp.clock); return; }
 
@@ -2951,6 +2974,118 @@
       botChips(["How many hours do I have?","Help"]);
     }));
     chat.history.push({role:"assistant", content:"Proposed " + amountLabel + " on " + dayLabel + " for " + selected.map(function(m){return m.name;}).join(", ") + ". Waiting for confirmation."});
+  }
+
+  /* "a per diem for João today" / "2 km for everyone Mon and Tue": the same
+     mass-entry idea as offerTeamEntry, but for allowances, driving the Team
+     screen's own Allowances form (#mAllowCode/#mAllowQty/#mAllowNote/
+     .mAllowDays) and its real applyMassAllow()/saveMassAllow(), so mixed
+     companies, missing required notes and closed periods are handled the
+     same way a person clicking through the screen would hit them. */
+  var ALLOWANCE_TYPES = [
+    {code:"AJC_INT", re:/\bforeign\s*per\s*diem\b/i},
+    {code:"AJC_NAC", re:/\bper\s*diem\b|\bdaily\s*allowance\b/i},
+    {code:"KMS", re:/\bkil?ometh?res?\b|\bkilometers?\b|\bkms?\b|\bmileage\b/i},
+    {code:"TURNO", re:/\bshift\s*allowance\b|\bshift\b/i}
+  ];
+  function matchAllowanceType(rest){
+    for(var i=0; i<ALLOWANCE_TYPES.length; i++){
+      var m = rest.match(ALLOWANCE_TYPES[i].re);
+      if(m) return {code:ALLOWANCE_TYPES[i].code, match:m[0]};
+    }
+    return null;
+  }
+  function matchQty(rest){
+    var m;
+    if((m = rest.match(/(\d+(?:[.,]\d+)?)\s*(?:km|kilometres?|kilometers?)\b/i))) return {qty:parseDur(m[1]), match:m[0]};
+    if((m = rest.match(/(\d+(?:[.,]\d+)?)\s*days?\b/i))) return {qty:parseDur(m[1]), match:m[0]};
+    if((m = rest.match(/\s(\d+(?:[.,]\d+)?)\s/))) return {qty:parseDur(m[1]), match:m[0]};
+    return null;
+  }
+  function botParseTeamAllowance(txt, members){
+    var rest = " " + txt + " ";
+    var typ = matchAllowanceType(rest);
+    if(!typ) return null;
+    rest = rest.replace(typ.match," ");
+
+    var tgt = matchTeamTargets(rest, members);
+    if(!tgt) return null;
+    rest = rest.replace(tgt.match," ");
+
+    var qm = matchQty(rest);
+    var qty = qm ? round15(qm.qty) : 1;
+    if(qm) rest = rest.replace(qm.match," ");
+
+    var dmn = matchDaysMention(rest);
+    if(dmn && dmn.invalid) return null;
+    var days = dmn ? dmn.days : [2];
+
+    /* Whatever's left after type/target/qty could be a real note (KMS's
+       "Lisbon to Porto", AJC_INT's country) or just filler ("log", "today",
+       a leftover weekday) the day parsing above didn't consume since, unlike
+       the other matchers, matchDaysMention doesn't report back what it
+       matched. Strip the usual filler so a bare "log today" doesn't get
+       mistaken for a genuine note and skip the required-field check below. */
+    var weekdayNames = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+    var note = rest
+      .replace(/\b(log|record|add|please|stage|enter|on|this|the)\b/gi," ")
+      .replace(/\b(today|yesterday)\b/gi," ")
+      .replace(new RegExp("\\b("+weekdayNames.join("|")+")\\b","gi")," ")
+      .replace(new RegExp("\\b("+MONTHS.join("|")+")\\b","gi")," ")
+      .replace(/\b\d{1,2}\b/g," ")
+      .replace(/^[\s,]+|[\s,]+$/g,"")
+      .replace(/\s+/g," ")
+      .trim();
+
+    return {members:tgt.list, days:days, code:typ.code, qty:qty, note:note};
+  }
+  function offerTeamAllowance(members, days, code, qty, note){
+    var w = wt(code);
+    var locked = members.filter(function(m){ return m.locked; });
+    var selected = members.filter(function(m){ return !m.locked; });
+    if(!selected.length){
+      botSay("bot","Can't stage that: " + locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ") + ".");
+      botChips(["Help"]);
+      return;
+    }
+    if(w.noteLabel && !note){
+      botSay("bot", w.noteLabel + " is required for " + w.name + ". What should it say?");
+      botChips(["Help"]);
+      return;
+    }
+    var dayLabel = days.map(function(d){ return DAYS[d]; }).join(", ");
+    var lines = [
+      ["People", selected.map(function(m){ return m.name; }).join(", ")],
+      ["Days", dayLabel],
+      ["Wage type", w.name],
+      ["Quantity each", fmt(qty) + " " + w.unit]
+    ];
+    if(note) lines.push([w.noteLabel || "Note", note]);
+    if(locked.length) lines.push(["Skipped", locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ")]);
+    botSay("bot","Stage and save this?", botCard(lines, "Stage and save", function(){
+      teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
+      selected.forEach(function(m){ stagedOf(m.pernr).sel = true; });
+      if($("mAllowCode")){ $("mAllowCode").value = code; syncMassAllowForm(); }
+      if($("mAllowQty")) $("mAllowQty").value = String(qty);
+      if($("mAllowNote")) $("mAllowNote").value = note || "";
+      Array.prototype.forEach.call(document.querySelectorAll(".mAllowDays input"), function(c){
+        c.checked = days.indexOf(+c.value) !== -1;
+      });
+      var beforeLog = state.massLog.length;
+      applyMassAllow();
+      saveMassAllow();
+      var savedPernrs = {};
+      state.massLog.slice(beforeLog).forEach(function(e){ savedPernrs[e.pernr] = true; });
+      var saved = selected.filter(function(m){ return savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
+      var notSaved = selected.filter(function(m){ return !savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
+      var msg = saved.length
+        ? "Staged and saved for " + saved.join(", ") + ", " + dayLabel + ", " + w.name + "."
+        : "Nothing was actually saved.";
+      if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it (wrong company for that allowance, or closed period).";
+      botSay("bot", msg);
+      botChips(["How many hours do I have?","Help"]);
+    }));
+    chat.history.push({role:"assistant", content:"Proposed " + fmt(qty) + " " + w.unit + " " + w.name + " on " + dayLabel + " for " + selected.map(function(m){return m.name;}).join(", ") + ". Waiting for confirmation."});
   }
 
   /* "approve João" / "approve everyone": mirrors exactly what the Approval

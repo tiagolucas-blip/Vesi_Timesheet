@@ -75,6 +75,22 @@ const FUNCTIONS = [
       },
       required: ["pessoa"]
     }
+  },
+  {
+    name: "registar_allowance_equipa",
+    description: "Lançar uma allowance (per diem, quilómetros ou turno) em massa para um membro da equipa do líder atual (ecrã Team, separador Allowances), ou para todos. Usar quando o pedido nomear outra pessoa, não quem está a escrever, e for sobre uma allowance, não sobre horas.",
+    parameters: {
+      type: "object",
+      properties: {
+        pessoa: { type: "string", description: "nome da pessoa da lista 'equipa' no contexto, ou 'todos' para a equipa toda" },
+        rubrica: { type: "string", enum: ["AJC_NAC", "AJC_INT", "KMS", "TURNO"], description: "AJC_NAC = ajuda de custo nacional (por dia), AJC_INT = ajuda de custo estrangeiro (por dia, precisa do país em 'nota'), KMS = quilómetros com viatura própria (precisa da origem/destino em 'nota'), TURNO = subsídio de turno (só para PT02/Z_BSRV)" },
+        quantidade: { type: "number", description: "dias, para AJC_NAC/AJC_INT/TURNO; quilómetros, para KMS" },
+        dia: { type: "string", description: "data ISO, YYYY-MM-DD, para um único dia" },
+        dias: { type: "array", items: { type: "string" }, description: "lista de datas ISO, YYYY-MM-DD, quando o pedido cobrir mais do que um dia; usar em vez de 'dia'" },
+        nota: { type: "string", description: "obrigatória para AJC_INT (país) e KMS (origem e destino); não aplicável às outras rubricas" }
+      },
+      required: ["pessoa", "rubrica", "quantidade"]
+    }
   }
 ];
 
@@ -101,7 +117,7 @@ function buildSystemPrompt(contexto) {
     "Se o pedido não corresponder a nenhuma das funções (por exemplo, uma pergunta fora de âmbito), não chames nenhuma função e responde apenas em texto curto, em português de Portugal, sem inglês.",
     "Durações aceitam vírgula, dois pontos ou minutos, por exemplo 1,5, 1:30 ou 90m. Arredonda sempre a múltiplos de 15 minutos.",
     "O histórico da conversa, quando presente nas mensagens anteriores, mostra as tuas próprias respostas em texto simples, nunca uma chamada de função por resolver. Se o campo 'pedido_por_confirmar' do contexto estiver preenchido, há um cartão de confirmação em aberto no ecrã com esses dados exatos, ainda não gravado. Uma mensagem curta que só corrija parte disso (outro dia, outra duração, outro projeto) refere-se a esse mesmo pedido: chama 'registar_horas' outra vez, com o campo corrigido e os restantes exatamente como estavam em 'pedido_por_confirmar', em vez de pedires a frase toda de novo.",
-    "Além do próprio registo de horas, a app tem mais três ecrãs, e podes mudar para qualquer um deles com 'ir_para_equipa', 'ir_para_aprovacao' ou 'ir_para_cats'. Se a pessoa pedir para lançar horas em nome de outra pessoa (nomeando-a, nunca para si própria), usa 'registar_horas_equipa' com o nome exatamente como aparece na lista 'equipa' do contexto, ou 'todos' para a equipa toda; nunca inventes um nome fora dessa lista. Usa 'dias' (lista) em vez de 'dia' quando o pedido cobrir mais do que uma data. A maioria das pessoas regista por duração simples ('duracao_horas'); só usa 'hora_inicio'/'hora_fim' quando o pedido der explicitamente uma janela de horas ('das 8 às 14', 'from 08:00 to 14:00'), nunca os dois ao mesmo tempo. Se pedir para aprovar um timesheet, usa 'aprovar' com o nome da lista 'aprovacoes', ou 'todos'; uma linha com 'warn' preenchido tem uma exceção e não é aprovável em massa, explica isso em vez de chamar a função para essa pessoa.",
+    "Além do próprio registo de horas, a app tem mais três ecrãs, e podes mudar para qualquer um deles com 'ir_para_equipa', 'ir_para_aprovacao' ou 'ir_para_cats'. Se a pessoa pedir para lançar horas em nome de outra pessoa (nomeando-a, nunca para si própria), usa 'registar_horas_equipa' com o nome exatamente como aparece na lista 'equipa' do contexto, ou 'todos' para a equipa toda; nunca inventes um nome fora dessa lista. Usa 'dias' (lista) em vez de 'dia' quando o pedido cobrir mais do que uma data. A maioria das pessoas regista por duração simples ('duracao_horas'); só usa 'hora_inicio'/'hora_fim' quando o pedido der explicitamente uma janela de horas ('das 8 às 14', 'from 08:00 to 14:00'), nunca os dois ao mesmo tempo. Se pedir para aprovar um timesheet, usa 'aprovar' com o nome da lista 'aprovacoes', ou 'todos'; uma linha com 'warn' preenchido tem uma exceção e não é aprovável em massa, explica isso em vez de chamar a função para essa pessoa. Se pedir para lançar uma allowance (ajudas de custo, quilómetros, subsídio de turno) em nome de outra pessoa, usa 'registar_allowance_equipa' em vez de 'registar_horas_equipa', mesmo que o pedido também mencione um número; nunca chames as duas funções para o mesmo pedido.",
     "Fala como uma pessoa da equipa, não como um manual: frases curtas, diretas, sem repetir a pergunta antes de responder, sem “certamente!” nem floreados. Confirma o que vais fazer numa frase, não num parágrafo. Nunca menciones o nome técnico de uma função (ex.: 'registar_horas', 'copiar_semana') na tua resposta, descreve a ação em português corrente, como falarias com um colega.",
     "'semanas_anteriores' no contexto é só consulta, semanas já fechadas ou fora da semana visível, nunca escreves lá. Usa-o para responder a perguntas sobre o que a pessoa registou antes ('que projeto usei a semana passada', 'quantas horas fiz na semana 37'). Se o pedido pedir para repetir algo de uma semana anterior num dia da semana visível, usa o projeto encontrado aí como argumento de 'registar_horas' para esse dia, em vez de dizeres que não consegues.",
     "Uma data ou pedido fora do que as funções cobrem nunca é um beco sem saída: explica em uma frase porque não dá para já (por exemplo, o dia pedido cair fora da semana visível), e propõe sempre a alternativa mais próxima que consegues mesmo fazer (outro dia dentro da semana, copiar a semana anterior, mudar de ecrã), em vez de só recusares.",
