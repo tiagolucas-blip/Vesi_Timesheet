@@ -2490,6 +2490,21 @@
             ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
             capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
             semana: {total: weekTotal(), esperado: weekCapacity(), erros: errors().length, submetida: state.submitted},
+            semanas_anteriores: WEEKS.slice(0, weekIdx).map(function(w){
+              var porProjeto = {};
+              w.rows.forEach(function(r){
+                var tot = r.h.reduce(function(a,b){ return a+(b||0); }, 0);
+                if(!tot) return;
+                var code = PROJECTS[r.p].code.split("-")[0];
+                porProjeto[code] = (porProjeto[code] || 0) + tot;
+              });
+              return {
+                semana: w.num,
+                submetida: w.submitted,
+                projetos: Object.keys(porProjeto).map(function(c){ return {codigo:c, horas: round15(porProjeto[c])}; }),
+                ausencias: w.absences.map(function(a){ return {tipo:a.type, horas:a.hours, estado:a.status}; })
+              };
+            }),
             equipa: teamOf(state.leader).map(function(m){ return {nome: m.name, aprovado_bloqueado: !!m.locked}; }),
             aprovacoes: state.approvals.map(function(a){ return {nome: a.who, tem_excecao: !!a.warn, nota: a.note || null, aprovado: !!a.approved}; }),
             pedido_por_confirmar: chat.pending === "entry" && chat.draft
