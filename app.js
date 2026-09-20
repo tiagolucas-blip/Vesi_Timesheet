@@ -2160,6 +2160,19 @@
     box.appendChild(t);
     setTimeout(function(){ if(t.parentNode) box.removeChild(t); }, 8000);
   }
+  /* A number changing inside an existing cell (an assistant entry merges
+     into whatever that project/day already had) is easy to miss, there's
+     no new row to draw the eye. Scrolls to the exact cell that changed and
+     flashes it, so "did that actually save?" has an obvious answer. */
+  function flashCell(rowId, day){
+    var cell = document.getElementById("c-"+rowId+"-"+day);
+    if(!cell) return;
+    cell.scrollIntoView({block:"center", behavior:"smooth"});
+    cell.classList.remove("just-saved");
+    void cell.offsetWidth;
+    cell.classList.add("just-saved");
+    setTimeout(function(){ cell.classList.remove("just-saved"); }, 1800);
+  }
 
   /* ---------- wiring ---------- */
   $("addRow").onclick = addRow;
@@ -2427,6 +2440,7 @@
       row.origin = "Joule";
       row.h[day] += dur;
       render();
+      flashCell(row.id, day);
       botSay("bot", fmt(dur) + " h saved on " + DAYS[day] + ", " + pr.code + ". " + weekSummaryText());
       botChips(["Submit the week","My absences"]);
     }, warn));
@@ -2468,6 +2482,7 @@
       row.origin = "Joule";
       applicable.forEach(function(d){ row.h[d] += dur; });
       render();
+      applicable.forEach(function(d){ flashCell(row.id, d); });
       botSay("bot", fmt(dur) + " h saved on " + applicable.length + (applicable.length === 1 ? " day" : " days")
         + " (" + fmt(dur * applicable.length) + " h total), " + pr.code + ". " + weekSummaryText());
       botChips(["Submit the week","My absences"]);

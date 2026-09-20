@@ -128,6 +128,8 @@
   .cell{width:100%; height:100%; min-height:44px; border:none; border-left:1px solid var(--line-soft); background:transparent; color:var(--ink); font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:14px; text-align:center; padding:0 4px}
   .cell:hover{background:var(--surface-2)}
   .cell:focus{background:var(--accent-soft); outline:2px solid var(--accent); outline-offset:-2px}
+  .cell.just-saved{animation:justSaved 1.8s ease-out}
+  @keyframes justSaved{0%{background:var(--accent-soft); box-shadow:inset 0 0 0 2px var(--accent)} 100%{background:transparent; box-shadow:inset 0 0 0 2px transparent}}
   .cell.we{background:var(--surface-2)}
   .cell::placeholder{color:transparent}
   .rowtot{border-left:1px solid var(--line-soft); display:grid; place-items:center; text-align:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-weight:500}
