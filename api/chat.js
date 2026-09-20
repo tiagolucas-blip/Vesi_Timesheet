@@ -165,6 +165,11 @@ export default async function handler(req, res) {
       texto: texto || null
     });
   } catch (err) {
+    console.error("assistente_falha_claude", {
+      name: err && err.name,
+      status: err && err.status,
+      message: err && err.message
+    });
     res.status(502).json({
       error: "falha_motor_linguagem",
       detalhe: String((err && err.message) || err)
