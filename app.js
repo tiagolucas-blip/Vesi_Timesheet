@@ -2541,7 +2541,7 @@
           : teamMembersE.filter(function(m){ return m.name.toLowerCase().indexOf(String(ae.pessoa || "").toLowerCase()) !== -1; });
         var rawDaysE = Array.isArray(ae.dias) && ae.dias.length ? ae.dias : (ae.dia ? [ae.dia] : []);
         var daysE = rawDaysE
-          .map(function(d){ return WORKDATES.indexOf(String(d).replace(/-/g,"")); })
+          .map(function(d){ return resolveDayArg(d); })
           .filter(function(i){ return i !== -1; });
         var clockE = null;
         if(ae.hora_inicio && ae.hora_fim){
@@ -2550,7 +2550,7 @@
         }
         var durE = clockE ? null : round15(Number(ae.duracao_horas));
         if(!targetsE.length || !daysE.length || (!clockE && (!durE || durE <= 0))){
-          botSay("bot", intent.texto || "I couldn't confirm who, which day(s) or the hours. Could you write it another way?");
+          botSay("bot", intent.texto || "Não consegui confirmar quem, os dias ou as horas. Pode escrever de outra forma?");
           botChips(["Help"]);
           return true;
         }
@@ -2563,14 +2563,14 @@
         return true;
       case "registar_horas":
         var a = intent.argumentos || {};
-        var dayIdx = WORKDATES.indexOf(String(a.dia || "").replace(/-/g,""));
+        var dayIdx = resolveDayArg(a.dia);
         var pIdx = -1;
         PROJECTS.forEach(function(pr,i){
           if(pr.code.toLowerCase().indexOf(String(a.projeto || "").toLowerCase()) === 0) pIdx = i;
         });
         var dur = round15(Number(a.duracao_horas));
         if(dayIdx === -1 || dayIdx > 4 || pIdx === -1 || !dur || dur <= 0){
-          botSay("bot", intent.texto || "I couldn't confirm all the details for that entry. Could you write it another way?");
+          botSay("bot", intent.texto || "Não consegui confirmar todos os detalhes desse registo. Pode escrever de outra forma?");
           botChips(["How many hours do I have?","My absences"]);
           return true;
         }
@@ -2584,7 +2584,7 @@
         });
         var durW = round15(Number(aw.duracao_horas));
         if(pIdxW === -1 || !durW || durW <= 0){
-          botSay("bot", intent.texto || "I couldn't confirm all the details for that entry. Could you write it another way?");
+          botSay("bot", intent.texto || "Não consegui confirmar todos os detalhes desse registo. Pode escrever de outra forma?");
           botChips(["How many hours do I have?","My absences"]);
           return true;
         }
@@ -2723,6 +2723,30 @@
       if(+WORKDATES[i].slice(6,8) === dd && +WORKDATES[i].slice(4,6) === mm){ day = i; break; }
     }
     return {day:day, match:m[0]};
+  }
+
+  /* Resolves a day argument coming back from Claude's tool call, which isn't
+     always the clean YYYY-MM-DD the tool schema asks for (a bare "15", a
+     "2026-9-15" with unpadded month, "15/09"). Tries, in order: exact ISO
+     match against WORKDATES, a calendar-date mention via parseDateMention,
+     then a bare day-of-month number against the visible week. Returns -1
+     when nothing in the visible week matches. */
+  function resolveDayArg(dia){
+    var s = String(dia == null ? "" : dia).trim();
+    if(!s) return -1;
+    var digits = s.replace(/[-\/]/g,"");
+    var idx = WORKDATES.indexOf(digits);
+    if(idx !== -1) return idx;
+    var dm = parseDateMention(" " + s + " ");
+    if(dm && dm.day !== -1) return dm.day;
+    var bare = s.match(/^(\d{1,2})$/);
+    if(bare){
+      var dd = +bare[1];
+      for(var i=0; i<WORKDATES.length; i++){
+        if(+WORKDATES[i].slice(6,8) === dd) return i;
+      }
+    }
+    return -1;
   }
 
   /* Duration token: "8h", "8 hours", "1:30", "90m" or a bare number, matched
