@@ -208,6 +208,7 @@
         <div class="panel" id="teamGridPanel">
           <header>
             <h2>Team</h2>
+            <label class="hdrfield" for="mProj"><span>Project</span><select id="mProj"></select></label>
           </header>
           <div class="tablescroll">
             <div class="tsgrid team" id="teamGrid"></div>
@@ -219,7 +220,6 @@
             <h2>Fill several people at once</h2>
           </header>
           <div class="massbar">
-            <label class="f"><span>Project</span><select id="mProj"></select></label>
             <label class="f" id="mDurWrap"><span>Duration</span><input type="text" id="mDur" value="8" inputmode="decimal" placeholder="8"></label>
             <label class="f" id="mBegWrap"><span>Start time</span><input type="text" id="mBeg" value="08:00" inputmode="numeric" placeholder="08:00"></label>
             <label class="f" id="mEndWrap"><span>End time</span><input type="text" id="mEnd" value="17:00" inputmode="numeric" placeholder="17:00"></label>
@@ -272,7 +272,7 @@
           <div class="gridfoot">
             <button class="btn primary" id="mAllowSave" disabled>Save staged allowances</button>
             <button class="btn" id="mAllowClear">Clear</button>
-            <button type="button" class="hinttip" title="Billed to the project shown above, the same one Hours uses for this team. The bonus is recorded separately, in the Bonus tab.">?</button>
+            <button type="button" class="hinttip" title="Billed to the project picked above the team grid, the same one Hours uses. The bonus is recorded separately, in the Bonus tab.">?</button>
           </div>
         </div>
 

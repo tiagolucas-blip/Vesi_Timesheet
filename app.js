@@ -102,17 +102,20 @@
   }
 
   /* ---------- team, for the leader's mass entry ----------
-     Scope is strictly by project ownership, never by line management: each
-     project has one owner in LEADERS, and the team a leader sees in mass
-     entry is everyone allocated to that project, whatever their manager in
-     IT0001/OM is. Rui Tavares is the example: he works on Pedro Alves's
-     project (AER-WFM) and also on Ana Ferreira's (BNK-2026), independently
-     of who he reports to in the org chart. */
+     Scope is strictly by project ownership, never by line management: the
+     team a leader sees in mass entry is everyone allocated to any of the
+     leader's own projects, whatever their manager in IT0001/OM is. Rui
+     Tavares is the example: he works on Pedro Alves's project (AER-WFM) and
+     also on Ana Ferreira's (BNK-2026), independently of who he reports to
+     in the org chart. A leader can own more than one project at once, as
+     Ricardo Nunes does here: the Team screen then unions everyone from
+     either project, and the project picker decides which one a given mass
+     entry is billed to, one at a time. */
   var LEADERS = [
-    {id:"RN", name:"Ricardo Nunes", label:"Project owner, RTL-TT",  proj:1, bukrs:"PT01"},
-    {id:"PA", name:"Pedro Alves",   label:"Project owner, AER-WFM", proj:2, bukrs:"PT01"},
-    {id:"AF", name:"Ana Ferreira",  label:"Project owner, BNK-2026", proj:0, bukrs:"PT01"},
-    {id:"CP", name:"Carlos Pinto",  label:"Project owner, HSP-FAC", proj:4, bukrs:"PT02"}
+    {id:"RN", name:"Ricardo Nunes", label:"Project owner, RTL-TT + AXI-INT", projs:[1,3], bukrs:"PT01"},
+    {id:"PA", name:"Pedro Alves",   label:"Project owner, AER-WFM", projs:[2], bukrs:"PT01"},
+    {id:"AF", name:"Ana Ferreira",  label:"Project owner, BNK-2026", projs:[0], bukrs:"PT01"},
+    {id:"CP", name:"Carlos Pinto",  label:"Project owner, HSP-FAC", projs:[4], bukrs:"PT02"}
   ];
   var TEAM = [
     {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", projs:[0,3], abs:{}, already:[8,8,4,0,0,0,0]},
@@ -127,14 +130,17 @@
   function leaderById(id){ return LEADERS.filter(function(l){ return l.id === id; })[0] || LEADERS[0]; }
   function teamOf(leaderId){
     var l = leaderById(leaderId);
-    return TEAM.filter(function(m){ return m.projs.indexOf(l.proj) !== -1; });
+    return TEAM.filter(function(m){
+      return m.projs.some(function(p){ return l.projs.indexOf(p) !== -1; });
+    });
   }
   function projectsOf(leaderId){
-    return [leaderById(leaderId).proj];
+    return leaderById(leaderId).projs;
   }
-  /* Leaders own one project each, in one company: "acting as" only offers
-     leaders of the company IT0001 currently reads, the same rule Team
-     entry already applies to who counts as someone's team. */
+  /* Leaders stay in one company, whatever number of projects they own:
+     "acting as" only offers leaders of the company IT0001 currently reads,
+     the same rule Team entry already applies to who counts as someone's
+     team. */
   function leadersForCompany(bukrs){
     return LEADERS.filter(function(l){ return l.bukrs === bukrs; });
   }
@@ -1450,7 +1456,7 @@
             box.appendChild(tinp);
           });
           box.appendChild(el("div","cdur", v ? fmt(v) + " h" : "–"));
-          box.title = PROJECTS[leader.proj].code + " · " + fmtClock(t.b) + "–" + fmtClock(t.e);
+          box.title = PROJECTS[massProject()].code + " · " + fmtClock(t.b) + "–" + fmtClock(t.e);
           if(memberBlocked(m,i)){ box.classList.add("abs"); box.title = "Approved "+m.abs[i].toLowerCase(); }
           if(!periodOpen(WORKDATES[i], m.bukrs)){ box.classList.add("closed"); box.title = "Closed period"; }
           row.appendChild(box);
@@ -1462,7 +1468,7 @@
         inp.value = v ? fmt(v) : "";
         inp.inputMode = "decimal";
         inp.disabled = m.locked || memberBlocked(m,i) || !periodOpen(WORKDATES[i], m.bukrs);
-        inp.title = v ? (PROJECTS[leader.proj].code + " · " + fmt(v) + " h") : "";
+        inp.title = v ? (PROJECTS[massProject()].code + " · " + fmt(v) + " h") : "";
         inp.setAttribute("aria-label","Hours for "+m.name+", "+DAYS[i]);
         if(memberBlocked(m,i)){ inp.classList.add("abs"); inp.title = "Approved "+m.abs[i].toLowerCase(); }
         if(!periodOpen(WORKDATES[i], m.bukrs)){ inp.classList.add("closed"); inp.title = "Closed period"; }
@@ -1698,8 +1704,7 @@
     }
     $("mAllowStagedCount").textContent = state.stagedAllow.length + (state.stagedAllow.length === 1 ? " staged" : " staged");
     if($("mAllowProj")){
-      var allowLeader = leaderById(state.leader);
-      $("mAllowProj").textContent = PROJECTS[allowLeader.proj].code + " · " + PROJECTS[allowLeader.proj].name;
+      $("mAllowProj").textContent = PROJECTS[massProject()].code + " · " + PROJECTS[massProject()].name;
     }
     $("mAllowSave").disabled = state.stagedAllow.length === 0;
     box.innerHTML = "";
@@ -1765,7 +1770,7 @@
        tab itself is always enabled, just not always the active one.
        Who it's for comes from the Team grid's own checkboxes, same as
        Hours and Allowances, instead of a second, separate picker here. */
-    $("bProj").textContent = PROJECTS[leader.proj].code + " · " + PROJECTS[leader.proj].name;
+    $("bProj").textContent = PROJECTS[massProject()].code + " · " + PROJECTS[massProject()].name;
     var box = $("bonusList");
     box.innerHTML = "";
     var mine = state.allow.filter(function(a){ return wt(a.code).amount; });
@@ -1784,24 +1789,34 @@
   }
   function saveBonus(){
     var leader = leaderById(state.leader);
+    var pIdx = massProject();
     var members = teamOf(state.leader).filter(function(m){ return stagedOf(m.pernr).sel && !m.locked; });
     if(!members.length){ toast("Select at least one person first."); return; }
     var amount = parseDur($("bAmount").value);
     var note = $("bNote").value.trim();
     if(isNaN(amount) || amount <= 0){ toast("The amount needs to be a number above zero."); return; }
     if(!note){ toast("The bonus needs a reason. It is the only trace of why the project carried this cost."); return; }
-    members.forEach(function(who){
+    /* A leader who owns more than one project can have someone selected who
+       isn't actually allocated to the project picked above (they're on the
+       team through the leader's other project): skip them, same partial-save
+       pattern as Hours and Allowances, rather than billing the wrong project. */
+    var eligible = members.filter(function(m){ return m.projs.indexOf(pIdx) !== -1; });
+    var ineligible = members.filter(function(m){ return m.projs.indexOf(pIdx) === -1; });
+    if(!eligible.length){ toast("None of the selected people are allocated to " + PROJECTS[pIdx].code + "."); return; }
+    eligible.forEach(function(who){
       var day = 4;
       for(var i=4; i>=0; i--){ if(periodOpen(WORKDATES[i], who.bukrs)){ day = i; break; } }
       state.allow.push({
-        id:"al"+(nextId++), day:day, p:leader.proj, code:"BONUS", qty:1, amount:amount,
+        id:"al"+(nextId++), day:day, p:pIdx, code:"BONUS", qty:1, amount:amount,
         note:note, by:leader.id, onBehalf:who.pernr, byName:leader.name, forName:who.name
       });
     });
     $("bAmount").value = ""; $("bNote").value = "";
     render();
-    var names = members.map(function(m){ return m.name; }).join(", ");
-    toast(fmt(amount) + " EUR bonus recorded for " + names + ", approved in the same act.");
+    var names = eligible.map(function(m){ return m.name; }).join(", ");
+    var msg = fmt(amount) + " EUR bonus recorded for " + names + ", approved in the same act.";
+    if(ineligible.length) msg += " " + ineligible.map(function(m){ return m.name.split(" ")[0]; }).join(", ") + " skipped, not allocated to " + PROJECTS[pIdx].code + ".";
+    toast(msg);
   }
 
   /* ---------- actions ---------- */
@@ -2931,8 +2946,7 @@
      absences/closed periods included, instead of a second copy of that
      logic that could drift from the real one. */
   function offerTeamEntry(members, days, dur, clock){
-    var leader = leaderById(state.leader);
-    var pIdx = leader.proj;
+    var pIdx = massProject();
     var pr = PROJECTS[pIdx];
     var locked = members.filter(function(m){ return m.locked; });
     var selected = members.filter(function(m){ return !m.locked; });
@@ -3265,6 +3279,7 @@
   if($("alCode")) $("alCode").onchange = syncAllowForm;
   if($("alSave")) $("alSave").onclick = function(){ saveAllow(); };
   if($("alCancel")) $("alCancel").onclick = function(){ $("dlgAllow").close(); };
+  if($("mProj")) $("mProj").onchange = renderTeam;
   if($("mApply")) $("mApply").onclick = applyMass;
   if($("mSave")) $("mSave").onclick = saveMass;
   if($("mClear")) $("mClear").onclick = function(){ clearMass(); toast("Staged entries cleared. Nothing had been saved."); };
