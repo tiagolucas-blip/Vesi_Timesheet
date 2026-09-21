@@ -1231,7 +1231,7 @@
         note: "CATSAMOUNT is a native CATSDB field (CURR 13,2), used above for the bonus. Confirm with the client whether the standard CAT6 transfer already maps it to IT2010 BETRG, or whether that mapping needs configuring, and which field carries the currency key alongside it",
         btpOnly: {
           comment: "stays in the experience layer, never enters CATSDB",
-          onBehalfOf: state.massLog.slice(-8).map(function(e){
+          onBehalfOf: massLogThisWeek().slice(-8).map(function(e){
             return {pernr: e.pernr, workdate: e.date, createdBy: e.createdBy, onBehalfOf: e.onBehalf};
           }),
           origins: state.rows.filter(function(r){ return rowTotal(r) > 0; }).map(function(r){
@@ -1426,14 +1426,22 @@
       p.appendChild(el("span","", m.name));
       var code = document.createElement("code"); code.textContent = m.pernr; p.appendChild(code);
       meta.appendChild(p);
+      /* Which projects someone is actually allocated to was invisible until
+         a save rejected them with a reason - shown here up front instead,
+         and called out when it's specifically the project a mass entry is
+         about to bill to right now, the one case that blocks an action. */
+      var pIdx = massProject();
+      var ineligibleNow = !isEligibleForProject(m, pIdx);
       var sub = m.role + " · " + m.bukrs + " · " + profileFor(WORKDATES[0], m.bukrs).code;
+      sub += " · allocated to " + m.projs.map(function(i){ return PROJECTS[i].code; }).join(", ");
       var absDays = Object.keys(m.abs).map(Number).sort(function(a,b){ return a-b; });
       if(absDays.length){
         sub += " · " + absDays.map(function(d){ return DAYS[d] + " " + m.abs[d].toLowerCase(); }).join(", ");
       }
+      if(ineligibleNow) sub += " · not allocated to " + PROJECTS[pIdx].code + ", the project selected above";
       if(m.locked) sub += " · week already approved";
       var s = el("div","s", sub);
-      if(m.locked) s.style.color = "var(--warn)";
+      if(m.locked || ineligibleNow) s.style.color = "var(--warn)";
       meta.appendChild(s);
       row.appendChild(meta);
 
@@ -1774,16 +1782,26 @@
     });
   }
 
+  /* state.massLog holds every mass entry ever recorded, across every week,
+     not just this one - it's the CATS payload's audit trail too. Without
+     this filter, switching weeks left last week's entries on screen, and
+     DAYS[e.day] read them against the WRONG week's calendar, so "Tue 15"
+     silently relabelled itself "Tue 22" the moment the visible week
+     changed, still pointing at the same stored day-of-week offset. */
+  function massLogThisWeek(){
+    return state.massLog.filter(function(e){ return WORKDATES.indexOf(e.date) !== -1; });
+  }
   function renderMassLog(){
     var box = $("massLog");
     if(!box) return;
     box.innerHTML = "";
-    $("massLogCount").textContent = state.massLog.length + (state.massLog.length === 1 ? " entry" : " entries");
-    if(!state.massLog.length){
-      box.appendChild(el("div","paused","Nothing recorded on behalf of the team yet."));
+    var weekLog = massLogThisWeek();
+    $("massLogCount").textContent = weekLog.length + (weekLog.length === 1 ? " entry" : " entries");
+    if(!weekLog.length){
+      box.appendChild(el("div","paused","Nothing recorded on behalf of the team yet, this week."));
       return;
     }
-    state.massLog.slice(-12).reverse().forEach(function(e){
+    weekLog.slice(-12).reverse().forEach(function(e){
       var c = el("div","abscard","");
       var h = el("div","h","");
       h.appendChild(el("b","", e.name));
