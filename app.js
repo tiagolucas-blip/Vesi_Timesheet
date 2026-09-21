@@ -1697,6 +1697,10 @@
       syncMassAllowForm();
     }
     $("mAllowStagedCount").textContent = state.stagedAllow.length + (state.stagedAllow.length === 1 ? " staged" : " staged");
+    if($("mAllowProj")){
+      var allowLeader = leaderById(state.leader);
+      $("mAllowProj").textContent = PROJECTS[allowLeader.proj].code + " · " + PROJECTS[allowLeader.proj].name;
+    }
     $("mAllowSave").disabled = state.stagedAllow.length === 0;
     box.innerHTML = "";
     if(!state.stagedAllow.length){
@@ -1758,16 +1762,9 @@
     var leader = leaderById(state.leader);
     /* visibility is owned by setTeamTab() now, one of the three mass-entry
        tabs, not this function — every leader is a project owner so the
-       tab itself is always enabled, just not always the active one */
-    var sel = $("bWho");
-    var keep = sel.value;
-    sel.innerHTML = "";
-    teamOf(state.leader).forEach(function(m){
-      var o = document.createElement("option");
-      o.value = m.pernr; o.textContent = m.name;
-      sel.appendChild(o);
-    });
-    if(keep && sel.querySelector('option[value="'+keep+'"]')) sel.value = keep;
+       tab itself is always enabled, just not always the active one.
+       Who it's for comes from the Team grid's own checkboxes, same as
+       Hours and Allowances, instead of a second, separate picker here. */
     $("bProj").textContent = PROJECTS[leader.proj].code + " · " + PROJECTS[leader.proj].name;
     var box = $("bonusList");
     box.innerHTML = "";
@@ -1787,21 +1784,24 @@
   }
   function saveBonus(){
     var leader = leaderById(state.leader);
+    var members = teamOf(state.leader).filter(function(m){ return stagedOf(m.pernr).sel && !m.locked; });
+    if(!members.length){ toast("Select at least one person first."); return; }
     var amount = parseDur($("bAmount").value);
     var note = $("bNote").value.trim();
-    var who = TEAM.filter(function(m){ return m.pernr === $("bWho").value; })[0];
-    if(!who){ toast("Pick who the bonus is for."); return; }
     if(isNaN(amount) || amount <= 0){ toast("The amount needs to be a number above zero."); return; }
     if(!note){ toast("The bonus needs a reason. It is the only trace of why the project carried this cost."); return; }
-    var day = 4;
-    for(var i=4; i>=0; i--){ if(periodOpen(WORKDATES[i], who.bukrs)){ day = i; break; } }
-    state.allow.push({
-      id:"al"+(nextId++), day:day, p:leader.proj, code:"BONUS", qty:1, amount:amount,
-      note:note, by:leader.id, onBehalf:who.pernr, byName:leader.name, forName:who.name
+    members.forEach(function(who){
+      var day = 4;
+      for(var i=4; i>=0; i--){ if(periodOpen(WORKDATES[i], who.bukrs)){ day = i; break; } }
+      state.allow.push({
+        id:"al"+(nextId++), day:day, p:leader.proj, code:"BONUS", qty:1, amount:amount,
+        note:note, by:leader.id, onBehalf:who.pernr, byName:leader.name, forName:who.name
+      });
     });
     $("bAmount").value = ""; $("bNote").value = "";
     render();
-    toast(fmt(amount) + " EUR bonus recorded for " + who.name + ", approved in the same act.");
+    var names = members.map(function(m){ return m.name; }).join(", ");
+    toast(fmt(amount) + " EUR bonus recorded for " + names + ", approved in the same act.");
   }
 
   /* ---------- actions ---------- */

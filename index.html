@@ -246,6 +246,7 @@
         <div class="panel" id="teamAllowPanel" hidden>
           <header>
             <h2>Allowances for selected people</h2>
+            <span class="chip green" id="mAllowProj">Project</span>
             <span class="chip grey" id="mAllowStagedCount">0 staged</span>
           </header>
           <div class="massbar">
@@ -271,7 +272,7 @@
           <div class="gridfoot">
             <button class="btn primary" id="mAllowSave" disabled>Save staged allowances</button>
             <button class="btn" id="mAllowClear">Clear</button>
-            <button type="button" class="hinttip" title="Uses the project chosen above. The bonus is recorded separately, in the Bonus tab.">?</button>
+            <button type="button" class="hinttip" title="Billed to the project shown above, the same one Hours uses for this team. The bonus is recorded separately, in the Bonus tab.">?</button>
           </div>
         </div>
 
@@ -281,10 +282,9 @@
             <span class="chip green" id="bProj">Project</span>
           </header>
           <div class="massbar">
-            <label class="f"><span>Employee</span><select id="bWho"></select></label>
             <label class="f"><span>Amount, EUR</span><input type="text" id="bAmount" inputmode="decimal" placeholder="500"></label>
             <label class="f wide"><span>Reason</span><input type="text" id="bNote" placeholder="Go-live weekend, payroll cutover"></label>
-            <button class="btn primary" id="bSave">Record and approve</button>
+            <button class="btn primary" id="bSave">Record and approve for selected</button>
           </div>
           <div class="sugs" id="bonusList"></div>
           <div class="privacy">
