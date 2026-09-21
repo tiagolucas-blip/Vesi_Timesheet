@@ -429,6 +429,10 @@
        guess) */
     teamTab: "hours",
     sugManualOpen: null,
+    /* which top-level screen is showing right now: "semana" (My week),
+       "team", "aprov" or "cats" - lets the assistant tell a personal
+       request from a team one when the wording alone is ambiguous */
+    screen: "semana",
     approvals:[
       {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false},
       {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false},
@@ -2455,6 +2459,7 @@
       var s = b.dataset.screen;
       Array.prototype.forEach.call(document.querySelectorAll(".nav button"), function(x){ x.setAttribute("aria-current", x === b ? "true" : "false"); });
       ["semana","team","aprov","cats"].forEach(function(k){ $("screen-"+k).hidden = k !== s; });
+      state.screen = s;
       if(s === "cats") renderCats();
       if(s === "team") renderTeam();
       window.scrollTo({top:0});
@@ -2736,6 +2741,7 @@
           mensagem: txt,
           historico: chat.history.slice(0, -1).slice(-12),
           contexto: {
+            ecra_atual: {semana:"My week", team:"Team", aprov:"Approval", cats:"CATS mapping"}[state.screen] || "My week",
             projetos: PROJECTS.map(function(p,i){ return {codigo: p.code.split("-")[0], nome: p.name, indice: i}; }),
             ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
             capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
