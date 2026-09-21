@@ -103,14 +103,15 @@
 
   /* ---------- team, for the leader's mass entry ----------
      Scope is strictly by project ownership, never by line management: the
-     team a leader sees in mass entry is everyone allocated to any of the
-     leader's own projects, whatever their manager in IT0001/OM is. Rui
-     Tavares is the example: he works on Pedro Alves's project (AER-WFM) and
-     also on Ana Ferreira's (BNK-2026), independently of who he reports to
-     in the org chart. A leader can own more than one project at once, as
-     Ricardo Nunes does here: the Team screen then unions everyone from
-     either project, and the project picker decides which one a given mass
-     entry is billed to, one at a time. */
+     team a leader sees in mass entry is everyone allocated to the project
+     currently picked above the grid, whatever their manager in IT0001/OM
+     is. Rui Tavares is the example: he works on Pedro Alves's project
+     (AER-WFM) and also on Ana Ferreira's (BNK-2026), independently of who
+     he reports to in the org chart. A leader can own more than one project
+     at once, as Ricardo Nunes does here: switching the project picker
+     switches which of those rosters is on screen, rather than showing
+     everyone from every project at once and sorting out who belongs where
+     after the fact. */
   var LEADERS = [
     {id:"RN", name:"Ricardo Nunes", label:"Project owner, RTL-TT + AXI-INT", projs:[1,3], bukrs:"PT01"},
     {id:"PA", name:"Pedro Alves",   label:"Project owner, AER-WFM", projs:[2], bukrs:"PT01"},
@@ -130,9 +131,18 @@
   function leaderById(id){ return LEADERS.filter(function(l){ return l.id === id; })[0] || LEADERS[0]; }
   function teamOf(leaderId){
     var l = leaderById(leaderId);
-    return TEAM.filter(function(m){
-      return m.projs.some(function(p){ return l.projs.indexOf(p) !== -1; });
-    });
+    var pIdx = massProject();
+    /* If the currently selected project isn't even one of this leader's
+       own (mid leader-switch, before #mProj's options are re-synced),
+       fall back to the union of their projects rather than an empty or
+       wrong-leader team; renderTeam() re-syncs #mProj before this runs in
+       the normal render path, so this only guards the edge case. */
+    if(l.projs.indexOf(pIdx) === -1){
+      return TEAM.filter(function(m){
+        return m.projs.some(function(p){ return l.projs.indexOf(p) !== -1; });
+      });
+    }
+    return TEAM.filter(function(m){ return isEligibleForProject(m, pIdx); });
   }
   function projectsOf(leaderId){
     return leaderById(leaderId).projs;
@@ -1366,13 +1376,10 @@
     var wrap = $("teamGrid");
     if(!wrap) return;
     var leader = leaderById(state.leader);
-    var members = teamOf(state.leader);
 
-    $("teamScope").textContent = leader.label;
-    $("teamScopeNote").textContent = "Project team. Includes people who report elsewhere in the line but work on this project.";
-    $("teamCount").textContent = members.length + (members.length === 1 ? " person" : " people");
-
-    /* project options, limited to the leader's scope */
+    /* project options, limited to the leader's scope. This has to run
+       before teamOf(), which reads #mProj's current value to decide who's
+       even on the roster now. */
     var pj = $("mProj");
     if(pj && !pj.dataset.for || (pj && pj.dataset.for !== state.leader)){
       var keep = pj.value;
@@ -1385,6 +1392,12 @@
       pj.dataset.for = state.leader;
       if(keep && pj.querySelector('option[value="'+keep+'"]')) pj.value = keep;
     }
+
+    var members = teamOf(state.leader);
+
+    $("teamScope").textContent = leader.label;
+    $("teamScopeNote").textContent = "Project team for " + PROJECTS[massProject()].code + ". Includes people who report elsewhere in the line but work on this project.";
+    $("teamCount").textContent = members.length + (members.length === 1 ? " person" : " people");
 
     renderAlreadyGrid(members);
     renderAlreadyAllowGrid(members);
@@ -1427,21 +1440,19 @@
       var code = document.createElement("code"); code.textContent = m.pernr; p.appendChild(code);
       meta.appendChild(p);
       /* Which projects someone is actually allocated to was invisible until
-         a save rejected them with a reason - shown here up front instead,
-         and called out when it's specifically the project a mass entry is
-         about to bill to right now, the one case that blocks an action. */
-      var pIdx = massProject();
-      var ineligibleNow = !isEligibleForProject(m, pIdx);
+         a save rejected them with a reason; shown here up front instead.
+         teamOf() now only lists people allocated to the project selected
+         above, so everyone in this loop already qualifies - this is
+         context, not a warning. */
       var sub = m.role + " · " + m.bukrs + " · " + profileFor(WORKDATES[0], m.bukrs).code;
       sub += " · allocated to " + m.projs.map(function(i){ return PROJECTS[i].code; }).join(", ");
       var absDays = Object.keys(m.abs).map(Number).sort(function(a,b){ return a-b; });
       if(absDays.length){
         sub += " · " + absDays.map(function(d){ return DAYS[d] + " " + m.abs[d].toLowerCase(); }).join(", ");
       }
-      if(ineligibleNow) sub += " · not allocated to " + PROJECTS[pIdx].code + ", the project selected above";
       if(m.locked) sub += " · week already approved";
       var s = el("div","s", sub);
-      if(m.locked || ineligibleNow) s.style.color = "var(--warn)";
+      if(m.locked) s.style.color = "var(--warn)";
       meta.appendChild(s);
       row.appendChild(meta);
 
