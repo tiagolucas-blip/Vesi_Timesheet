@@ -169,6 +169,9 @@
         </div>
         <span class="chip blue" id="teamScope">Project team</span>
         <span class="chip grey" id="teamCount">0 people</span>
+        <label class="coswitch" for="mProj"><span>Project</span>
+          <select id="mProj" aria-label="Project to bill and staff mass entries for"></select>
+        </label>
         <div class="spacer"></div>
         <label class="coswitch" for="leadSel"><span>Acting as</span>
           <select id="leadSel" aria-label="Leader and scope"></select>
@@ -208,7 +211,6 @@
         <div class="panel" id="teamGridPanel">
           <header>
             <h2>Team</h2>
-            <label class="hdrfield" for="mProj"><span>Project</span><select id="mProj"></select></label>
           </header>
           <div class="tablescroll">
             <div class="tsgrid team" id="teamGrid"></div>
@@ -272,7 +274,7 @@
           <div class="gridfoot">
             <button class="btn primary" id="mAllowSave" disabled>Save staged allowances</button>
             <button class="btn" id="mAllowClear">Clear</button>
-            <button type="button" class="hinttip" title="Billed to the project picked above the team grid, the same one Hours uses. The bonus is recorded separately, in the Bonus tab.">?</button>
+            <button type="button" class="hinttip" title="Billed to the Project picked at the top of the screen, the same one Hours uses. The bonus is recorded separately, in the Bonus tab.">?</button>
           </div>
         </div>
 

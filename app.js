@@ -113,10 +113,10 @@
      everyone from every project at once and sorting out who belongs where
      after the fact. */
   var LEADERS = [
-    {id:"RN", name:"Ricardo Nunes", label:"Project owner, RTL-TT + AXI-INT", projs:[1,3], bukrs:"PT01"},
-    {id:"PA", name:"Pedro Alves",   label:"Project owner, AER-WFM", projs:[2], bukrs:"PT01"},
-    {id:"AF", name:"Ana Ferreira",  label:"Project owner, BNK-2026", projs:[0], bukrs:"PT01"},
-    {id:"CP", name:"Carlos Pinto",  label:"Project owner, HSP-FAC", projs:[4], bukrs:"PT02"}
+    {id:"RN", name:"Ricardo Nunes", label:"RTL-TT + AXI-INT", projs:[1,3], bukrs:"PT01"},
+    {id:"PA", name:"Pedro Alves",   label:"AER-WFM", projs:[2], bukrs:"PT01"},
+    {id:"AF", name:"Ana Ferreira",  label:"BNK-2026", projs:[0], bukrs:"PT01"},
+    {id:"CP", name:"Carlos Pinto",  label:"HSP-FAC", projs:[4], bukrs:"PT02"}
   ];
   var TEAM = [
     {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", projs:[0,3], abs:{}, already:[8,8,4,0,0,0,0]},
@@ -1375,7 +1375,6 @@
   function renderTeam(){
     var wrap = $("teamGrid");
     if(!wrap) return;
-    var leader = leaderById(state.leader);
 
     /* project options, limited to the leader's scope. This has to run
        before teamOf(), which reads #mProj's current value to decide who's
@@ -1395,7 +1394,6 @@
 
     var members = teamOf(state.leader);
 
-    $("teamScope").textContent = leader.label;
     $("teamScopeNote").textContent = "Project team for " + PROJECTS[massProject()].code + ". Includes people who report elsewhere in the line but work on this project.";
     $("teamCount").textContent = members.length + (members.length === 1 ? " person" : " people");
 
