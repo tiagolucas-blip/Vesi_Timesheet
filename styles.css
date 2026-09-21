@@ -406,6 +406,7 @@
   .already-cell.we{background:var(--surface-2)}
   .already-cell.full{background:var(--warn-soft); color:var(--warn); font-weight:600}
   .already-cell.over{background:var(--crit-soft); color:var(--crit); font-weight:600}
+  .already-cell.abs{background:repeating-linear-gradient(135deg,var(--surface-3),var(--surface-3) 4px,var(--surface-2) 4px,var(--surface-2) 8px); color:var(--ink-3)}
   .allowcell{display:flex; align-items:center; justify-content:center; text-align:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-3); border-left:1px solid var(--line-soft)}
   .allowcell.we{background:var(--surface-2)}
   .allowcell.pending{background:var(--accent-soft); color:var(--accent-ink); font-weight:600}

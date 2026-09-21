@@ -1327,8 +1327,10 @@
         var cls = "already-cell" + (i>4 ? " we" : "");
         if(total > 8) cls += " over";
         else if(total >= 8) cls += " full";
+        if(memberBlocked(m,i)) cls += " abs";
         var cell = el("div", cls, total ? fmt(total) : "–");
-        if(st.h[i]) cell.title = fmt(v) + " h already · " + fmt(st.h[i]) + " h staged now";
+        if(memberBlocked(m,i)) cell.title = "Approved " + m.abs[i].toLowerCase();
+        else if(st.h[i]) cell.title = fmt(v) + " h already · " + fmt(st.h[i]) + " h staged now";
         row.appendChild(cell);
       });
       row.appendChild(el("div","rowtot", rowTotal ? fmt(rowTotal) : "–"));
@@ -1381,9 +1383,11 @@
       DAYS.forEach(function(d,i){
         var lines = entries.filter(function(e){ return e.day === i; });
         var info = fmtAllowCell(lines);
-        var cell = el("div","already-cell" + (i>4 ? " we" : ""), info.text);
+        var cls = "already-cell" + (i>4 ? " we" : "") + (memberBlocked(m,i) ? " abs" : "");
+        var cell = el("div", cls, info.text);
+        if(memberBlocked(m,i)) cell.title = "Approved " + m.abs[i].toLowerCase();
+        else if(lines.length) cell.title = info.title;
         if(lines.length){
-          cell.title = info.title;
           lines.forEach(function(l){ units[wt(l.code).unit] = (units[wt(l.code).unit]||0) + l.qty; });
         }
         row.appendChild(cell);
@@ -2762,6 +2766,25 @@
     }
   }
 
+  /* Claude reads teamOf(state.leader) too (the 'equipa' list in its
+     context), scoped to whichever leader and project are currently active
+     above the Team grid - so a name it names correctly can still fail to
+     resolve here if Acting as / Project moved on since, and "couldn't
+     confirm who, the days or the hours" said nothing about which, or why.
+     This says which part is missing and, for the person specifically,
+     names the likely cause: right person, wrong Acting as / Project. */
+  function teamActionProblem(pessoaArg, hasTarget, hasDays, hasAmount, amountLabel){
+    var missing = [];
+    if(!hasTarget){
+      var name = String(pessoaArg || "").trim();
+      missing.push(name
+        ? "não encontrei \"" + name + "\" na equipa de " + PROJECTS[massProject()].code + " (" + leaderById(state.leader).name + "). Se está noutro projeto ou com outro líder, muda o seletor \"Acting as\" ou \"Project\" no topo do ecrã Team primeiro"
+        : "não percebi de quem se trata");
+    }
+    if(!hasDays) missing.push("não percebi o dia");
+    if(!hasAmount) missing.push("não percebi " + amountLabel);
+    return missing.join("; ") + ".";
+  }
   /* maps Claude's response (function + arguments) to the same bot actions */
   function botDispatch(intent){
     switch(intent.funcao){
@@ -2789,8 +2812,9 @@
           if(!isNaN(bE) && bE !== null && !isNaN(eE) && eE !== null) clockE = {b:bE, e:eE};
         }
         var durE = clockE ? null : round15(Number(ae.duracao_horas));
-        if(!targetsE.length || !daysE.length || (!clockE && (!durE || durE <= 0))){
-          botSay("bot", intent.texto || "Não consegui confirmar quem, os dias ou as horas. Pode escrever de outra forma?");
+        var hasAmountE = !!(clockE || (durE && durE > 0));
+        if(!targetsE.length || !daysE.length || !hasAmountE){
+          botSay("bot", intent.texto || teamActionProblem(ae.pessoa, targetsE.length > 0, daysE.length > 0, hasAmountE, "as horas"));
           botChips(["Help"]);
           return true;
         }
@@ -2811,8 +2835,11 @@
         var rawDaysAl = Array.isArray(al.dias) && al.dias.length ? al.dias : (al.dia ? [al.dia] : []);
         var daysAl = rawDaysAl.map(function(d){ return resolveDayArg(d); }).filter(function(i){ return i !== -1; });
         var qtyAl = round15(Number(al.quantidade));
-        if(!targetsAl.length || !wAl || !daysAl.length || !qtyAl || qtyAl <= 0){
-          botSay("bot", intent.texto || "Não consegui confirmar quem, a rubrica, os dias ou a quantidade. Pode escrever de outra forma?");
+        var hasAmountAl = !!(qtyAl && qtyAl > 0);
+        if(!targetsAl.length || !wAl || !daysAl.length || !hasAmountAl){
+          var msgAl = intent.texto || teamActionProblem(al.pessoa, targetsAl.length > 0, daysAl.length > 0, hasAmountAl, "a quantidade");
+          if(!intent.texto && !wAl) msgAl += " Também não reconheci a rubrica.";
+          botSay("bot", msgAl);
           botChips(["Help"]);
           return true;
         }
