@@ -223,6 +223,24 @@
     });
     return base;
   }
+  /* Weekdays (Mon-Fri) with zero hours for this person: nothing already
+     saved, nothing staged now, no approved absence and the period open -
+     the same three checks saveMass() itself applies, computed up front so
+     a "fill the gaps" request can target exactly the days that are
+     actually empty, one person at a time, instead of one day set forced
+     onto everyone selected. */
+  function missingWeekdaysFor(m){
+    var already = alreadyHoursFor(m, WEEKS[weekIdx].num);
+    var st = stagedOf(m.pernr);
+    var days = [];
+    for(var d=0; d<5; d++){
+      if(already[d] || st.h[d]) continue;
+      if(memberBlocked(m,d)) continue;
+      if(!periodOpen(WORKDATES[d], m.bukrs)) continue;
+      days.push(d);
+    }
+    return days;
+  }
 
   var WEEKDAY_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -2747,7 +2765,8 @@
             equipa: teamOf(state.leader).map(function(m){
               return {
                 nome: m.name, aprovado_bloqueado: !!m.locked,
-                projetos: m.projs.map(function(i){ return PROJECTS[i].code.split("-")[0]; })
+                projetos: m.projs.map(function(i){ return PROJECTS[i].code.split("-")[0]; }),
+                dias_uteis_sem_horas: missingWeekdaysFor(m).map(function(d){ return DAYS[d]; })
               };
             }),
             aprovacoes: state.approvals.map(function(a){ return {nome: a.who, tem_excecao: !!a.warn, nota: a.note || null, aprovado: !!a.approved}; }),
@@ -2819,6 +2838,11 @@
           return true;
         }
         offerTeamEntry(targetsE, daysE, durE, clockE);
+        return true;
+      case "preencher_horas_em_falta_equipa":
+        var fp = intent.argumentos || {};
+        var durFp = round15(Number(fp.duracao_horas));
+        offerFillMissingTeam(fp.pessoa, (durFp && durFp > 0) ? durFp : 8);
         return true;
       case "aprovar":
         var aa = intent.argumentos || {};
@@ -3344,6 +3368,60 @@
       botChips(["How many hours do I have?","Help"]);
     }));
     chat.history.push({role:"assistant", content:"Proposed " + fmt(qty) + " " + w.unit + " " + w.name + " on " + dayLabel + " for " + selected.map(function(m){return m.name;}).join(", ") + ". Waiting for confirmation."});
+  }
+
+  /* "fill in whoever's missing hours" / "complete the team's week": unlike
+     every other mass entry, this one can't share a single day set across
+     everyone, since each person's gaps are their own. Computes
+     missingWeekdaysFor() per person, so someone on Tue and Wed alone
+     doesn't also get filled on Thu just because a teammate was free then. */
+  function offerFillMissingTeam(pessoaArg, dur){
+    var members = teamOf(state.leader).filter(function(m){ return !m.locked; });
+    var name = String(pessoaArg || "").trim().toLowerCase();
+    var matched = name ? members.filter(function(m){ return m.name.toLowerCase().indexOf(name) !== -1; }) : members;
+    var plan = matched.map(function(m){ return {member:m, days:missingWeekdaysFor(m)}; })
+      .filter(function(p){ return p.days.length; });
+    if(!plan.length){
+      var msg;
+      if(!name) msg = "Ninguém na equipa de " + PROJECTS[massProject()].code + " tem dias úteis por preencher esta semana.";
+      else if(matched.length) msg = matched.map(function(m){ return m.name; }).join(", ") + " já tem todos os dias úteis desta semana preenchidos, na equipa de " + PROJECTS[massProject()].code + ".";
+      else msg = "Não encontrei ninguém chamada \"" + pessoaArg + "\" na equipa de " + PROJECTS[massProject()].code + ".";
+      botSay("bot", msg);
+      botChips(["Help"]);
+      return;
+    }
+    var startMin = parseClock("08:00");
+    var clockWindow = {b:startMin, e:startMin + dur*60};
+    var lines = plan.map(function(p){
+      return [p.member.name, p.days.map(function(d){ return DAYS[d]; }).join(", ")];
+    });
+    lines.push(["Duração por dia", fmt(dur) + " h"]);
+    lines.push(["Projeto", PROJECTS[massProject()].code]);
+    botSay("bot", "Preencher estes dias em falta com " + fmt(dur) + " h cada?", botCard(lines, "Preencher e gravar", function(){
+      teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
+      plan.forEach(function(p){
+        var st = stagedOf(p.member.pernr);
+        st.sel = true;
+        var clock = profileFor(WORKDATES[0], p.member.bukrs).clock;
+        p.days.forEach(function(d){
+          if(clock){ st.t[d] = {b:clockWindow.b, e:clockWindow.e}; st.h[d] = slotHours(st.t[d]); }
+          else { st.t[d] = null; st.h[d] = dur; }
+        });
+      });
+      var beforeLog = state.massLog.length;
+      saveMass(plan.map(function(p){ return p.member.pernr; }));
+      var savedPernrs = {};
+      state.massLog.slice(beforeLog).forEach(function(e){ savedPernrs[e.pernr] = true; });
+      var saved = plan.filter(function(p){ return savedPernrs[p.member.pernr]; }).map(function(p){ return p.member.name.split(" ")[0]; });
+      var notSaved = plan.filter(function(p){ return !savedPernrs[p.member.pernr]; }).map(function(p){ return p.member.name.split(" ")[0]; });
+      var msg = saved.length
+        ? "Preenchido e gravado para " + saved.join(", ") + "."
+        : "Nada foi gravado.";
+      if(notSaved.length) msg += " " + notSaved.join(", ") + " não foi possível, o motivo fica na grelha da equipa.";
+      botSay("bot", msg);
+      botChips(["Help"]);
+    }));
+    chat.history.push({role:"assistant", content:"Proposto preencher dias em falta (" + fmt(dur) + "h/dia) para " + plan.map(function(p){return p.member.name;}).join(", ") + ". Aguardando confirmação."});
   }
 
   /* "approve João" / "approve everyone": mirrors exactly what the Approval
