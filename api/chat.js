@@ -139,6 +139,25 @@ function sanitizeHistorico(historico) {
     .map((h) => ({ role: h.role, content: h.content.slice(0, 600) }));
 }
 
+const MAX_MENSAGEM_LEN = 1000;
+const MAX_CONTEXTO_LEN = 20000;
+
+/* Best-effort only: this is a per-instance counter, so it doesn't coordinate
+   across the several serverless instances Vercel can run concurrently, and
+   it resets on every cold start. It still stops the cheap case, a script
+   hammering one warm connection, at zero extra infrastructure. A real limit
+   needs a shared store (Vercel KV/Upstash) and is out of scope here. */
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX = 20;
+let rateLimitHits = [];
+function rateLimited() {
+  const now = Date.now();
+  rateLimitHits = rateLimitHits.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (rateLimitHits.length >= RATE_LIMIT_MAX) return true;
+  rateLimitHits.push(now);
+  return false;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Use POST" });
@@ -152,10 +171,38 @@ export default async function handler(req, res) {
     });
     return;
   }
+  if (rateLimited()) {
+    res.status(429).json({
+      error: "demasiados_pedidos",
+      detalhe: "Demasiados pedidos num curto período. Tenta novamente dentro de um minuto."
+    });
+    return;
+  }
 
   const { mensagem, contexto, historico } = req.body || {};
   if (!mensagem || typeof mensagem !== "string") {
     res.status(400).json({ error: "mensagem em falta" });
+    return;
+  }
+  if (mensagem.length > MAX_MENSAGEM_LEN) {
+    res.status(400).json({
+      error: "mensagem_demasiado_longa",
+      detalhe: `A mensagem excede o limite de ${MAX_MENSAGEM_LEN} caracteres.`
+    });
+    return;
+  }
+  let contextoLen = 0;
+  try {
+    contextoLen = JSON.stringify(contexto || {}).length;
+  } catch (e) {
+    res.status(400).json({ error: "contexto_invalido" });
+    return;
+  }
+  if (contextoLen > MAX_CONTEXTO_LEN) {
+    res.status(400).json({
+      error: "contexto_demasiado_grande",
+      detalhe: `O contexto excede o limite de ${MAX_CONTEXTO_LEN} caracteres.`
+    });
     return;
   }
 
@@ -192,7 +239,7 @@ export default async function handler(req, res) {
     });
     res.status(502).json({
       error: "falha_motor_linguagem",
-      detalhe: String((err && err.message) || err)
+      detalhe: "O assistente não respondeu. Os detalhes ficaram no registo do servidor."
     });
   }
 }

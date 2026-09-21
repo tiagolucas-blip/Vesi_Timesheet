@@ -137,6 +137,14 @@
   function projectsOf(leaderId){
     return leaderById(leaderId).projs;
   }
+  /* Hours, Allowances and Bonus each re-implement "is this team member
+     actually on the project a mass entry is about to bill to" - the exact
+     check an earlier pass missed for Allowances when leaders went from one
+     project to several. One shared predicate instead of three copies, so
+     the next feature can't leave it out the same way. */
+  function isEligibleForProject(m, pIdx){
+    return m.projs.indexOf(pIdx) !== -1;
+  }
   /* Leaders stay in one company, whatever number of projects they own:
      "acting as" only offers leaders of the company IT0001 currently reads,
      the same rule Team entry already applies to who counts as someone's
@@ -358,6 +366,7 @@
     rows: WEEKS[weekIdx].rows,
     allow: WEEKS[weekIdx].allow,
     sugs: WEEKS[weekIdx].sugs,
+    deviationNote: WEEKS[weekIdx].deviationNote || "",
     leader: "RN",
     staged: {},
     stagedAllow: [],
@@ -538,6 +547,14 @@
     return hits;
   }
 
+  /* The one gate a self-entry cell has to pass to stay editable: the week
+     isn't submitted, its period isn't closed, and it isn't a day an approved
+     absence already fills (unless it already carries a value, so an old
+     entry stays visible and removable even if an absence landed on it
+     afterwards). durCell and clockCell each computed this the same way. */
+  function cellLocked(day, v){
+    return state.submitted || !periodOpen(WORKDATES[day]) || (isBlocked(day) && !v);
+  }
   function durCell(r, i, v, pr){
     var inp = document.createElement("input");
     inp.type = "text";
@@ -546,7 +563,7 @@
     inp.value = v ? fmt(v) : "";
     inp.inputMode = "decimal";
     inp.setAttribute("aria-label","Duration in hours, "+pr.name+", "+DAYS[i]);
-    inp.disabled = state.submitted || !periodOpen(WORKDATES[i]) || (isBlocked(i) && !v);
+    inp.disabled = cellLocked(i, v);
     decorateCell(inp, i, v);
     inp.addEventListener("change", function(){
       var parsed = parseDur(inp.value);
@@ -571,7 +588,7 @@
   function clockCell(r, i, v, pr){
     var box = el("div","clockcell" + (i>4 ? " we" : ""), "");
     var s = slot(r,i);
-    var locked = state.submitted || !periodOpen(WORKDATES[i]) || (isBlocked(i) && !v);
+    var locked = cellLocked(i, v);
     ["b","e"].forEach(function(k){
       var inp = document.createElement("input");
       inp.type = "text";
@@ -715,10 +732,15 @@
       absOn(d).forEach(function(a){
         var ab = el("div","blk abs" + (a.status === "pending" ? " pend" : ""), "");
         ab.style.minHeight = Math.max(30, a.hours*26) + "px";
-        ab.innerHTML = "<b>"+fmt(a.hours)+" h</b>"+a.type+" · "+ABSTATUS[a.status];
+        ab.appendChild(el("b","", fmt(a.hours)+" h"));
+        ab.appendChild(document.createTextNode(a.type + " · " + ABSTATUS[a.status]));
         ab.title = a.src + ", AWART " + a.awart;
         col.appendChild(ab);
       });
+      /* r.desc is free text the person types in Quick Add or the detail
+         dialog: built with textContent/createTextNode, never innerHTML, so
+         something like "<img onerror=...>" in a description shows up as
+         literal text instead of running. */
       state.rows.forEach(function(r){
         var v = r.h[d];
         if(!v) return;
@@ -726,7 +748,8 @@
         var b = document.createElement("button");
         b.className = "blk" + (pr.proj ? "" : " nb");
         b.style.minHeight = Math.max(30, v*26) + "px";
-        b.innerHTML = "<b>"+fmt(v)+" h</b>"+pr.code+" · "+(r.desc || pr.act);
+        b.appendChild(el("b","", fmt(v)+" h"));
+        b.appendChild(document.createTextNode(pr.code + " · " + (r.desc || pr.act)));
         b.onclick = function(){ openDetail(r); };
         col.appendChild(b);
       });
@@ -1203,6 +1226,7 @@
         profile: profileFor(WORKDATES[0]).code,
         period: {ym: periodFor(WORKDATES[0]).ym, open: periodOpen(WORKDATES[0])},
         release: state.submitted,
+        deviationJustification: state.deviationNote || null,
         records: recs,
         note: "CATSAMOUNT is a native CATSDB field (CURR 13,2), used above for the bonus. Confirm with the client whether the standard CAT6 transfer already maps it to IT2010 BETRG, or whether that mapping needs configuring, and which field carries the currency key alongside it",
         btpOnly: {
@@ -1591,7 +1615,7 @@
       if(total === 0){ st.err = ""; return; }
       var err = "";
       if(m.locked) err = "Week already approved, the line was left untouched.";
-      else if(m.projs.indexOf(pIdx) === -1) err = m.name.split(" ")[0] + " is not allocated to " + PROJECTS[pIdx].code + ".";
+      else if(!isEligibleForProject(m, pIdx)) err = m.name.split(" ")[0] + " is not allocated to " + PROJECTS[pIdx].code + ".";
       else {
         for(var d=0; d<7; d++){
           if(!st.h[d]) continue;
@@ -1667,7 +1691,7 @@
          selected who isn't actually allocated to the project currently
          picked (they're on the team through the leader's other project):
          skip them here too, same as Hours already does at save time. */
-      if(w.needProj && m.projs.indexOf(pIdx) === -1){ skippedProject++; return; }
+      if(w.needProj && !isEligibleForProject(m, pIdx)){ skippedProject++; return; }
       days.forEach(function(d){
         if(!periodOpen(WORKDATES[d], m.bukrs)) return;
         state.stagedAllow.push({pernr:m.pernr, name:m.name, code:w.code, day:d, p:pIdx, qty:round15(qty), note:note});
@@ -1830,12 +1854,17 @@
        isn't actually allocated to the project picked above (they're on the
        team through the leader's other project): skip them, same partial-save
        pattern as Hours and Allowances, rather than billing the wrong project. */
-    var eligible = members.filter(function(m){ return m.projs.indexOf(pIdx) !== -1; });
-    var ineligible = members.filter(function(m){ return m.projs.indexOf(pIdx) === -1; });
+    var eligible = members.filter(function(m){ return isEligibleForProject(m, pIdx); });
+    var ineligible = members.filter(function(m){ return !isEligibleForProject(m, pIdx); });
     if(!eligible.length){ toast("None of the selected people are allocated to " + PROJECTS[pIdx].code + "."); return; }
+    var recorded = [], noOpenDay = [];
     eligible.forEach(function(who){
-      var day = 4;
+      var day = -1;
       for(var i=4; i>=0; i--){ if(periodOpen(WORKDATES[i], who.bukrs)){ day = i; break; } }
+      /* Every weekday closed is the same "nothing open to bill to" case
+         Hours and Allowances already skip with a reason, not a silent
+         write to whatever day the loop happened to start from. */
+      if(day === -1){ noOpenDay.push(who); return; }
       state.allow.push({
         id:"al"+(nextId++), day:day, p:pIdx, code:"BONUS", qty:1, amount:amount,
         note:note, by:leader.id, onBehalf:who.pernr, byName:leader.name, forName:who.name
@@ -1845,12 +1874,15 @@
         code:"BONUS", amount:amount, note:note, p:pIdx,
         createdBy:leader.name, onBehalf:who.pernr
       });
+      recorded.push(who);
     });
     $("bAmount").value = ""; $("bNote").value = "";
     render();
-    var names = eligible.map(function(m){ return m.name; }).join(", ");
-    var msg = fmt(amount) + " EUR bonus recorded for " + names + ", approved in the same act.";
+    var msg = recorded.length
+      ? fmt(amount) + " EUR bonus recorded for " + recorded.map(function(m){ return m.name; }).join(", ") + ", approved in the same act."
+      : "Nothing was actually recorded.";
     if(ineligible.length) msg += " " + ineligible.map(function(m){ return m.name.split(" ")[0]; }).join(", ") + " skipped, not allocated to " + PROJECTS[pIdx].code + ".";
+    if(noOpenDay.length) msg += " " + noOpenDay.map(function(m){ return m.name.split(" ")[0]; }).join(", ") + " skipped, every day this week falls in a closed period.";
     toast(msg);
   }
 
@@ -1908,6 +1940,7 @@
     state.allow = w.allow || (w.allow = []);
     state.sugs = w.sugs;
     state.submitted = w.submitted;
+    state.deviationNote = w.deviationNote || "";
   }
   function changeWeek(delta){
     var next = weekIdx + delta;
@@ -2023,16 +2056,17 @@
       $("nlq").value = nlText(dur, (day + 1) % 7, pIdx, desc);
       parseNL();
     }));
-    box.appendChild(chipBtn(pIdx === -1 ? "project to choose" : PROJECTS[pIdx].name, pIdx === -1 ? "warnc" : "okc", function(){
-      var codes = PROJECTS.map(function(p){ return p.code.split("-")[0]; }).join(", ");
-      var v = window.prompt("Project code ("+codes+")", pIdx === -1 ? "" : PROJECTS[pIdx].code.split("-")[0]);
-      if(v === null) return;
-      var idx = -1;
-      PROJECTS.forEach(function(p,i){ if(p.code.split("-")[0].toLowerCase() === v.trim().toLowerCase()) idx = i; });
-      if(idx === -1){ toast("Unknown project code “"+v+"”."); return; }
-      $("nlq").value = nlText(dur, day, idx, desc);
-      parseNL();
-    }));
+    box.appendChild(chipSelect(
+      pIdx === -1 ? "" : String(pIdx),
+      PROJECTS.map(function(p,i){ return {value:String(i), label:p.code + " · " + p.name}; }),
+      pIdx === -1 ? "warnc" : "okc",
+      function(v){
+        if(v === "") return;
+        $("nlq").value = nlText(dur, day, +v, desc);
+        parseNL();
+      },
+      "project to choose"
+    ));
     box.appendChild(chip(pIdx === -1 ? "activity to set" : PROJECTS[pIdx].act, pIdx === -1 ? "" : "okc"));
     if(pIdx !== -1) box.appendChild(chip(PROJECTS[pIdx].sap.rproj ? "PEP "+PROJECTS[pIdx].sap.rproj : "cost center "+PROJECTS[pIdx].sap.rkostl, "okc"));
     if(desc) box.appendChild(chip("description: "+desc.slice(0,42), "okc"));
@@ -2130,10 +2164,14 @@
       var f = el("div","field","");
       f.innerHTML = "<label for='subWhy'>Justification for the deviation from the expected total</label><textarea id='subWhy' placeholder='One line is enough. Stays in the week's history.'></textarea>";
       body.appendChild(f);
+      $("subWhy").value = state.deviationNote || "";
     }
     $("dlgSubmit").showModal();
   }
   function doSubmit(){
+    var why = $("subWhy");
+    state.deviationNote = why ? why.value.trim() : "";
+    WEEKS[weekIdx].deviationNote = state.deviationNote;
     state.submitted = true;
     $("dlgSubmit").close();
     render();
@@ -2195,6 +2233,28 @@
   function btn(txt, cls, fn){ var b = document.createElement("button"); b.className = cls || "btn"; b.textContent = txt; if(fn) b.onclick = fn; return b; }
   function chip(txt, cls){ var s = document.createElement("span"); s.className = "pchip " + (cls||""); s.textContent = txt; return s; }
   function chipBtn(txt, cls, fn){ var b = document.createElement("button"); b.type = "button"; b.className = "pchip clickable " + (cls||""); b.textContent = txt; b.onclick = fn; return b; }
+  /* A picklist styled as a chip, for the one place (Quick Add) that used to
+     ask for a project code via window.prompt(): free text, no list of what's
+     valid, easy to typo. options is [{value, label}]; placeholder, when
+     given, is an extra unselectable first option for "nothing chosen yet". */
+  function chipSelect(value, options, cls, fn, placeholder){
+    var s = document.createElement("select");
+    s.className = "pchip clickable " + (cls||"");
+    if(placeholder){
+      var ph = document.createElement("option");
+      ph.value = ""; ph.textContent = placeholder; ph.disabled = true;
+      if(value === "") ph.selected = true;
+      s.appendChild(ph);
+    }
+    options.forEach(function(o){
+      var opt = document.createElement("option");
+      opt.value = o.value; opt.textContent = o.label;
+      if(o.value === value) opt.selected = true;
+      s.appendChild(opt);
+    });
+    s.onchange = function(){ fn(s.value); };
+    return s;
+  }
   function dayWordFor(day){ var names = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]; return names[day] !== undefined ? names[day] : names[2]; }
   function nlText(dur, day, pIdx, desc){
     var parts = [];
@@ -2299,7 +2359,7 @@
   });
 
   /* ---------- conversational assistant, Joule pattern ---------- */
-  var chat = {pending:null, greeted:false, draft:null, draftWeek:null, history:[]};
+  var chat = {pending:null, greeted:false, draft:null, draftWeek:null, history:[], busy:false};
 
   function botToggle(force){
     var p = $("joulePanel");
@@ -2315,12 +2375,18 @@
       setTimeout(function(){ $("jinput").focus(); }, 60);
     }
   }
-  function botSay(who, txt, node){
+  /* allowHtml is opt-in and only for our own static strings (the two help
+     messages that style an example with <span class="num">). Everything
+     else here can carry text the person typed or, for a Claude-backed
+     reply, text the model wrote after reading what the person typed -
+     prompt injection could put markup in either - so the default stays
+     textContent, never innerHTML, for both bot and user lines. */
+  function botSay(who, txt, node, allowHtml){
     var log = $("jlog");
     var b = el("div","jmsg "+who,"");
     if(txt){
       var t = el("div","jtxt","");
-      if(who === "bot") t.innerHTML = txt; else t.textContent = txt;
+      if(who === "bot" && allowHtml) t.innerHTML = txt; else t.textContent = txt;
       b.appendChild(t);
     }
     if(node) b.appendChild(node);
@@ -2410,7 +2476,7 @@
     botChips(["My absences","Submit the week"]);
   }
   function showHelp(){
-    botSay("bot","A few things I can do: log your hours (<span class=\"num\">2h BNK payroll testing yesterday</span>), log for someone on your team (<span class=\"num\">4h for João today</span>), check the week or your absences, copy last week, apply high-confidence suggestions, submit the week, approve timesheets, or jump to Team, Approval or CATS mapping. Just say it in plain language.");
+    botSay("bot","A few things I can do: log your hours (<span class=\"num\">2h BNK payroll testing yesterday</span>), log for someone on your team (<span class=\"num\">4h for João today</span>), check the week or your absences, copy last week, apply high-confidence suggestions, submit the week, approve timesheets, or jump to Team, Approval or CATS mapping. Just say it in plain language.", null, true);
     botChips(["How many hours do I have?","My absences","Copy last week","Submit the week"]);
   }
   function goToScreen(key, label){
@@ -2813,7 +2879,7 @@
     /* time entry, reuses the same parser as quick add */
     var p = botParse(txt);
     if(!p){
-      botSay("bot","I couldn't understand what to record. Write the duration and the project, for example <span class=\"num\">2h BNK payroll testing yesterday</span>. I can also show the week's status or your absences.");
+      botSay("bot","I couldn't understand what to record. Write the duration and the project, for example <span class=\"num\">2h BNK payroll testing yesterday</span>. I can also show the week's status or your absences.", null, true);
       botChips(["How many hours do I have?","My absences","Help"]);
       chat.history.push({role:"assistant", content:"Couldn't parse a duration and project from that message."});
       return;
@@ -2828,17 +2894,23 @@
      the date falls in the visible week, -1 if it's a real date outside it,
      or null if nothing date-shaped was found at all. */
   var MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+  /* Finds the WORKDATES index whose day-of-month matches dd, and whose
+     month matches mm when mm is given; -1 when nothing in the visible week
+     fits. parseDateMention, resolveDayArg and matchDaysMention each used
+     to run this same loop with their own slightly different copy. */
+  function workdateIndexFor(dd, mm){
+    for(var i=0; i<WORKDATES.length; i++){
+      if(+WORKDATES[i].slice(6,8) === dd && (mm == null || +WORKDATES[i].slice(4,6) === mm)) return i;
+    }
+    return -1;
+  }
   function parseDateMention(rest){
     var m, dd, mm;
     if((m = rest.match(/\b(\d{1,2})[\/\-](\d{1,2})\b/))){ dd = +m[1]; mm = +m[2]; }
     else if((m = rest.match(new RegExp("\\b("+MONTHS.join("|")+")\\s+(\\d{1,2})\\b","i")))){ mm = MONTHS.indexOf(m[1].toLowerCase())+1; dd = +m[2]; }
     else if((m = rest.match(new RegExp("\\b(\\d{1,2})\\s+("+MONTHS.join("|")+")\\b","i")))){ dd = +m[1]; mm = MONTHS.indexOf(m[2].toLowerCase())+1; }
     else return null;
-    var day = -1;
-    for(var i=0; i<WORKDATES.length; i++){
-      if(+WORKDATES[i].slice(6,8) === dd && +WORKDATES[i].slice(4,6) === mm){ day = i; break; }
-    }
-    return {day:day, match:m[0]};
+    return {day: workdateIndexFor(dd, mm), match:m[0]};
   }
 
   /* Resolves a day argument coming back from Claude's tool call, which isn't
@@ -2856,12 +2928,7 @@
     var dm = parseDateMention(" " + s + " ");
     if(dm && dm.day !== -1) return dm.day;
     var bare = s.match(/^(\d{1,2})$/);
-    if(bare){
-      var dd = +bare[1];
-      for(var i=0; i<WORKDATES.length; i++){
-        if(+WORKDATES[i].slice(6,8) === dd) return i;
-      }
-    }
+    if(bare) return workdateIndexFor(+bare[1]);
     return -1;
   }
 
@@ -2965,9 +3032,8 @@
       var nums = mm[2].match(/\d{1,2}/g).map(Number);
       var days = [];
       nums.forEach(function(dd){
-        for(var i=0; i<WORKDATES.length; i++){
-          if(+WORKDATES[i].slice(6,8) === dd && +WORKDATES[i].slice(4,6) === month){ days.push(i); break; }
-        }
+        var i = workdateIndexFor(dd, month);
+        if(i !== -1) days.push(i);
       });
       if(days.length) return {days:days};
     }
@@ -3279,9 +3345,19 @@
   $("jClose").onclick = function(){ botToggle(false); };
   $("jform").onsubmit = function(ev){
     ev.preventDefault();
-    var v = $("jinput").value;
+    if(chat.busy) return;
+    var v = $("jinput").value.trim();
+    if(!v) return;
     $("jinput").value = "";
-    botHandle(v);
+    chat.busy = true;
+    $("jinput").disabled = true;
+    if($("jsend")) $("jsend").disabled = true;
+    botHandle(v).finally(function(){
+      chat.busy = false;
+      $("jinput").disabled = false;
+      if($("jsend")) $("jsend").disabled = false;
+      $("jinput").focus();
+    });
   };
 
   document.addEventListener("keydown", function(ev){
