@@ -1571,9 +1571,18 @@
 
   /* Partial save. Every row is validated on its own and the ones that pass are
      written, with CREATED_BY as the leader and ON_BEHALF_OF as the employee. */
-  function saveMass(){
+  /* onlyPernrs, when given, restricts the commit to those people, leaving
+     anyone else's staged-but-unsaved hours exactly as they were: without
+     it, this saves every nonzero staged line for the whole team, which is
+     what "Save staged entries" on screen means (several people can be
+     staged in separate batches before one Save). The chat assistant passes
+     it, scoped to whoever its own confirmation card named, so a person's
+     unrelated staged hours from an earlier, still-unconfirmed manual batch
+     never get swept into a save the person never saw or confirmed. */
+  function saveMass(onlyPernrs){
     var leader = leaderById(state.leader);
     var members = teamOf(state.leader);
+    if(onlyPernrs) members = members.filter(function(m){ return onlyPernrs.indexOf(m.pernr) !== -1; });
     var saved = 0, kept = 0, savedPeople = 0;
     var pIdx = massProject();
     members.forEach(function(m){
@@ -1675,10 +1684,18 @@
     state.stagedAllow = [];
     renderTeam();
   }
-  function saveMassAllow(){
-    if(!state.stagedAllow.length){ toast("Nothing staged."); return; }
+  /* Same onlyPernrs scoping as saveMass(): without it, every staged
+     allowance line is committed and cleared, which is what "Save staged
+     allowances" on screen means. The chat assistant passes it, scoped to
+     its own confirmation card, so someone else's still-unconfirmed staged
+     lines are left in place instead of being saved (or wiped) alongside it. */
+  function saveMassAllow(onlyPernrs){
+    var lines = onlyPernrs
+      ? state.stagedAllow.filter(function(a){ return onlyPernrs.indexOf(a.pernr) !== -1; })
+      : state.stagedAllow;
+    if(!lines.length){ toast("Nothing staged."); return; }
     var leader = leaderById(state.leader);
-    state.stagedAllow.forEach(function(a){
+    lines.forEach(function(a){
       state.massLog.push({
         kind: "allowance",
         pernr: a.pernr, name: a.name, date: WORKDATES[a.day], day: a.day,
@@ -1686,8 +1703,10 @@
         createdBy: leader.name, onBehalf: a.pernr
       });
     });
-    var n = state.stagedAllow.length;
-    state.stagedAllow = [];
+    var n = lines.length;
+    state.stagedAllow = onlyPernrs
+      ? state.stagedAllow.filter(function(a){ return onlyPernrs.indexOf(a.pernr) === -1; })
+      : [];
     renderTeam();
     toast(n + " allowance " + (n === 1 ? "line" : "lines") + " saved, recorded on their behalf.");
   }
@@ -1837,6 +1856,7 @@
 
   /* ---------- actions ---------- */
   function addRow(){
+    if(state.submitted) return;
     var used = state.rows.map(function(r){ return r.p; });
     var p = 0;
     for(var i=0; i<PROJECTS.length; i++){ if(used.indexOf(i) === -1){ p = i; break; } }
@@ -2021,15 +2041,23 @@
     nlParsed = ok ? {dur:round15(dur), day:day, p:pIdx, desc:desc} : null;
     $("nlSave").disabled = !ok;
   }
+  /* Returns whether the entry was actually saved: the dialog is a native
+     <form method="dialog">, which closes itself on any button click
+     regardless of what the handler does, so the onclick wrapper below needs
+     this to know when to preventDefault() and keep it open instead, rather
+     than closing over a rejected save as if it had gone through. */
   function saveNL(){
-    if(!nlParsed) return;
-    if(isBlocked(nlParsed.day)){ toast(DAYS[nlParsed.day]+" has an approved absence, doesn't accept time entries."); return; }
+    if(!nlParsed) return false;
+    if(state.submitted){ toast("The week is submitted, it can't be changed."); return false; }
+    if(isBlocked(nlParsed.day)){ toast(DAYS[nlParsed.day]+" has an approved absence, doesn't accept time entries."); return false; }
+    if(!periodOpen(WORKDATES[nlParsed.day])){ toast(DAYS[nlParsed.day]+" falls in a closed period, it can't take new hours."); return false; }
     var row = state.rows.filter(function(r){ return r.p === nlParsed.p; })[0];
     if(!row){ row = {id:nextId++, p:nlParsed.p, desc:nlParsed.desc, h:[0,0,0,0,0,0,0], origin:"Manual"}; state.rows.push(row); }
     if(nlParsed.desc) row.desc = nlParsed.desc;
     row.h[nlParsed.day] += nlParsed.dur;
     render();
     toast(fmt(nlParsed.dur)+" h recorded in "+PROJECTS[nlParsed.p].code+", "+DAYS[nlParsed.day]+".");
+    return true;
   }
 
   /* ---------- detail ---------- */
@@ -2220,7 +2248,7 @@
     $("vCal").setAttribute("aria-pressed", grid ? "false" : "true");
   }
   $("nlq").addEventListener("input", parseNL);
-  $("nlSave").onclick = function(){ saveNL(); };
+  $("nlSave").onclick = function(ev){ if(!saveNL()) ev.preventDefault(); };
   $("dtSave").onclick = saveDetail;
   $("dtCancel").onclick = function(){ $("dlgDetail").close(); };
   $("subCancel").onclick = function(){ $("dlgSubmit").close(); };
@@ -2432,6 +2460,10 @@
   }
   function offerEntry(day, dur, pIdx, desc){
     var pr = PROJECTS[pIdx];
+    if(state.submitted){
+      botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
+      return;
+    }
     var alt = null;
     if(isBlocked(day)){
       alt = nextFreeDay();
@@ -2441,6 +2473,10 @@
       }
       botSay("bot", DAYS[day] + " has an approved " + absOn(day,"approved")[0].type.toLowerCase() + ", so it doesn't accept hours. I suggest " + DAYS[alt] + ".");
       day = alt;
+    }
+    if(!periodOpen(WORKDATES[day])){
+      botSay("bot", DAYS[day] + " falls in a closed period, it can't take new hours. I didn't record anything.");
+      return;
     }
     var livre = capacity(day) - dayTotal(day);
     var warn = null;
@@ -2475,18 +2511,24 @@
      single blocked day. */
   function offerEntryWeek(days, dur, pIdx, desc){
     var pr = PROJECTS[pIdx];
-    var applicable = days.filter(function(d){ return !isBlocked(d); });
+    if(state.submitted){
+      botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
+      return;
+    }
+    var applicable = days.filter(function(d){ return !isBlocked(d) && periodOpen(WORKDATES[d]); });
     var blocked = days.filter(function(d){ return isBlocked(d); });
+    var closed = days.filter(function(d){ return !isBlocked(d) && !periodOpen(WORKDATES[d]); });
     if(!applicable.length){
-      botSay("bot","Every day in that range has an approved absence. I didn't record anything.");
+      botSay("bot","Every day in that range has an approved absence or falls in a closed period. I didn't record anything.");
       return;
     }
     var over = applicable.filter(function(d){ return dur > capacity(d) - dayTotal(d); });
     var warn = over.length
       ? "This leaves " + over.map(function(d){ return DAYS[d]; }).join(", ") + " above capacity. It will raise an error at submission."
       : null;
+    var skippedLabel = blocked.map(function(d){ return DAYS[d]; }).concat(closed.map(function(d){ return DAYS[d]; })).join(", ");
     var daysLabel = applicable.map(function(d){ return DAYS[d]; }).join(", ")
-      + (blocked.length ? " (" + blocked.map(function(d){ return DAYS[d]; }).join(", ") + " skipped, approved absence)" : "");
+      + ((blocked.length || closed.length) ? " (" + skippedLabel + " skipped, approved absence or closed period)" : "");
 
     chat.pending = "entryWeek";
     chat.draftWeek = {days:applicable, dur:dur, p:pIdx, desc:desc};
@@ -3003,7 +3045,7 @@
       });
       var beforeLog = state.massLog.length;
       applyMass();
-      saveMass();
+      saveMass(selected.map(function(m){ return m.pernr; }));
       var savedPernrs = {};
       state.massLog.slice(beforeLog).forEach(function(e){ savedPernrs[e.pernr] = true; });
       var saved = selected.filter(function(m){ return savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
@@ -3115,7 +3157,7 @@
       });
       var beforeLog = state.massLog.length;
       applyMassAllow();
-      saveMassAllow();
+      saveMassAllow(selected.map(function(m){ return m.pernr; }));
       var savedPernrs = {};
       state.massLog.slice(beforeLog).forEach(function(e){ savedPernrs[e.pernr] = true; });
       var saved = selected.filter(function(m){ return savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
@@ -3309,12 +3351,12 @@
   if($("alCancel")) $("alCancel").onclick = function(){ $("dlgAllow").close(); };
   if($("mProj")) $("mProj").onchange = renderTeam;
   if($("mApply")) $("mApply").onclick = applyMass;
-  if($("mSave")) $("mSave").onclick = saveMass;
+  if($("mSave")) $("mSave").onclick = function(){ saveMass(); };
   if($("mClear")) $("mClear").onclick = function(){ clearMass(); toast("Staged entries cleared. Nothing had been saved."); };
   if($("bSave")) $("bSave").onclick = saveBonus;
   if($("mAllowCode")) $("mAllowCode").onchange = syncMassAllowForm;
   if($("mAllowApply")) $("mAllowApply").onclick = applyMassAllow;
-  if($("mAllowSave")) $("mAllowSave").onclick = saveMassAllow;
+  if($("mAllowSave")) $("mAllowSave").onclick = function(){ saveMassAllow(); };
   if($("mAllowClear")) $("mAllowClear").onclick = function(){ clearMassAllow(); toast("Staged allowances cleared. Nothing had been saved."); };
 
   /* ---------- collapsible panels and in-screen tabs ----------
