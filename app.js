@@ -105,13 +105,16 @@
      Scope is strictly by project ownership, never by line management: the
      team a leader sees in mass entry is everyone allocated to the project
      currently picked above the grid, whatever their manager in IT0001/OM
-     is. Rui Tavares is the example: he works on Pedro Alves's project
-     (AER-WFM) and also on Ana Ferreira's (BNK-2026), independently of who
-     he reports to in the org chart. A leader can own more than one project
-     at once, as Ricardo Nunes does here: switching the project picker
-     switches which of those rosters is on screen, rather than showing
-     everyone from every project at once and sorting out who belongs where
-     after the fact. */
+     is. Rui Tavares is the deliberate exception: he works on Pedro Alves's
+     project (AER-WFM) and also on Ana Ferreira's (BNK-2026), independently
+     of who he reports to in the org chart. Every other consultant sits on
+     exactly one project - a Junior consultant showing up under a project
+     they don't actually work on isn't a multi-project feature, it's wrong
+     data - so Rui stays the one, named example of it, not the norm. Each
+     project's roster is 5 people, a realistic engagement team size. A
+     leader can still own more than one project at once, as Ricardo Nunes
+     does here: switching the project picker switches which 5-person
+     roster is on screen. */
   var LEADERS = [
     {id:"RN", name:"Ricardo Nunes", label:"RTL-TT + AXI-INT", projs:[1,3], bukrs:"PT01"},
     {id:"PA", name:"Pedro Alves",   label:"AER-WFM", projs:[2], bukrs:"PT01"},
@@ -119,14 +122,35 @@
     {id:"CP", name:"Carlos Pinto",  label:"HSP-FAC", projs:[4], bukrs:"PT02"}
   ];
   var TEAM = [
-    {pernr:"00104501", name:"Marta Silva",    role:"Consultant",        bukrs:"PT01", projs:[0,3], abs:{}, already:[8,8,4,0,0,0,0]},
-    {pernr:"00104502", name:"João Costa",     role:"Consultant",        bukrs:"PT01", projs:[0,1], abs:{4:"Vacation"}, already:[4,4,4,4,0,0,0]},
-    {pernr:"00104503", name:"Inês Braga",     role:"Junior consultant", bukrs:"PT01", projs:[1,3], abs:{}, locked:true, already:[8,8,8,8,8,0,0]},
-    {pernr:"00104504", name:"Rui Tavares",    role:"Consultant",        bukrs:"PT01", projs:[0,2], abs:{}, already:[8,0,8,0,0,0,0]},
-    {pernr:"00104505", name:"Sofia Marques",  role:"Architect",         bukrs:"PT01", projs:[2],   abs:{2:"Medical appointment"}, already:[0,4,4,8,0,0,0]},
-    {pernr:"00104510", name:"Nuno Dias",      role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[8,8,0,0,0,0,0]},
-    {pernr:"00104511", name:"Hélder Rocha",   role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[0,0,8,8,8,0,0]},
-    {pernr:"00104512", name:"Hugo Matos",     role:"Technician",        bukrs:"PT02", projs:[4],   abs:{1:"Vacation"}, already:[8,0,8,8,0,0,0]}
+    /* BNK-2026 */
+    {pernr:"00104501", name:"Marta Silva",     role:"Consultant",        bukrs:"PT01", projs:[0],   abs:{}, already:[8,8,4,0,0,0,0]},
+    {pernr:"00104504", name:"Rui Tavares",     role:"Consultant",        bukrs:"PT01", projs:[0,2], abs:{}, already:[8,0,8,0,0,0,0]},
+    {pernr:"00104513", name:"Beatriz Costa",   role:"Consultant",        bukrs:"PT01", projs:[0],   abs:{}, already:[8,8,0,0,0,0,0]},
+    {pernr:"00104514", name:"Tiago Almeida",   role:"Consultant",        bukrs:"PT01", projs:[0],   abs:{3:"Medical appointment"}, already:[8,4,0,0,0,0,0]},
+    {pernr:"00104515", name:"Mariana Neves",   role:"Junior consultant", bukrs:"PT01", projs:[0],   abs:{}, already:[0,8,8,0,0,0,0]},
+    /* RTL-TT */
+    {pernr:"00104502", name:"João Costa",      role:"Consultant",        bukrs:"PT01", projs:[1],   abs:{4:"Vacation"}, already:[4,4,4,4,0,0,0]},
+    {pernr:"00104503", name:"Inês Braga",      role:"Junior consultant", bukrs:"PT01", projs:[1],   abs:{}, locked:true, already:[8,8,8,8,8,0,0]},
+    {pernr:"00104516", name:"Vera Antunes",    role:"Consultant",        bukrs:"PT01", projs:[1],   abs:{}, already:[8,0,8,0,0,0,0]},
+    {pernr:"00104517", name:"Gonçalo Pinheiro",role:"Senior consultant", bukrs:"PT01", projs:[1],   abs:{}, already:[8,8,8,0,0,0,0]},
+    {pernr:"00104518", name:"Teresa Correia",  role:"Consultant",        bukrs:"PT01", projs:[1],   abs:{1:"Vacation"}, already:[8,0,4,0,0,0,0]},
+    /* AER-WFM */
+    {pernr:"00104505", name:"Sofia Marques",   role:"Architect",         bukrs:"PT01", projs:[2],   abs:{2:"Medical appointment"}, already:[0,4,4,8,0,0,0]},
+    {pernr:"00104519", name:"Vasco Pereira",   role:"Architect",         bukrs:"PT01", projs:[2],   abs:{}, already:[8,8,4,0,0,0,0]},
+    {pernr:"00104520", name:"Miguel Santos",   role:"Consultant",        bukrs:"PT01", projs:[2],   abs:{}, already:[4,4,0,0,0,0,0]},
+    {pernr:"00104521", name:"Rita Nunes",      role:"Consultant",        bukrs:"PT01", projs:[2],   abs:{}, already:[8,0,0,0,0,0,0]},
+    /* AXI-INT */
+    {pernr:"00104523", name:"Bárbara Moreira", role:"Consultant",        bukrs:"PT01", projs:[3],   abs:{}, already:[4,0,0,0,0,0,0]},
+    {pernr:"00104524", name:"Eduardo Cardoso", role:"Junior consultant", bukrs:"PT01", projs:[3],   abs:{},  already:[0,4,4,0,0,0,0]},
+    {pernr:"00104525", name:"Sara Martins",    role:"Consultant",        bukrs:"PT01", projs:[3],   abs:{0:"Vacation"}, already:[0,4,0,0,0,0,0]},
+    {pernr:"00104526", name:"Cláudia Ribeiro", role:"Architect",         bukrs:"PT01", projs:[3],   abs:{}, already:[8,0,4,0,0,0,0]},
+    {pernr:"00104527", name:"Diogo Ferreira",  role:"Consultant",        bukrs:"PT01", projs:[3],   abs:{}, already:[0,0,0,4,0,0,0]},
+    /* HSP-FAC */
+    {pernr:"00104510", name:"Nuno Dias",       role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[8,8,0,0,0,0,0]},
+    {pernr:"00104511", name:"Hélder Rocha",    role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[0,0,8,8,8,0,0]},
+    {pernr:"00104512", name:"Hugo Matos",      role:"Technician",        bukrs:"PT02", projs:[4],   abs:{1:"Vacation"}, already:[8,0,8,8,0,0,0]},
+    {pernr:"00104528", name:"Luís Teixeira",   role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[8,8,8,0,0,0,0]},
+    {pernr:"00104529", name:"Sandra Fonseca",  role:"Senior technician", bukrs:"PT02", projs:[4],   abs:{}, already:[0,8,8,8,0,0,0]}
   ];
   function leaderById(id){ return LEADERS.filter(function(l){ return l.id === id; })[0] || LEADERS[0]; }
   function teamOf(leaderId){
@@ -1437,13 +1461,10 @@
       p.appendChild(el("span","", m.name));
       var code = document.createElement("code"); code.textContent = m.pernr; p.appendChild(code);
       meta.appendChild(p);
-      /* Which projects someone is actually allocated to was invisible until
-         a save rejected them with a reason; shown here up front instead.
-         teamOf() now only lists people allocated to the project selected
-         above, so everyone in this loop already qualifies - this is
-         context, not a warning. */
+      /* teamOf() only lists people allocated to the project selected above,
+         so everyone in this loop already qualifies - no need to spell out
+         which project(s), the roster itself is the answer. */
       var sub = m.role + " · " + m.bukrs + " · " + profileFor(WORKDATES[0], m.bukrs).code;
-      sub += " · allocated to " + m.projs.map(function(i){ return PROJECTS[i].code; }).join(", ");
       var absDays = Object.keys(m.abs).map(Number).sort(function(a,b){ return a-b; });
       if(absDays.length){
         sub += " · " + absDays.map(function(d){ return DAYS[d] + " " + m.abs[d].toLowerCase(); }).join(", ");
