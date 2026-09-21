@@ -1651,9 +1651,14 @@
     Array.prototype.forEach.call(document.querySelectorAll(".mAllowDays input:checked"), function(c){ days.push(+c.value); });
     if(!days.length){ toast("Pick at least one day."); return; }
     var pIdx = w.needProj ? massProject() : 3;
-    var added = 0, skipped = 0;
+    var added = 0, skippedCompany = 0, skippedProject = 0;
     members.forEach(function(m){
-      if(w.code === "TURNO" && m.bukrs !== "PT02"){ skipped++; return; }
+      if(w.code === "TURNO" && m.bukrs !== "PT02"){ skippedCompany++; return; }
+      /* A leader who owns more than one project can have a team member
+         selected who isn't actually allocated to the project currently
+         picked (they're on the team through the leader's other project):
+         skip them here too, same as Hours already does at save time. */
+      if(w.needProj && m.projs.indexOf(pIdx) === -1){ skippedProject++; return; }
       days.forEach(function(d){
         if(!periodOpen(WORKDATES[d], m.bukrs)) return;
         state.stagedAllow.push({pernr:m.pernr, name:m.name, code:w.code, day:d, p:pIdx, qty:round15(qty), note:note});
@@ -1662,7 +1667,8 @@
     });
     renderTeam();
     var msg = added + " allowance line" + (added === 1 ? "" : "s") + " staged for " + members.length + " people. Nothing is saved yet.";
-    if(skipped) msg += " " + skipped + " skipped, the shift allowance doesn't apply to their company.";
+    if(skippedCompany) msg += " " + skippedCompany + " skipped, the shift allowance doesn't apply to their company.";
+    if(skippedProject) msg += " " + skippedProject + " skipped, not allocated to " + PROJECTS[pIdx].code + ".";
     toast(msg);
   }
   function clearMassAllow(){
@@ -1738,7 +1744,12 @@
       var c = el("div","abscard","");
       var h = el("div","h","");
       h.appendChild(el("b","", e.name));
-      if(e.kind === "allowance"){
+      if(e.kind === "bonus"){
+        h.appendChild(el("span","chip green", fmt(e.amount) + " EUR"));
+        c.appendChild(h);
+        c.appendChild(el("div","why", DAYS[e.day] + " · " + PROJECTS[e.p].code + " · " + wt(e.code).name));
+        c.appendChild(el("div","why", e.note));
+      } else if(e.kind === "allowance"){
         var w = wt(e.code);
         h.appendChild(el("span","chip grey", fmt(e.qty) + " " + w.unit));
         c.appendChild(h);
@@ -1809,6 +1820,11 @@
       state.allow.push({
         id:"al"+(nextId++), day:day, p:pIdx, code:"BONUS", qty:1, amount:amount,
         note:note, by:leader.id, onBehalf:who.pernr, byName:leader.name, forName:who.name
+      });
+      state.massLog.push({
+        kind:"bonus", pernr:who.pernr, name:who.name, date:WORKDATES[day], day:day,
+        code:"BONUS", amount:amount, note:note, p:pIdx,
+        createdBy:leader.name, onBehalf:who.pernr
       });
     });
     $("bAmount").value = ""; $("bNote").value = "";
@@ -2528,7 +2544,19 @@
                 ausencias: w.absences.map(function(a){ return {tipo:a.type, horas:a.hours, estado:a.status}; })
               };
             }),
-            equipa: teamOf(state.leader).map(function(m){ return {nome: m.name, aprovado_bloqueado: !!m.locked}; }),
+            projeto_equipa_ativo: (function(){
+              var p = PROJECTS[massProject()];
+              return p ? {codigo: p.code.split("-")[0], nome: p.name} : null;
+            })(),
+            projetos_do_lider: projectsOf(state.leader).map(function(i){
+              return {codigo: PROJECTS[i].code.split("-")[0], nome: PROJECTS[i].name};
+            }),
+            equipa: teamOf(state.leader).map(function(m){
+              return {
+                nome: m.name, aprovado_bloqueado: !!m.locked,
+                projetos: m.projs.map(function(i){ return PROJECTS[i].code.split("-")[0]; })
+              };
+            }),
             aprovacoes: state.approvals.map(function(a){ return {nome: a.who, tem_excecao: !!a.warn, nota: a.note || null, aprovado: !!a.approved}; }),
             pedido_por_confirmar: chat.pending === "entry" && chat.draft
               ? {dia: DAYS[chat.draft.day], duracao_horas: chat.draft.dur, projeto: PROJECTS[chat.draft.p].code.split("-")[0], descricao: chat.draft.desc}
@@ -2983,7 +3011,7 @@
       var msg = saved.length
         ? "Staged and saved for " + saved.join(", ") + ", " + dayLabel + ", " + pr.code + "."
         : "Nothing was actually saved.";
-      if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it this way (wrong profile for that field, absence, or closed period), the reason is on the Team screen.";
+      if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it this way (not allocated to " + pr.code + ", wrong profile for that field, absence, or closed period), the reason is on the Team screen.";
       botSay("bot", msg);
       botChips(["How many hours do I have?","Help"]);
     }));
@@ -3095,7 +3123,7 @@
       var msg = saved.length
         ? "Staged and saved for " + saved.join(", ") + ", " + dayLabel + ", " + w.name + "."
         : "Nothing was actually saved.";
-      if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it (wrong company for that allowance, or closed period).";
+      if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it (not allocated to " + PROJECTS[massProject()].code + ", wrong company for that allowance, or closed period).";
       botSay("bot", msg);
       botChips(["How many hours do I have?","Help"]);
     }));
