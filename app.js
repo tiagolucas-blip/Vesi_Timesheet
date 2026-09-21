@@ -2100,7 +2100,20 @@
     dtRow = r;
     var pr = PROJECTS[r.p];
     $("dtTitle").textContent = pr.name;
-    $("dtProj").value = pr.code + " · " + pr.wbs;
+    var pj = $("dtProj");
+    pj.innerHTML = "";
+    PROJECTS.forEach(function(p,i){
+      var o = document.createElement("option");
+      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
+      pj.appendChild(o);
+    });
+    pj.value = String(r.p);
+    pj.disabled = state.submitted;
+    /* Activity type isn't its own choice here, it comes from whichever
+       project is picked (each project has exactly one, in SAP terms its
+       LSTAR), so it follows the project select instead of being a second,
+       independent field that could disagree with it. */
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
     $("dtDur").value = fmt(rowTotal(r));
     $("dtDesc").value = r.desc;
     $("dtAct").value = pr.act;
@@ -2114,7 +2127,27 @@
     $("dlgDetail").showModal();
   }
   function saveDetail(){
-    if(dtRow){ dtRow.desc = $("dtDesc").value; render(); toast("Entry updated."); }
+    if(!dtRow) return;
+    var pj = $("dtProj");
+    if(pj && !pj.disabled){
+      var newP = +pj.value;
+      if(newP !== dtRow.p){
+        /* Every other path that touches state.rows (addRow, Quick Add,
+           the chat) keeps at most one row per project, finding-or-creating
+           rather than ever duplicating one. Re-pointing this row at a
+           project that already has its own row would break that, and
+           silently merging the two could surprise someone who didn't ask
+           for their hours combined - so this asks them to resolve it on
+           the grid first instead. */
+        var clash = state.rows.some(function(r){ return r !== dtRow && r.p === newP; });
+        if(clash){
+          toast(PROJECTS[newP].code + " already has a row this week. Remove or merge it first.");
+          return;
+        }
+        dtRow.p = newP;
+      }
+    }
+    dtRow.desc = $("dtDesc").value; render(); toast("Entry updated.");
     $("dlgDetail").close();
   }
 

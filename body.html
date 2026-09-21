@@ -455,12 +455,10 @@
 <dialog id="dlgDetail"><div class="dlg">
   <header><h3 id="dtTitle">Entry detail</h3><span class="chip blue" id="dtState">Draft</span></header>
   <div class="body">
-    <div class="field"><label>Project and WBS</label><input type="text" id="dtProj" readonly></div>
+    <div class="field"><label for="dtProj">Project and WBS</label><select id="dtProj"></select></div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
       <div class="field"><label for="dtDur">Duration</label><input type="text" id="dtDur"></div>
-      <div class="field"><label for="dtAct">Activity type</label>
-        <select id="dtAct"><option>Functional consulting</option><option>Development</option><option>Project management</option><option>Training</option><option>Administrative</option></select>
-      </div>
+      <div class="field"><label for="dtAct">Activity type</label><input type="text" id="dtAct" readonly></div>
     </div>
     <div class="field"><label for="dtDesc">Description</label><textarea id="dtDesc" maxlength="300" placeholder="Required for project entries. The first 40 characters go to LTXA1"></textarea></div>
     <div class="budget">
