@@ -2013,7 +2013,6 @@
 
     var members = teamOf(state.leader);
 
-    $("teamScopeNote").textContent = "Project team for " + PROJECTS[massProject()].code + ". Includes people who report elsewhere in the line but work on this project.";
     $("teamCount").textContent = members.length + (members.length === 1 ? " person" : " people");
 
     renderAlreadyGrid(members);
