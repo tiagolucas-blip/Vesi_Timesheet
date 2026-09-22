@@ -212,6 +212,13 @@
   .grouphead td{background:var(--surface-3); font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-2); font-weight:700}
   .tablescroll{overflow-x:auto}
 
+  .apwho{display:flex; align-items:center; gap:8px; background:none; border:0; padding:0; margin:0; font:inherit; text-align:left; cursor:pointer; color:inherit}
+  .apchev{color:var(--ink-3); font-size:11px; width:10px; display:inline-block}
+  tr.apdetail td{padding:0 12px 12px; border-bottom:1px solid var(--line-soft); background:var(--surface-2)}
+  .apdays{display:flex; gap:8px; flex-wrap:wrap; padding-top:2px}
+  .apday{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-family:var(--f-mono); font-variant-numeric:tabular-nums; padding:4px 10px; border-radius:999px; background:var(--surface); border:1px solid var(--line-soft); color:var(--ink-2)}
+  .apday.empty{color:var(--ink-3); border-style:dashed}
+
   /* dialog */
   dialog{border:none; padding:0; border-radius:8px; background:var(--surface); color:var(--ink); box-shadow:var(--shadow); max-width:min(560px,94vw); width:100%}
   dialog::backdrop{background:rgba(10,18,26,.45)}

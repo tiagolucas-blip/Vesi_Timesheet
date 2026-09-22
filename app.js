@@ -433,12 +433,12 @@
        request from a team one when the wording alone is ambiguous */
     screen: "semana",
     approvals:[
-      {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false},
-      {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false},
-      {who:"Carla Nunes", role:"Consultant", proj:"AER-WFM", tot:40, inproj:40, dev:0, warn:0, sel:false},
-      {who:"Diogo Sousa", role:"Junior consultant", proj:"BNK-2026", tot:37, inproj:30, dev:-3, warn:0, sel:false},
-      {who:"Eva Lopes", role:"Architect", proj:"RTL-TT", tot:52, inproj:52, dev:12, warn:1, sel:false, note:"12 h above plan"},
-      {who:"Filipe Reis", role:"Consultant", proj:"AER-WFM", tot:24, inproj:18, dev:-16, warn:1, sel:false, note:"Two empty working days"}
+      {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false, days:[8,8,8,8,8]},
+      {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false, days:[8,8,8,8,6.5]},
+      {who:"Carla Nunes", role:"Consultant", proj:"AER-WFM", tot:40, inproj:40, dev:0, warn:0, sel:false, days:[8,8,8,8,8]},
+      {who:"Diogo Sousa", role:"Junior consultant", proj:"BNK-2026", tot:37, inproj:30, dev:-3, warn:0, sel:false, days:[8,8,8,8,5]},
+      {who:"Eva Lopes", role:"Architect", proj:"RTL-TT", tot:52, inproj:52, dev:12, warn:1, sel:false, note:"12 h above plan", days:[10,10,12,10,10]},
+      {who:"Filipe Reis", role:"Consultant", proj:"AER-WFM", tot:24, inproj:18, dev:-16, warn:1, sel:false, note:"Two empty working days", days:[8,8,0,8,0]}
     ]
   };
 
@@ -2326,7 +2326,13 @@
         cb.onchange = function(){ a.sel = cb.checked; renderApprovals(); };
         c1.appendChild(cb); tr.appendChild(c1);
         var c2 = document.createElement("td");
-        c2.innerHTML = "<div class='who'>"+a.who+"</div><div class='sub'>"+a.role+"</div>";
+        var whoBtn = document.createElement("button");
+        whoBtn.type = "button";
+        whoBtn.className = "apwho";
+        whoBtn.setAttribute("aria-expanded", a.expanded ? "true" : "false");
+        whoBtn.innerHTML = "<span class='apchev'>"+(a.expanded ? "▾" : "▸")+"</span><span><div class='who'>"+a.who+"</div><div class='sub'>"+a.role+"</div></span>";
+        whoBtn.onclick = function(){ a.expanded = !a.expanded; renderApprovals(); };
+        c2.appendChild(whoBtn);
         tr.appendChild(c2);
         tr.appendChild(td2(a.proj, "num"));
         tr.appendChild(td2(fmt(a.tot)+" h","n"));
@@ -2338,6 +2344,23 @@
           : (a.approved ? "<span class='chip green'>Approved</span>" : "<span class='chip blue'>In approval</span>");
         tr.appendChild(c7);
         body.appendChild(tr);
+        if(a.expanded){
+          var dtr = document.createElement("tr");
+          dtr.className = "apdetail";
+          var dtd = document.createElement("td");
+          dtd.colSpan = 7;
+          var wrap = document.createElement("div");
+          wrap.className = "apdays";
+          (a.days || []).forEach(function(h, i){
+            var d = document.createElement("span");
+            d.className = "apday" + (h ? "" : " empty");
+            d.textContent = WEEKDAY_ABBR[i] + " " + (h ? fmt(h)+"h" : "–");
+            wrap.appendChild(d);
+          });
+          dtd.appendChild(wrap);
+          dtr.appendChild(dtd);
+          body.appendChild(dtr);
+        }
       });
     }
     group("No warnings, bulk approval available", clean);
