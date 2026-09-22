@@ -472,10 +472,40 @@
     Object.keys(counts).forEach(function(k){ if(counts[k] > bestN){ bestN = counts[k]; best = k; } });
     return best;
   }
-  function activeMonthWeeks(){
-    var ym = monthKeyOf(WEEKS[weekIdx]);
-    return WEEKS.filter(function(w){ return monthKeyOf(w) === ym; });
+  /* All the calendar dates of a YYYYMM month, and which week+day-index
+     (into the underlying WEEKS data) each one comes from. This is the
+     actual rendering unit for the monthly view - not "the weeks this
+     month owns" (monthKeyOf, used only to order months for prev/next) -
+     so a day from a neighbouring month never shows, and every day this
+     month actually has shows, even from a week whose majority belongs
+     to a different month (its non-matching days just aren't in the
+     list). */
+  function monthDatesFor(ym){
+    var y = +ym.slice(0,4), m = +ym.slice(4,6) - 1;
+    var daysInMonth = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
+    var out = [];
+    for(var d=1; d<=daysInMonth; d++) out.push(ym + (d < 10 ? "0"+d : ""+d));
+    return out;
   }
+  function weekDayFor(dateISO){
+    for(var i=0; i<WEEKS.length; i++){
+      var idx = datesFor(WEEKS[i].start).indexOf(dateISO);
+      if(idx !== -1) return {week:WEEKS[i], day:idx};
+    }
+    return null;
+  }
+  function activeMonthDates(){
+    return monthDatesFor(monthKeyOf(WEEKS[weekIdx])).filter(function(d){ return weekDayFor(d); });
+  }
+  function touchedWeeksFor(dates){
+    var seen = {}, out = [];
+    dates.forEach(function(d){
+      var wd = weekDayFor(d);
+      if(wd && !seen[wd.week.num]){ seen[wd.week.num] = 1; out.push(wd.week); }
+    });
+    return out;
+  }
+  function activeMonthWeeks(){ return touchedWeeksFor(activeMonthDates()); }
   function absHoursOf(week, day){
     return week.absences.filter(function(a){ return a.day === day && a.status === "approved"; })
       .reduce(function(s,a){ return s + a.hours; }, 0);
@@ -523,18 +553,28 @@
      an already-submitted week (its own history, frozen before this month
      even existed as a grouping) can carry an old conflict, like hours on
      a day whose period closed after the fact, without holding the weeks
-     that still need submitting hostage to it. */
-  function monthErrors(weeks){
+     that still need submitting hostage to it. A day-specific error whose
+     date falls outside this month (a boundary week straddling two months)
+     doesn't block this month either - that day belongs to the other one. */
+  function monthErrors(dates){
     var out = [];
-    weeks.filter(function(w){ return !w.submitted; }).forEach(function(w){
+    touchedWeeksFor(dates).filter(function(w){ return !w.submitted; }).forEach(function(w){
       withWeek(w, function(){
-        validate().filter(function(m){ return m.sev === "e"; }).forEach(function(m){ m.week = w; out.push(m); });
+        validate().filter(function(m){ return m.sev === "e"; }).forEach(function(m){
+          if(typeof m.day === "number" && dates.indexOf(datesFor(w.start)[m.day]) === -1) return;
+          m.week = w;
+          out.push(m);
+        });
       });
     });
     return out;
   }
-  function monthCapacityTotal(weeks){ return weeks.reduce(function(a,w){ return a + weekCapacityOf(w); }, 0); }
-  function monthTotalHours(weeks){ return weeks.reduce(function(a,w){ return a + weekTotalOf(w); }, 0); }
+  function monthCapacityTotal(dates){
+    return dates.reduce(function(a,d){ var wd = weekDayFor(d); return a + (wd ? capacityOf(wd.week, wd.day) : 0); }, 0);
+  }
+  function monthTotalHours(dates){
+    return dates.reduce(function(a,d){ var wd = weekDayFor(d); return a + (wd ? dayTotalOf(wd.week, wd.day) : 0); }, 0);
+  }
   /* One logical row per project across the whole month, sourced from
      whichever weeks already have a row for it; desc is shared, taken from
      the first week that has one. Hours stay per week, read through
@@ -579,7 +619,7 @@
       {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false, days:[8,8,8,8,6.5]},
       {who:"Carla Nunes", role:"Consultant", proj:"AER-WFM", tot:40, inproj:40, dev:0, warn:0, sel:false, days:[8,8,8,8,8]},
       {who:"Diogo Sousa", role:"Junior consultant", proj:"BNK-2026", tot:37, inproj:30, dev:-3, warn:0, sel:false, days:[8,8,8,8,5]},
-      {who:"Eva Lopes", role:"Architect", proj:"RTL-TT", tot:52, inproj:52, dev:12, warn:1, sel:false, note:"12 h above plan", days:[10,10,12,10,10]},
+      {who:"Eva Lopes", role:"Architect", proj:"RTL-TT", tot:40, inproj:40, dev:0, warn:1, sel:false, note:"Pending leave request overlaps recorded hours", days:[8,8,8,8,8]},
       {who:"Filipe Reis", role:"Consultant", proj:"AER-WFM", tot:24, inproj:18, dev:-16, warn:1, sel:false, note:"Two empty working days", days:[8,8,0,8,0]}
     ]
   };
@@ -618,20 +658,22 @@
         out.push({sev:"e", txt:"Project entries need a description: "+PROJECTS[r.p].code+".", row:r.id});
       }
     });
-    /* conflicts with absences - capacity() also reflects a reduced daily
-       schedule, not only absences, so this only fires on a day an absence
-       actually touches; working past a reduced schedule with no absence on
-       it is not a conflict, same as it never was against the standard 8 h. */
+    /* Never past the day's capacity - the person's daily schedule, reduced
+       further by an approved absence when there is one. The field-level
+       check in durCell keeps this from happening through the UI; this is
+       the same rule enforced again for whatever reaches state.rows some
+       other way (Quick add, the assistant, a suggestion accepted). */
     for(var a=0; a<5; a++){
-      if(!absHours(a)) continue;
       var cap = capacity(a), tot = dayTotal(a);
       if(tot === 0) continue;
-      if(cap === 0){
+      if(cap === 0 && absHours(a) > 0){
         out.push({sev:"e", day:a, conflict:a,
           txt:DAYS[a]+" has an approved "+absOn(a,"approved")[0].type.toLowerCase()+". The "+fmt(tot)+" h recorded need to move off this day."});
       } else if(tot > cap){
         out.push({sev:"e", day:a,
-          txt:DAYS[a]+" has an approved partial absence. Day capacity is "+fmt(cap)+" h and "+fmt(tot)+" h are recorded."});
+          txt: absHours(a) > 0
+            ? DAYS[a]+" has an approved partial absence. Day capacity is "+fmt(cap)+" h and "+fmt(tot)+" h are recorded."
+            : DAYS[a]+"'s capacity is "+fmt(cap)+" h; "+fmt(tot)+" h are recorded."});
       }
     }
     for(var p=0; p<5; p++){
@@ -770,22 +812,21 @@
       var parsed = parseDur(inp.value);
       if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 1.5 or 1:30 or 90m."); inp.value = v ? fmt(v) : ""; return; }
       var newVal = round15(parsed);
-      /* a day with an approved absence (full or partial) has a reduced
-         capacity; block typing past it here, at the field, instead of
-         only flagging it once the week is validated */
-      if(absHours(i) > 0){
-        var otherTotal = dayTotal(i) - (r.h[i] || 0);
-        var cap = capacity(i);
-        if(otherTotal + newVal > cap){
-          var abs = absOn(i, "approved")[0];
-          var kind = abs ? abs.type.toLowerCase() : "absence";
-          var left = Math.max(0, cap - otherTotal);
-          toast(left > 0
-            ? DAYS[i]+" has an approved "+kind+". Only "+fmt(left)+" h available."
-            : DAYS[i]+" has an approved "+kind+". No hours available on this day.");
-          inp.value = v ? fmt(v) : "";
-          return;
-        }
+      /* Never exceed the day's capacity - the person's daily schedule,
+         reduced further by an approved absence when there is one. Block
+         it here, at the field, instead of only flagging it once the
+         week is validated: the app should never let the limit pass. */
+      var otherTotal = dayTotal(i) - (r.h[i] || 0);
+      var cap = capacity(i);
+      if(otherTotal + newVal > cap){
+        var abs = absOn(i, "approved")[0];
+        var left = Math.max(0, cap - otherTotal);
+        var msg = abs
+          ? DAYS[i]+" has an approved "+abs.type.toLowerCase()+"."
+          : DAYS[i]+"'s capacity is "+fmt(cap)+" h.";
+        toast(msg + (left > 0 ? " Only "+fmt(left)+" h available." : " No hours available on this day."));
+        inp.value = v ? fmt(v) : "";
+        return;
       }
       r.h[i] = newVal;
       render();
@@ -980,21 +1021,17 @@
       var parsed = parseDur(inp.value);
       if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 1.5 or 1:30 or 90m."); inp.value = v ? fmt(v) : ""; return; }
       var newVal = round15(parsed);
-      if(absHoursOf(week, i) > 0){
-        var row0 = monthRowIn(week, monthRow.p);
-        var otherTotal = dayTotalOf(week, i) - (row0 ? (row0.h[i]||0) : 0);
-        var cap = capacityOf(week, i);
-        if(otherTotal + newVal > cap){
-          var abs = week.absences.filter(function(a){ return a.day === i && a.status === "approved"; })[0];
-          var kind = abs ? abs.type.toLowerCase() : "absence";
-          var left = Math.max(0, cap - otherTotal);
-          var dayLabel = monthDayLabel(week, i);
-          toast(left > 0
-            ? dayLabel+" has an approved "+kind+". Only "+fmt(left)+" h available."
-            : dayLabel+" has an approved "+kind+". No hours available on this day.");
-          inp.value = v ? fmt(v) : "";
-          return;
-        }
+      var row0 = monthRowIn(week, monthRow.p);
+      var otherTotal = dayTotalOf(week, i) - (row0 ? (row0.h[i]||0) : 0);
+      var cap = capacityOf(week, i);
+      if(otherTotal + newVal > cap){
+        var abs = week.absences.filter(function(a){ return a.day === i && a.status === "approved"; })[0];
+        var left = Math.max(0, cap - otherTotal);
+        var dayLabel = monthDayLabel(week, i);
+        var msg = abs ? dayLabel+" has an approved "+abs.type.toLowerCase()+"." : dayLabel+"'s capacity is "+fmt(cap)+" h.";
+        toast(msg + (left > 0 ? " Only "+fmt(left)+" h available." : " No hours available on this day."));
+        inp.value = v ? fmt(v) : "";
+        return;
       }
       var row = monthRowIn(week, monthRow.p);
       if(!row){
@@ -1010,8 +1047,9 @@
     var g = $("tsgrid");
     g.innerHTML = "";
     g.className = "tsgrid month";
-    var weeks = activeMonthWeeks();
-    var dayCols = weeks.length * 5;
+    var dates = activeMonthDates();
+    var weeks = touchedWeeksFor(dates);
+    var dayCols = dates.length;
     var gridCols = "minmax(230px,1fr) repeat(" + dayCols + ",50px) 70px 34px";
     g.style.minWidth = (230 + dayCols*50 + 70 + 34) + "px";
 
@@ -1019,31 +1057,38 @@
     head.className = "row head";
     head.style.gridTemplateColumns = gridCols;
     head.appendChild(el("div","","Project, WBS and activity"));
-    weeks.forEach(function(w){
-      for(var i=0; i<5; i++){
-        var c = el("div","","");
-        c.appendChild(el("span","dname", WEEKDAY_ABBR[i]));
-        c.appendChild(el("span","dnum", "" + (+datesFor(w.start)[i].slice(6,8))));
-        var ap = w.absences.filter(function(a){ return a.day===i && a.status==="approved"; })[0];
-        var pe = w.absences.filter(function(a){ return a.day===i && a.status==="pending"; })[0];
-        if(ap) c.appendChild(dayAbsBadgeOf(w, ap, capacityOf(w,i)===0 ? ap.type : "half day", capacityOf(w,i)===0 ? " full" : ""));
-        else if(pe) c.appendChild(dayAbsBadgeOf(w, pe, "pending", " pend"));
-        head.appendChild(c);
-      }
+    dates.forEach(function(dateISO){
+      var wd = weekDayFor(dateISO);
+      var c = el("div", wd.day > 4 ? "we" : "", "");
+      c.appendChild(el("span","dname", WEEKDAY_ABBR[wd.day]));
+      c.appendChild(el("span","dnum", "" + (+dateISO.slice(6,8))));
+      var ap = wd.week.absences.filter(function(a){ return a.day===wd.day && a.status==="approved"; })[0];
+      var pe = wd.week.absences.filter(function(a){ return a.day===wd.day && a.status==="pending"; })[0];
+      if(ap) c.appendChild(dayAbsBadgeOf(wd.week, ap, capacityOf(wd.week,wd.day)===0 ? ap.type : "half day", capacityOf(wd.week,wd.day)===0 ? " full" : ""));
+      else if(pe) c.appendChild(dayAbsBadgeOf(wd.week, pe, "pending", " pend"));
+      head.appendChild(c);
     });
     head.appendChild(el("div","","Total"));
     head.appendChild(el("div","",""));
     g.appendChild(head);
 
+    /* the week-divider row groups consecutive dates that belong to the
+       same underlying week - not fixed at 5 or 7 wide, since a boundary
+       week only contributes however many of its days fall in this month */
     var sub = document.createElement("div");
     sub.className = "row monthsub";
     sub.style.gridTemplateColumns = gridCols;
     sub.appendChild(el("div","",""));
-    weeks.forEach(function(w){
-      var span = el("div","monthweeklabel","Week "+w.num);
-      span.style.gridColumn = "span 5";
-      sub.appendChild(span);
-    });
+    var di = 0;
+    while(di < dates.length){
+      var w0 = weekDayFor(dates[di]).week;
+      var span = 0;
+      while(di+span < dates.length && weekDayFor(dates[di+span]).week === w0) span++;
+      var label = el("div","monthweeklabel","Week "+w0.num);
+      label.style.gridColumn = "span " + span;
+      sub.appendChild(label);
+      di += span;
+    }
     sub.appendChild(el("div","",""));
     sub.appendChild(el("div","",""));
     g.appendChild(sub);
@@ -1089,12 +1134,11 @@
       row.appendChild(meta);
 
       var rowTot = 0;
-      weeks.forEach(function(w){
-        var existing = monthRowIn(w, monthRow.p);
-        for(var i=0; i<5; i++){
-          rowTot += existing ? (existing.h[i]||0) : 0;
-          row.appendChild(monthDurCell(monthRow, w, i, pr));
-        }
+      dates.forEach(function(dateISO){
+        var wd = weekDayFor(dateISO);
+        var existing = monthRowIn(wd.week, monthRow.p);
+        rowTot += existing ? (existing.h[wd.day]||0) : 0;
+        row.appendChild(monthDurCell(monthRow, wd.week, wd.day, pr));
       });
 
       row.appendChild(el("div","rowtot", rowTot ? fmt(rowTot) : "–"));
@@ -1123,17 +1167,16 @@
       tr.className = "row totals";
       tr.style.gridTemplateColumns = gridCols;
       tr.appendChild(el("div","rowmeta","Total per day"));
-      weeks.forEach(function(w){
-        for(var d=0; d<5; d++){
-          var v = dayTotalOf(w, d), cap = capacityOf(w, d);
-          var cls = "t";
-          if(v > 24 || v > cap) cls += " over";
-          else if(v === 0 && cap > 0) cls += " zero";
-          else if(cap === 0) cls += " off";
-          tr.appendChild(el("div", cls, cap === 0 && !v ? "–" : (v ? fmt(v) : "0.0")));
-        }
+      dates.forEach(function(dateISO){
+        var wd = weekDayFor(dateISO);
+        var v = dayTotalOf(wd.week, wd.day), cap = capacityOf(wd.week, wd.day);
+        var cls = "t";
+        if(v > 24 || v > cap) cls += " over";
+        else if(v === 0 && cap > 0) cls += " zero";
+        else if(cap === 0) cls += " off";
+        tr.appendChild(el("div", cls, cap === 0 && !v ? "–" : (v ? fmt(v) : "0.0")));
       });
-      tr.appendChild(el("div","t", fmt(monthTotalHours(weeks))));
+      tr.appendChild(el("div","t", fmt(monthTotalHours(dates))));
       tr.appendChild(el("div","",""));
       g.appendChild(tr);
     }
@@ -1170,10 +1213,6 @@
     loadWeek(WEEKS.indexOf(target));
     render();
   }
-  /* Hides the parts of the screen that only make sense for one week at a
-     time (calendar view, copy/template, suggestions, allowances) while in
-     the monthly view - each ties to a single week's WORKDATES/state.rows,
-     and extending them to span a month is future work, not this ask. */
   /* Only Copy previous week and Apply template are hidden for consulting's
      monthly view - "previous week" and a per-week template don't carry a
      clear meaning once the whole month is already on screen. Calendar,
@@ -1196,49 +1235,49 @@
   function renderCalMonth(){
     var cal = $("cal");
     cal.innerHTML = "";
-    var weeks = activeMonthWeeks();
-    var dayCols = weeks.length * 5;
+    var dates = activeMonthDates();
     cal.className = "cal month";
-    cal.style.gridTemplateColumns = "52px repeat(" + dayCols + ",minmax(90px,1fr))";
-    cal.style.minWidth = (52 + dayCols*90) + "px";
+    cal.style.gridTemplateColumns = "52px repeat(" + dates.length + ",minmax(90px,1fr))";
+    cal.style.minWidth = (52 + dates.length*90) + "px";
 
     cal.appendChild(el("div","ch","Time"));
-    weeks.forEach(function(w){
-      for(var i=0; i<5; i++) cal.appendChild(el("div","ch", monthDayLabel(w,i)));
+    dates.forEach(function(dateISO){
+      var wd = weekDayFor(dateISO);
+      cal.appendChild(el("div","ch", monthDayLabel(wd.week, wd.day)));
     });
 
     var hours = el("div","hours","");
     for(var h=9; h<19; h++){ hours.appendChild(el("span","", h+":00")); }
     cal.appendChild(hours);
 
-    weeks.forEach(function(w){
-      for(var d=0; d<5; d++){
-        var col = el("div","col","");
-        w.absences.filter(function(a){ return a.day === d; }).forEach(function(a){
-          var ab = el("div","blk abs" + (a.status === "pending" ? " pend" : ""), "");
-          ab.style.minHeight = Math.max(30, a.hours*26) + "px";
-          ab.appendChild(el("b","", fmt(a.hours)+" h"));
-          ab.appendChild(document.createTextNode(a.type + " · " + ABSTATUS[a.status]));
-          ab.title = a.src + ", AWART " + a.awart;
-          col.appendChild(ab);
-        });
-        var any = false;
-        w.rows.forEach(function(r){
-          var v = r.h[d];
-          if(!v) return;
-          any = true;
-          var pr = PROJECTS[r.p];
-          var b = el("div","blk" + (pr.proj ? "" : " nb"), "");
-          b.style.minHeight = Math.max(30, v*26) + "px";
-          b.appendChild(el("b","", fmt(v)+" h"));
-          b.appendChild(document.createTextNode(pr.code + " · " + (r.desc || pr.act)));
-          col.appendChild(b);
-        });
-        if(isBlockedOf(w,d) && !any){
-          col.appendChild(el("div","calfree off","day not available"));
-        }
-        cal.appendChild(col);
+    dates.forEach(function(dateISO){
+      var wd = weekDayFor(dateISO), w = wd.week, d = wd.day;
+      var col = el("div","col","");
+      w.absences.filter(function(a){ return a.day === d; }).forEach(function(a){
+        var ab = el("div","blk abs" + (a.status === "pending" ? " pend" : ""), "");
+        ab.style.minHeight = Math.max(30, a.hours*26) + "px";
+        ab.appendChild(el("b","", fmt(a.hours)+" h"));
+        ab.appendChild(document.createTextNode(a.type + " · " + ABSTATUS[a.status]));
+        ab.title = a.src + ", AWART " + a.awart;
+        col.appendChild(ab);
+      });
+      var any = false;
+      w.rows.forEach(function(r){
+        var v = r.h[d];
+        if(!v) return;
+        any = true;
+        var pr = PROJECTS[r.p];
+        var b = el("div","blk" + (pr.proj ? "" : " nb"), "");
+        b.style.minHeight = Math.max(30, v*26) + "px";
+        var s = slot(r,d);
+        b.appendChild(el("b","", (isClock() && s && s.b!==null && s.e!==null) ? (fmtClock(s.b)+"–"+fmtClock(s.e%1440)) : fmt(v)+" h"));
+        b.appendChild(document.createTextNode(pr.code + " · " + (r.desc || pr.act)));
+        col.appendChild(b);
+      });
+      if(isBlockedOf(w,d) && !any){
+        col.appendChild(el("div","calfree off","day not available"));
       }
+      cal.appendChild(col);
     });
   }
   function renderCal(){
@@ -1276,9 +1315,10 @@
         var b = document.createElement("button");
         b.className = "blk" + (pr.proj ? "" : " nb");
         b.style.minHeight = Math.max(30, v*26) + "px";
-        b.appendChild(el("b","", fmt(v)+" h"));
+        var s = slot(r,d);
+        b.appendChild(el("b","", (isClock() && s && s.b!==null && s.e!==null) ? (fmtClock(s.b)+"–"+fmtClock(s.e%1440)) : fmt(v)+" h"));
         b.appendChild(document.createTextNode(pr.code + " · " + (r.desc || pr.act)));
-        b.onclick = function(){ openDetail(r); };
+        b.onclick = (function(day){ return function(){ openDetail(r, day); }; })(d);
         col.appendChild(b);
       });
       if(!isBlocked(d)){
@@ -1365,10 +1405,16 @@
      on, which isn't reliably true once a message can belong to any of
      several weeks. Each line names its week instead. */
   function renderMsgsMonth(){
-    var weeks = activeMonthWeeks();
+    var dates = activeMonthDates();
+    var weeks = touchedWeeksFor(dates);
     var list = [];
     weeks.forEach(function(w){
-      withWeek(w, function(){ validate().forEach(function(m){ list.push({sev:m.sev, txt:"Week "+w.num+": "+m.txt}); }); });
+      withWeek(w, function(){
+        validate().forEach(function(m){
+          if(typeof m.day === "number" && dates.indexOf(datesFor(w.start)[m.day]) === -1) return;
+          list.push({sev:m.sev, txt:"Week "+w.num+": "+m.txt});
+        });
+      });
     });
     var box = $("msgs");
     box.innerHTML = "";
@@ -1411,9 +1457,9 @@
     });
   }
   function renderKpisMonth(){
-    var weeks = activeMonthWeeks();
-    var first = weeks[0];
-    var ym = monthKeyOf(first);
+    var dates = activeMonthDates();
+    var weeks = touchedWeeksFor(dates);
+    var ym = monthKeyOf(WEEKS[weekIdx]);
     var y = ym.slice(0,4), mIdx = +ym.slice(4,6) - 1;
     /* A clean month selector, not a week one - the week numbers already
        label their own columns in the grid below, repeating them here read
@@ -1422,7 +1468,7 @@
     var label = monthName + " " + y;
     $("weekLabel").textContent = label;
     var months = monthList();
-    var mi = months.indexOf(monthKeyOf(first));
+    var mi = months.indexOf(ym);
     $("prevW").disabled = mi <= 0;
     $("nextW").disabled = mi >= months.length - 1;
     /* Team keeps its own week-by-week navigator even when My week steps by
@@ -1432,8 +1478,11 @@
     if($("prevW2")) $("prevW2").disabled = weekIdx === 0;
     if($("nextW2")) $("nextW2").disabled = weekIdx === WEEKS.length - 1;
 
-    var tot = monthTotalHours(weeks), expect = monthCapacityTotal(weeks);
-    var proj = weeks.reduce(function(a,w){ return a + w.rows.reduce(function(x,r){ return x + (PROJECTS[r.p].proj ? rowTotal(r) : 0); }, 0); }, 0);
+    var tot = monthTotalHours(dates), expect = monthCapacityTotal(dates);
+    var proj = dates.reduce(function(a,d){
+      var wd = weekDayFor(d);
+      return a + (wd ? wd.week.rows.reduce(function(x,r){ return x + (PROJECTS[r.p].proj ? (r.h[wd.day]||0) : 0); }, 0) : 0);
+    }, 0);
     $("kTot").innerHTML = fmt(tot) + "<small> / " + fmt(expect) + " h</small>";
     var pct = expect ? Math.min(100, tot/expect*100) : 0;
     var bar = $("kBar");
@@ -1443,18 +1492,18 @@
     $("kProjBar").style.width = (tot ? proj/tot*100 : 0) + "%";
 
     var absW = 0, zeros = 0;
-    weeks.forEach(function(w){
-      for(var i=0; i<5; i++){
-        absW += absHoursOf(w, i);
-        if(capacityOf(w,i) > 0 && dayTotalOf(w,i) === 0) zeros++;
-      }
+    dates.forEach(function(d){
+      var wd = weekDayFor(d);
+      if(!wd || wd.day > 4) return;
+      absW += absHoursOf(wd.week, wd.day);
+      if(capacityOf(wd.week, wd.day) > 0 && dayTotalOf(wd.week, wd.day) === 0) zeros++;
     });
     var reduced = dailyCapFor() !== DAYCAP;
     if($("kExtra")) $("kExtra").textContent = weeks.length + (weeks.length===1?" week":" weeks") + " this month · "
       + (reduced ? "Reduced schedule, " + fmt(dailyCapFor()) + " h/day · " : "")
       + fmt(absW) + " h absences deducted · " + zeros + (zeros === 1 ? " empty working day" : " empty working days");
 
-    var errs = monthErrors(weeks).length;
+    var errs = monthErrors(dates).length;
     $("kVal").textContent = errs ? (errs + (errs===1 ? " error" : " errors")) : "No errors";
     $("kVal").style.color = errs ? "var(--crit)" : "var(--good)";
     var allSubmitted = weeks.every(function(w){ return w.submitted; });
@@ -2756,7 +2805,11 @@
 
   /* ---------- detail ---------- */
   var dtRow = null;
-  function openDetail(r){
+  /* day is which calendar column was clicked, only meaningful for Z_BSRV
+     (Building Solutions): that profile records start and end per day, not
+     one duration for the week, so a day-specific click there needs to
+     show that day's actual window, not the row's total. */
+  function openDetail(r, day){
     dtRow = r;
     var pr = PROJECTS[r.p];
     $("dtTitle").textContent = pr.name;
@@ -2778,6 +2831,14 @@
     $("dtDesc").value = r.desc;
     $("dtAct").value = pr.act;
     $("dtOrigin").textContent = r.origin;
+    var showClock = isClock() && typeof day === "number";
+    $("dtStartField").hidden = !showClock;
+    $("dtEndField").hidden = !showClock;
+    if(showClock){
+      var s = slot(r, day);
+      $("dtStart").value = s && s.b !== null ? fmtClock(s.b) : "–";
+      $("dtEnd").value = s && s.e !== null ? fmtClock(s.e % 1440) : "–";
+    }
     var st = $("dtState");
     st.textContent = state.submitted ? "In approval, read-only" : "Draft";
     st.className = state.submitted ? "chip blue" : "chip grey";
@@ -2813,9 +2874,10 @@
 
   /* ---------- submit ---------- */
   function openSubmitMonth(){
-    var weeks = activeMonthWeeks();
+    var dates = activeMonthDates();
+    var weeks = touchedWeeksFor(dates);
     var first = weeks[0];
-    var ym = monthKeyOf(first);
+    var ym = monthKeyOf(WEEKS[weekIdx]);
     var y = ym.slice(0,4), mIdx = +ym.slice(4,6) - 1;
     var monthName = MONTHS_NLP[mIdx].charAt(0).toUpperCase() + MONTHS_NLP[mIdx].slice(1);
     $("subTitle").textContent = "Submit " + monthName + " " + y;
@@ -2844,7 +2906,7 @@
     var tr = el("div","r t","");
     tr.appendChild(el("span","","Month total"));
     tr.appendChild(el("span","", fmt(monthProj)+" h in project"));
-    tr.appendChild(el("span","n", fmt(monthTotalHours(weeks))+" h"));
+    tr.appendChild(el("span","n", fmt(monthTotalHours(dates))+" h"));
     sum.appendChild(tr);
     body.appendChild(sum);
 
@@ -2954,6 +3016,13 @@
     body.innerHTML = "";
     var clean = state.approvals.filter(function(a){ return !a.warn; });
     var flagged = state.approvals.filter(function(a){ return a.warn; });
+    var apHours = $("apHours");
+    if(apHours) apHours.innerHTML = fmt(state.approvals.reduce(function(a,x){ return a+x.tot; }, 0)) + "<small> h</small>";
+    var apDev = $("apDev");
+    if(apDev){
+      var dev = state.approvals.reduce(function(a,x){ return a+x.dev; }, 0);
+      apDev.innerHTML = (dev>0?"+":"") + fmt(dev) + "<small> h</small>";
+    }
 
     function group(title, list, cls){
       if(!list.length) return;

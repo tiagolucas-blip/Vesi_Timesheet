@@ -145,6 +145,11 @@
   .row.totals .t.zero{color:var(--warn); background:var(--warn-soft)}
   .row.totals .t.over{color:var(--crit); background:var(--crit-soft)}
   .row.locked .cell{background:var(--surface-3); color:var(--ink-3)}
+  .totlegend{display:flex; gap:16px; flex-wrap:wrap; padding:8px 14px 0; font-size:11px; color:var(--ink-3)}
+  .totlegend .sw{display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:5px; vertical-align:middle}
+  .totlegend .sw.over{background:var(--crit)}
+  .totlegend .sw.zero{background:var(--warn)}
+  .totlegend .sw.off{background:var(--ink-3)}
   .gridfoot{display:flex; gap:8px; padding:10px 14px; flex-wrap:wrap; border-top:1px solid var(--line-soft)}
   .hint{margin-left:auto; font-size:12px; color:var(--ink-3); align-self:center}
   kbd{font-family:var(--f-mono); font-size:11px; border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:1px 5px; background:var(--surface-2); color:var(--ink-2)}

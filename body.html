@@ -68,6 +68,11 @@
             <div class="gridscroll">
               <div class="tsgrid" id="tsgrid"></div>
             </div>
+            <div class="totlegend">
+              <span><i class="sw over"></i>Total per day: over capacity</span>
+              <span><i class="sw zero"></i>Empty working day</span>
+              <span><i class="sw off"></i>Not available (absence or non-working day)</span>
+            </div>
             <div class="gridfoot">
               <button class="btn" id="addRow">Add row</button>
               <button class="btn" id="copyWeek">Copy previous week <kbd>C</kbd></button>
@@ -301,9 +306,9 @@
       <p class="sub" style="margin:6px 0 0; font-size:13px; color:var(--ink-3)">A different person's queue, not your own week. It covers the people on Sofia's consulting projects (Banking, Retail, Airports) &mdash; nothing you submit under My week lands here.</p>
       <div class="kpis">
         <div class="kpi"><span class="k">Pending approval</span><span class="v" id="apPend">6</span></div>
-        <div class="kpi"><span class="k">Hours submitted</span><span class="v" id="apHours">231.5<small> h</small></span></div>
+        <div class="kpi"><span class="k">Hours submitted</span><span class="v" id="apHours">0.0<small> h</small></span></div>
         <div class="kpi"><span class="k">With warnings</span><span class="v" id="apWarn" style="color:var(--warn)">2</span></div>
-        <div class="kpi"><span class="k">Deviation from plan</span><span class="v">+6.5<small> h</small></span></div>
+        <div class="kpi"><span class="k">Deviation from plan</span><span class="v" id="apDev">0.0<small> h</small></span></div>
       </div>
     </div>
 
@@ -456,6 +461,8 @@
   <div class="body">
     <div class="field"><label for="dtProj">Project and WBS</label><select id="dtProj"></select></div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
+      <div class="field" id="dtStartField" hidden><label for="dtStart">Start</label><input type="text" id="dtStart" readonly></div>
+      <div class="field" id="dtEndField" hidden><label for="dtEnd">End</label><input type="text" id="dtEnd" readonly></div>
       <div class="field"><label for="dtDur">Duration</label><input type="text" id="dtDur"></div>
       <div class="field"><label for="dtAct">Activity type</label><input type="text" id="dtAct" readonly></div>
     </div>
