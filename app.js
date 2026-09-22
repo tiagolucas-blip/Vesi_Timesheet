@@ -45,8 +45,12 @@
 
   /* IT0001 of the person using the application. The switch in the header changes
      it, which is the same as opening the sheet as someone assigned to the other
-     company. Nothing else in the application decides the entry mode. */
-  var IT0001 = {pernr:PERNR, bukrs:"PT01"};
+     company. Nothing else in the application decides the entry mode.
+     dailyHours is the example of a reduced work schedule (part-time): the
+     same capacity every working day, only meaningful for consulting, where
+     each day is expected to reach it. Omitted/8 means a standard schedule. */
+  var IT0001 = {pernr:PERNR, bukrs:"PT01", dailyHours:6};
+  function dailyCapFor(){ return (IT0001.bukrs === "PT01" && IT0001.dailyHours) ? IT0001.dailyHours : DAYCAP; }
 
   function profileCodeFor(bukrs, dateISO){
     var hit = ZTIME_COMPANY_CFG.filter(function(c){
@@ -309,7 +313,7 @@
       ],
       rows:[
         {id:1, p:0, desc:"Requirements workshop, payroll", h:[3,4,0,2,0,0,0], origin:"Manual"},
-        {id:2, p:1, desc:"Time recording solution design", h:[2,0,3,0,0,0,0], origin:"Suggested"},
+        {id:2, p:1, desc:"Time recording solution design", h:[2,0,2,0,0,0,0], origin:"Suggested"},
         {id:3, p:3, desc:"", h:[1,0,0,1.5,0,0,0], origin:"Manual"}
       ],
       allow:[
@@ -402,7 +406,7 @@
   }
   function capacity(day){
     if(day > 4) return 0;
-    return Math.max(0, DAYCAP - absHours(day));
+    return Math.max(0, dailyCapFor() - absHours(day));
   }
   function isBlocked(day){ return day <= 4 && capacity(day) === 0; }
   function weekCapacity(){
@@ -476,8 +480,12 @@
         out.push({sev:"e", txt:"Project entries need a description: "+PROJECTS[r.p].code+".", row:r.id});
       }
     });
-    /* conflicts with absences */
+    /* conflicts with absences - capacity() also reflects a reduced daily
+       schedule, not only absences, so this only fires on a day an absence
+       actually touches; working past a reduced schedule with no absence on
+       it is not a conflict, same as it never was against the standard 8 h. */
     for(var a=0; a<5; a++){
+      if(!absHours(a)) continue;
       var cap = capacity(a), tot = dayTotal(a);
       if(tot === 0) continue;
       if(cap === 0){
@@ -952,7 +960,9 @@
     $("kProjBar").style.width = (tot ? proj/tot*100 : 0) + "%";
     var zeros = 0;
     for(var i=0; i<5; i++) if(capacity(i) > 0 && dayTotal(i) === 0) zeros++;
-    if($("kExtra")) $("kExtra").textContent = fmt(absW) + " h absences deducted · " + zeros + (zeros === 1 ? " empty working day" : " empty working days");
+    var reduced = dailyCapFor() !== DAYCAP;
+    if($("kExtra")) $("kExtra").textContent = (reduced ? "Reduced schedule, " + fmt(dailyCapFor()) + " h/day · " : "")
+      + fmt(absW) + " h absences deducted · " + zeros + (zeros === 1 ? " empty working day" : " empty working days");
     var errs = errors().length;
     $("kVal").textContent = errs ? (errs + (errs===1 ? " error" : " errors")) : "No errors";
     $("kVal").style.color = errs ? "var(--crit)" : "var(--good)";
