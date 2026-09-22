@@ -3582,7 +3582,7 @@
           mensagem: txt,
           historico: chat.history.slice(0, -1).slice(-12),
           contexto: {
-            ecra_atual: {semana:"My week", team:"Team", aprov:"Approval", cats:"CATS mapping"}[state.screen] || "My week",
+            ecra_atual: {semana:"My Timesheet", team:"Team", aprov:"Approval", cats:"CATS mapping"}[state.screen] || "My Timesheet",
             projetos: PROJECTS.map(function(p,i){ return {codigo: p.code.split("-")[0], nome: p.name, indice: i}; }),
             ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
             capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
