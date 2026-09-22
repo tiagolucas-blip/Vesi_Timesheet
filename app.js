@@ -209,8 +209,7 @@
      at capacity so the "day already full" case is visible without more clicks. */
   function alreadyHoursFor(m, weekNum){
     var base;
-    if(weekNum >= 39) base = [0,0,0,0,0,0,0];
-    else if(weekNum === 38) base = (m.already || [0,0,0,0,0,0,0]).slice();
+    if(weekNum >= 38) base = (m.already || [0,0,0,0,0,0,0]).slice();
     else base = [0,1,2,3,4].reduce(function(acc,d){ acc[d] = m.abs[d] ? 0 : 8; return acc; }, [0,0,0,0,0,0,0]);
     /* the sample "already" figures are a static baseline and never move;
        without this, saving a mass entry made the read-only grid look like
