@@ -1475,8 +1475,9 @@
        month for consulting - a leader stepping through the team's log
        still needs single weeks, so this mirrors the *week*, not the month. */
     if($("weekLabel2")) $("weekLabel2").textContent = weekLabelFor(WORKDATES, WEEKS[weekIdx].num);
-    if($("prevW2")) $("prevW2").disabled = weekIdx === 0;
-    if($("nextW2")) $("nextW2").disabled = weekIdx === WEEKS.length - 1;
+    var teamRange = teamWeekRange();
+    if($("prevW2")) $("prevW2").disabled = weekIdx <= teamRange.lo;
+    if($("nextW2")) $("nextW2").disabled = weekIdx >= teamRange.hi;
 
     var tot = monthTotalHours(dates), expect = monthCapacityTotal(dates);
     var proj = dates.reduce(function(a,d){
@@ -1532,8 +1533,9 @@
     $("nextW").disabled = weekIdx === WEEKS.length - 1;
     /* the team screen has its own week navigator, kept in sync with this one */
     if($("weekLabel2")) $("weekLabel2").textContent = weekLabelFor(WORKDATES, WEEKS[weekIdx].num);
-    if($("prevW2")) $("prevW2").disabled = weekIdx === 0;
-    if($("nextW2")) $("nextW2").disabled = weekIdx === WEEKS.length - 1;
+    var teamRange = teamWeekRange();
+    if($("prevW2")) $("prevW2").disabled = weekIdx <= teamRange.lo;
+    if($("nextW2")) $("nextW2").disabled = weekIdx >= teamRange.hi;
     var tot = weekTotal(), proj = projTotal(), expect = weekCapacity();
     $("kTot").innerHTML = fmt(tot) + "<small> / " + fmt(expect) + " h</small>";
     var pct = expect ? Math.min(100, tot/expect*100) : 0;
@@ -2640,14 +2642,30 @@
      the same navigation as the monthly My week view, even though both
      screens read the same underlying "current week". */
   function changeWeekByOne(delta){
+    var range = teamWeekRange();
     var next = weekIdx + delta;
-    if(next < 0 || next >= WEEKS.length){
+    if(next < range.lo || next > range.hi){
       toast(delta < 0 ? "No earlier sample weeks." : "No later sample weeks.");
       return;
     }
     saveCurrentWeek();
     loadWeek(next);
     render();
+  }
+  /* Weeks 35/40/41 exist only so My week's month pager (consulting) has
+     more than one month to page through; Team's own week-by-week
+     navigator predates that and only ever offered weeks 36-39. Without
+     this, stepping through Team with prevW2/nextW2 could wander into
+     those extra weeks too, which reads as the mass entry screen now
+     spanning far more weeks than it used to - it should stay exactly as
+     it was before the monthly work, regardless of what My week added. */
+  function teamWeekRange(){
+    var lo = 0, hi = WEEKS.length - 1;
+    WEEKS.forEach(function(w, i){
+      if(w.num === 36) lo = i;
+      if(w.num === 39) hi = i;
+    });
+    return { lo: lo, hi: hi };
   }
   function changeWeek(delta){
     if(isMonthly()) return changeMonth(delta);
