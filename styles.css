@@ -38,6 +38,7 @@
     display:flex; align-items:center; gap:14px; flex-wrap:wrap;
     padding:10px 16px;
   }
+  .orglogo{height:28px; width:auto; display:block}
   .brand{display:flex; align-items:baseline; gap:9px; margin-right:auto}
   .brand strong{font-family:var(--f-display); font-size:15px; font-weight:600; letter-spacing:-.01em; color:var(--accent-ink); display:inline-flex; align-items:baseline; gap:6px}
   .brand strong::before{content:""; display:inline-block; width:7px; height:7px; border-radius:1px; background:var(--brand-mark); transform:translateY(-1px)}
@@ -49,6 +50,7 @@
   .btn:hover{background:var(--surface-2)}
   .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
   .btn.primary:hover{filter:brightness(1.08)}
+  .btn.primary.warn{background:var(--warn); border-color:var(--warn)}
   .btn.ghost{background:transparent; border-color:transparent; color:var(--accent); padding:6px 8px}
   .btn.ghost:hover{background:var(--accent-soft)}
   .btn:disabled{opacity:.45; cursor:not-allowed}
@@ -150,6 +152,7 @@
   .totlegend .sw.over{background:var(--crit)}
   .totlegend .sw.zero{background:var(--warn)}
   .totlegend .sw.off{background:var(--ink-3)}
+  .totlegend .sw.submitted{background:var(--accent-soft); border:1px solid var(--accent)}
   .gridfoot{display:flex; gap:8px; padding:10px 14px; flex-wrap:wrap; border-top:1px solid var(--line-soft)}
   .hint{margin-left:auto; font-size:12px; color:var(--ink-3); align-self:center}
   kbd{font-family:var(--f-mono); font-size:11px; border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:1px 5px; background:var(--surface-2); color:var(--ink-2)}
@@ -275,8 +278,11 @@
   .pTog{background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:4px; color:var(--ink-3); font-size:16px; line-height:1}
   .pTog:hover{background:var(--surface-2); color:var(--ink-2)}
   .panel.collapsed > *:not(header){display:none}
+  .togHead{cursor:pointer}
+  .togHead:hover .pTog{background:var(--surface-2); color:var(--ink-2)}
 
   .teamtabs{margin:0}
+  .teamtabs button{font-size:14px; padding:8px 16px}
   .maplist{display:grid; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:var(--radius); overflow:hidden}
   .maplist div{background:var(--surface); display:grid; grid-template-columns:52px minmax(0,1fr) auto; gap:12px; padding:8px 11px; font-size:13px; align-items:baseline}
   .maplist code{font-family:var(--f-mono); font-size:12px; color:var(--accent-ink); background:var(--accent-soft); padding:1px 6px; border-radius:3px; justify-self:start}
@@ -317,6 +323,7 @@
   .abstip{position:fixed; z-index:60; width:260px}
   .abstip .abscard{box-shadow:0 10px 28px rgba(0,0,0,.18)}
   .cell.abs{background:repeating-linear-gradient(135deg,var(--surface-3),var(--surface-3) 4px,var(--surface-2) 4px,var(--surface-2) 8px); cursor:not-allowed}
+  .cell.submitted{background:var(--accent-soft); color:var(--accent-ink); cursor:not-allowed}
   .row.totals .t.off{color:var(--ink-3)}
   .blk.abs.pend{border-left-color:var(--warn)}
   .calfree.off{border-style:dashed; color:var(--ink-3); background:var(--surface-2); cursor:default}
@@ -375,7 +382,7 @@
   .coswitch select{font:inherit; font-size:12px; padding:3px 6px; border:1px solid var(--line); border-radius:5px; background:var(--surface); color:var(--ink)}
 
   /* ---------- start and end cells, profile Z_BSRV ---------- */
-  .tsgrid.clock .row{grid-template-columns:minmax(210px,1fr) repeat(7,92px) 70px 34px}
+  .tsgrid.clock .row{grid-template-columns:minmax(210px,260px) repeat(7,92px) 70px 34px}
   .tsgrid.clock{min-width:940px}
   .clockcell{border-left:1px solid var(--line-soft); display:grid; gap:2px; padding:5px 5px; align-content:start}
   .clockcell.we{background:var(--surface-2)}

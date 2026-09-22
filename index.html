@@ -16,6 +16,7 @@
 </head>
 <body>
 <header class="shellbar">
+  <img class="orglogo" src="assets/vinci-energies-logo.png" alt="Vinci Energies">
   <div class="brand"><strong>Time Recording</strong><span>Fiori Prototype</span></div>
   <div class="capture" id="capture"><span class="dot"></span><span id="captureTxt">Suggestions on, private timeline</span></div>
   <label class="coswitch" for="coSel"><span>IT0001</span>
@@ -50,6 +51,7 @@
         <span style="margin-left:auto"></span>
         <button class="btn" id="quickBtn">Quick add <kbd>N</kbd></button>
         <button class="btn primary" id="submitBtn">Submit week</button>
+        <button class="btn primary warn" id="saveBtn" hidden>Save</button>
       </div>
       <div class="kpis">
         <div class="kpi">
@@ -89,6 +91,7 @@
               <span><i class="sw over"></i>Total per day: over capacity</span>
               <span><i class="sw zero"></i>Empty working day</span>
               <span><i class="sw off"></i>Not available (absence or non-working day)</span>
+              <span><i class="sw submitted"></i>Week already submitted</span>
             </div>
             <div class="gridfoot">
               <button class="btn" id="addRow">Add row</button>
@@ -100,7 +103,7 @@
 
           <div id="viewCal" hidden>
             <div class="calscroll"><div class="cal" id="cal"></div></div>
-            <div class="gridfoot"><button type="button" class="hinttip" title="Click an empty slot to log time that day. Absences and public holidays are not editable.">?</button></div>
+            <div class="gridfoot"><button type="button" class="hinttip" id="calHint" title="Click an empty slot to log time that day. Absences and public holidays are not editable.">?</button></div>
           </div>
         </div>
 
@@ -190,7 +193,7 @@
     <div class="cols">
       <div style="min-width:0; display:grid; gap:16px">
         <div class="panel collapsed" id="alreadyPanel">
-          <header>
+          <header id="alreadyHead" class="togHead">
             <button type="button" class="pTog" id="alreadyTog" aria-expanded="false" aria-label="Expand already recorded">&#9656;</button>
             <h2 id="alreadyTitle">Already recorded this week</h2>
             <span class="chip grey">Read-only</span>
@@ -226,7 +229,7 @@
           <div class="massbar">
             <label class="f" id="mDurWrap"><span>Duration</span><input type="text" id="mDur" value="8" inputmode="decimal" placeholder="8"></label>
             <label class="f" id="mBegWrap"><span>Start time</span><input type="text" id="mBeg" value="08:00" inputmode="numeric" placeholder="08:00"></label>
-            <label class="f" id="mEndWrap"><span>End time</span><input type="text" id="mEnd" value="17:00" inputmode="numeric" placeholder="17:00"></label>
+            <label class="f" id="mEndWrap"><span>End time</span><input type="text" id="mEnd" value="16:00" inputmode="numeric" placeholder="16:00"></label>
             <div class="f mdayswrap"><span>Days</span>
               <div class="mdays mHoursDays">
                 <label class="mday"><input type="checkbox" value="0" checked>Mon</label>

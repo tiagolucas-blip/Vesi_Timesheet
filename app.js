@@ -45,12 +45,11 @@
 
   /* IT0001 of the person using the application. The switch in the header changes
      it, which is the same as opening the sheet as someone assigned to the other
-     company. Nothing else in the application decides the entry mode.
-     dailyHours is the example of a reduced work schedule (part-time): the
-     same capacity every working day, only meaningful for consulting, where
-     each day is expected to reach it. Omitted/8 means a standard schedule. */
-  var IT0001 = {pernr:PERNR, bukrs:"PT01", dailyHours:6};
-  function dailyCapFor(){ return (IT0001.bukrs === "PT01" && IT0001.dailyHours) ? IT0001.dailyHours : DAYCAP; }
+     company. Nothing else in the application decides the entry mode. My week is
+     always a standard 8h/day schedule; reduced schedules are only modelled for
+     named people on the Team (mass entry) roster, see TEAM below. */
+  var IT0001 = {pernr:PERNR, bukrs:"PT01"};
+  function dailyCapFor(){ return DAYCAP; }
 
   function profileCodeFor(bukrs, dateISO){
     var hit = ZTIME_COMPANY_CFG.filter(function(c){
@@ -131,7 +130,7 @@
     /* BNK-2026 */
     {pernr:"00104501", name:"Marta Silva",     role:"Consultant",        bukrs:"PT01", projs:[0],   abs:{}, already:[8,8,4,0,0,0,0]},
     {pernr:"00104504", name:"Rui Tavares",     role:"Consultant",        bukrs:"PT01", projs:[0,2], abs:{}, already:[8,0,8,0,0,0,0]},
-    {pernr:"00104513", name:"Beatriz Costa",   role:"Consultant",        bukrs:"PT01", projs:[0],   abs:{}, already:[8,8,0,0,0,0,0]},
+    {pernr:"00104513", name:"Beatriz Costa",   role:"Consultant",        bukrs:"PT01", projs:[0],   abs:{}, dailyHours:6, already:[6,6,0,0,0,0,0]},
     {pernr:"00104514", name:"Tiago Almeida",   role:"Consultant",        bukrs:"PT01", projs:[0],   abs:{3:"Medical appointment"}, already:[8,4,0,0,0,0,0]},
     {pernr:"00104515", name:"Mariana Neves",   role:"Junior consultant", bukrs:"PT01", projs:[0],   abs:{}, already:[0,8,8,0,0,0,0]},
     /* RTL-TT */
@@ -153,7 +152,7 @@
     {pernr:"00104527", name:"Diogo Ferreira",  role:"Consultant",        bukrs:"PT01", projs:[3],   abs:{}, already:[0,0,0,4,0,0,0]},
     /* HSP-FAC */
     {pernr:"00104510", name:"Nuno Dias",       role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[8,8,0,0,0,0,0]},
-    {pernr:"00104511", name:"Hélder Rocha",    role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[0,0,8,8,8,0,0]},
+    {pernr:"00104511", name:"Hélder Rocha",    role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, dailyHours:6, already:[0,0,6,6,6,0,0]},
     {pernr:"00104512", name:"Hugo Matos",      role:"Technician",        bukrs:"PT02", projs:[4],   abs:{1:"Vacation"}, already:[8,0,8,8,0,0,0]},
     {pernr:"00104528", name:"Luís Teixeira",   role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[8,8,8,0,0,0,0]},
     {pernr:"00104529", name:"Sandra Fonseca",  role:"Senior technician", bukrs:"PT02", projs:[4],   abs:{}, already:[0,8,8,8,0,0,0]}
@@ -424,6 +423,11 @@
       ]
     }
   ];
+  /* The PT02 sample rows only ever specified a duration; Z_BSRV always
+     needs a start and end too, so back-fill one for every week here,
+     once, rather than leaving it to whichever week happens to be loaded
+     when seedClock() next runs. */
+  WEEKS_PT02.forEach(function(w){ seedClockRows(w.rows); });
   var WEEKS = WEEKS_PT01;
   var weekIdx = 3; // week 38, the default landing week (index shifts whenever a week is added before it)
   var ABSENCES = WEEKS[weekIdx].absences;
@@ -595,6 +599,10 @@
 
   var state = {
     submitted: WEEKS[weekIdx].submitted,
+    /* Submit alone doesn't close the loop: after submitting, Save still
+       has to be clicked before the week/month is really done. True only
+       in the window between a submit and the Save that follows it. */
+    needsSave: false,
     privateMode:false,
     rows: WEEKS[weekIdx].rows,
     allow: WEEKS[weekIdx].allow,
@@ -995,7 +1003,10 @@
   }
   function monthDecorateCell(node, week, i){
     var dates = datesFor(week.start);
-    if(!periodOpen(dates[i])){
+    if(week.submitted){
+      node.classList.add("submitted");
+      node.title = "Week " + week.num + " was already submitted, not editable.";
+    } else if(!periodOpen(dates[i])){
       node.classList.add("closed");
       node.title = "Period " + periodFor(dates[i]).ym + " is closed for " + IT0001.bukrs + ". Reopening is an HR action.";
     } else if(isBlockedOf(week, i)){
@@ -1223,6 +1234,15 @@
     var monthly = isMonthly();
     if($("copyWeek")) $("copyWeek").hidden = monthly;
     if($("tplBtn")) $("tplBtn").hidden = monthly;
+    /* The Calendar view's own hint only holds true week by week - the
+       monthly Calendar is read-only, so telling the user they can click
+       an empty slot there would be wrong. */
+    var calHint = $("calHint");
+    if(calHint){
+      calHint.title = monthly
+        ? "Read-only overview for the month. Log or edit time on the Grid view."
+        : "Click an empty slot to log time that day. Absences and public holidays are not editable.";
+    }
   }
 
   /* ---------- render: calendar ---------- */
@@ -1499,9 +1519,7 @@
       absW += absHoursOf(wd.week, wd.day);
       if(capacityOf(wd.week, wd.day) > 0 && dayTotalOf(wd.week, wd.day) === 0) zeros++;
     });
-    var reduced = dailyCapFor() !== DAYCAP;
     if($("kExtra")) $("kExtra").textContent = weeks.length + (weeks.length===1?" week":" weeks") + " this month · "
-      + (reduced ? "Reduced schedule, " + fmt(dailyCapFor()) + " h/day · " : "")
       + fmt(absW) + " h absences deducted · " + zeros + (zeros === 1 ? " empty working day" : " empty working days");
 
     var errs = monthErrors(dates).length;
@@ -1510,9 +1528,10 @@
     var allSubmitted = weeks.every(function(w){ return w.submitted; });
     $("submitBtn").disabled = allSubmitted || errs > 0 || tot === 0;
     $("submitBtn").textContent = allSubmitted ? "Month submitted" : "Submit month";
+    if($("saveBtn")) $("saveBtn").hidden = !state.needsSave;
     var chip = $("stateChip");
-    chip.textContent = allSubmitted ? "In approval" : "Draft";
-    chip.className = allSubmitted ? "chip blue" : "chip grey";
+    chip.textContent = state.needsSave ? "Save to finish" : (allSubmitted ? "In approval" : "Draft");
+    chip.className = state.needsSave ? "chip amber" : (allSubmitted ? "chip blue" : "chip grey");
     var sc = $("sugChip"), nv = visibleSugs().length;
     sc.hidden = state.privateMode || nv === 0;
     sc.textContent = nv + (nv === 1 ? " suggestion to review" : " suggestions to review");
@@ -1548,17 +1567,16 @@
     $("kProjBar").style.width = (tot ? proj/tot*100 : 0) + "%";
     var zeros = 0;
     for(var i=0; i<5; i++) if(capacity(i) > 0 && dayTotal(i) === 0) zeros++;
-    var reduced = dailyCapFor() !== DAYCAP;
-    if($("kExtra")) $("kExtra").textContent = (reduced ? "Reduced schedule, " + fmt(dailyCapFor()) + " h/day · " : "")
-      + fmt(absW) + " h absences deducted · " + zeros + (zeros === 1 ? " empty working day" : " empty working days");
+    if($("kExtra")) $("kExtra").textContent = fmt(absW) + " h absences deducted · " + zeros + (zeros === 1 ? " empty working day" : " empty working days");
     var errs = errors().length;
     $("kVal").textContent = errs ? (errs + (errs===1 ? " error" : " errors")) : "No errors";
     $("kVal").style.color = errs ? "var(--crit)" : "var(--good)";
     $("submitBtn").disabled = state.submitted || errs > 0 || tot === 0;
     $("submitBtn").textContent = state.submitted ? "Week submitted" : "Submit week";
+    if($("saveBtn")) $("saveBtn").hidden = !state.needsSave;
     var chip = $("stateChip");
-    chip.textContent = state.submitted ? "In approval" : "Draft";
-    chip.className = state.submitted ? "chip blue" : "chip grey";
+    chip.textContent = state.needsSave ? "Save to finish" : (state.submitted ? "In approval" : "Draft");
+    chip.className = state.needsSave ? "chip amber" : (state.submitted ? "chip blue" : "chip grey");
     var sc = $("sugChip"), nv = visibleSugs().length;
     sc.hidden = state.privateMode || nv === 0;
     sc.textContent = nv + (nv === 1 ? " suggestion to review" : " suggestions to review");
@@ -1934,6 +1952,10 @@
     return state.staged[pernr];
   }
   function memberBlocked(m, day){ return !!m.abs[day]; }
+  /* Most of the roster is a standard 8h/day schedule; a few named people
+     carry their own reduced dailyHours (see TEAM above), the same idea as
+     My week's own daily cap, just per person instead of a single value. */
+  function teamDailyCap(m){ return m.dailyHours || DAYCAP; }
   function massProject(){ return +($("mProj") ? $("mProj").value : 0); }
 
   /* ---------- already recorded, read-only ----------
@@ -2110,6 +2132,7 @@
          so everyone in this loop already qualifies - no need to spell out
          which project(s), the roster itself is the answer. */
       var sub = m.role + " · " + m.bukrs + " · " + profileFor(WORKDATES[0], m.bukrs).code;
+      if(m.dailyHours) sub += " · " + fmt(m.dailyHours) + "h/dia";
       var absDays = Object.keys(m.abs).map(Number).sort(function(a,b){ return a-b; });
       if(absDays.length){
         sub += " · " + absDays.map(function(d){ return DAYS[d] + " " + m.abs[d].toLowerCase(); }).join(", ");
@@ -2182,7 +2205,19 @@
         inp.addEventListener("change", function(){
           var parsed = parseDur(inp.value);
           if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”."); renderTeam(); return; }
-          st.h[i] = round15(parsed);
+          var newVal = round15(parsed);
+          /* Same rule as My week: never let a day go over the person's own
+             daily capacity, counting what they already have recorded that
+             day (alreadyHoursFor), not just what's being staged here. */
+          var already = alreadyHoursFor(m, WEEKS[weekIdx].num)[i];
+          var cap = teamDailyCap(m);
+          if(already + newVal > cap){
+            var left = Math.max(0, cap - already);
+            toast(m.name + "'s capacity is " + fmt(cap) + " h on " + DAYS[i] + "." + (left > 0 ? " Only " + fmt(left) + " h available." : " No hours available on this day."));
+            renderTeam();
+            return;
+          }
+          st.h[i] = newVal;
           st.t[i] = null;
           renderTeam();
         });
@@ -2246,27 +2281,35 @@
     var days = [];
     Array.prototype.forEach.call(document.querySelectorAll(".mHoursDays input:checked"), function(c){ days.push(+c.value); });
     if(!days.length){ toast("Pick at least one day."); return; }
-    var touched = 0, skipped = 0;
+    var touched = 0, skipped = 0, capped = 0;
     members.forEach(function(m){
       var st = stagedOf(m.pernr);
+      var already = alreadyHoursFor(m, WEEKS[weekIdx].num);
+      var cap = teamDailyCap(m);
       days.forEach(function(d){
         if(memberBlocked(m,d) || !periodOpen(WORKDATES[d], m.bukrs)) return;
         var clock = profileFor(WORKDATES[d], m.bukrs).clock;
+        var val;
         if(clock){
           if(!hasClock){ skipped++; return; }
-          st.t[d] = {b:b, e:e};
-          st.h[d] = slotHours(st.t[d]);
+          val = slotHours({b:b, e:e});
         } else {
           if(!hasDur){ skipped++; return; }
-          st.t[d] = null;
-          st.h[d] = round15(dur);
+          val = round15(dur);
         }
+        /* Same daily cap as a single manual cell (durCell, the Team hours
+           input above): bulk-filling never gets to skip the check just
+           because it touches many people at once. */
+        if(already[d] + val > cap){ capped++; return; }
+        if(clock){ st.t[d] = {b:b, e:e}; st.h[d] = val; }
+        else { st.t[d] = null; st.h[d] = val; }
         touched++;
       });
     });
     renderTeam();
     var msg = touched + " cells filled for " + members.length + " people. Nothing is saved yet, review the grid first.";
     if(skipped) msg += " " + skipped + " cell" + (skipped === 1 ? "" : "s") + " skipped, needs the other field for that profile.";
+    if(capped) msg += " " + capped + " cell" + (capped === 1 ? "" : "s") + " skipped, over that person's daily capacity.";
     toast(msg);
   }
 
@@ -2635,6 +2678,10 @@
     state.sugs = w.sugs;
     state.submitted = w.submitted;
     state.deviationNote = w.deviationNote || "";
+    /* The "Save to finish" prompt is about the week/month just submitted;
+       navigating elsewhere leaves that reminder behind, it shouldn't
+       follow onto an unrelated week. */
+    state.needsSave = false;
   }
   /* My week's own arrows step by month for consulting (changeWeek below);
      the Team screen's arrows (prevW2/nextW2) call this directly instead,
@@ -2683,9 +2730,17 @@
      Changing the company is the same as opening the sheet as someone assigned
      to the other one. Nothing else decides the layout. */
   function seedClock(){
+    seedClockRows(state.rows);
+  }
+  /* Shared by seedClock (the currently loaded week) and the PT02 sample
+     data itself (every week, at definition time, see below): lays out
+     start/end times sequentially from 8:00, for whichever rows have an
+     hour value but no slot yet, with a one-hour lunch break once the
+     cursor crosses 13:00. */
+  function seedClockRows(rows){
     for(var d=0; d<7; d++){
       var cursor = 8*60, lunched = false;
-      state.rows.forEach(function(r){
+      rows.forEach(function(r){
         if(!r.h[d] || slot(r,d)) return;
         if(!lunched && cursor >= 13*60){ cursor += 60; lunched = true; }
         setSlot(r, d, {b:cursor, e:cursor + Math.round(r.h[d]*60)});
@@ -2958,11 +3013,13 @@
     var note = why ? why.value.trim() : "";
     weeks.forEach(function(w){ w.deviationNote = note; w.submitted = true; });
     state.submitted = true;
+    state.needsSave = true;
     state.deviationNote = note;
     $("dlgSubmit").close();
     render();
-    toast(weeks.length + (weeks.length===1?" week":" weeks") + " submitted for approval.", "Reopen", function(){
+    toast(weeks.length + (weeks.length===1?" week":" weeks") + " submitted for approval. Click Save to finish.", "Reopen", function(){
       weeks.forEach(function(w){ w.submitted = false; });
+      state.needsSave = false;
       render();
     });
   }
@@ -3022,9 +3079,10 @@
     state.deviationNote = why ? why.value.trim() : "";
     WEEKS[weekIdx].deviationNote = state.deviationNote;
     state.submitted = true;
+    state.needsSave = true;
     $("dlgSubmit").close();
     render();
-    toast("Week " + WEEKS[weekIdx].num + " submitted for approval.", "Reopen", function(){ state.submitted = false; render(); });
+    toast("Week " + WEEKS[weekIdx].num + " submitted for approval. Click Save to finish.", "Reopen", function(){ state.submitted = false; state.needsSave = false; render(); });
   }
 
   /* ---------- approvals ---------- */
@@ -3171,6 +3229,11 @@
   $("tplBtn").onclick = applyTemplate;
   $("quickBtn").onclick = function(){ openQuick("", 2); };
   $("submitBtn").onclick = openSubmit;
+  if($("saveBtn")) $("saveBtn").onclick = function(){
+    state.needsSave = false;
+    render();
+    toast("Changes saved.");
+  };
   $("sugChip").onclick = function(){ $("sugPanel").scrollIntoView({block:"center"}); };
   $("acceptHi").onclick = function(){
     var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
@@ -4406,7 +4469,10 @@
     state.sugManualOpen = $("sugPanel").classList.contains("collapsed");
     setPanelOpen("sugPanel", "sugTog", state.sugManualOpen);
   };
-  if($("alreadyTog")) $("alreadyTog").onclick = function(){
+  /* The icon alone (.pTog) was a ~24px target, easy to miss; the whole
+     header now opens/closes the panel, the icon is still there as the
+     visual affordance but isn't the only way in. */
+  if($("alreadyHead")) $("alreadyHead").onclick = function(){
     setPanelOpen("alreadyPanel", "alreadyTog", $("alreadyPanel").classList.contains("collapsed"));
   };
 
