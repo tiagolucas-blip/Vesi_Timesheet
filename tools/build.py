@@ -11,9 +11,12 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 body = (ROOT / "body.html").read_text(encoding="utf-8").strip()
 
 TITLE = "Timesheet Fiori Prototype"
+# Frutiger LT Std is the corporate brand font, with Arial as the mandatory
+# system fallback (variables.css); neither is a Google Fonts webfont, so
+# there is nothing to load for them. IBM Plex Mono stays, for the tabular
+# numeric columns (hours, employee IDs) the brand sheet doesn't cover.
 FONTS = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?'
-         'family=Poppins:wght@600;700;800&family=Archivo:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600'
-         '&family=IBM+Plex+Mono:wght@400;500&display=swap">')
+         'family=IBM+Plex+Mono:wght@400;500&display=swap">')
 
 index = f"""<!doctype html>
 <html lang="en">
@@ -25,7 +28,7 @@ index = f"""<!doctype html>
 {FONTS}
 <link rel="stylesheet" href="styles.css">
 <style>
-  :root{{padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); color-scheme:light dark}}
+  :root{{padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); color-scheme:light}}
   body{{margin:0; font:14px/1.5 system-ui, sans-serif}}
   img{{max-width:100%}}
   [hidden]{{display:none !important}}

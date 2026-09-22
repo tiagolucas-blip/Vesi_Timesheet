@@ -1,41 +1,26 @@
 :root{
-    --ground:#F1F4F7; --surface:#FFFFFF; --surface-2:#F7F9FB; --surface-3:#EDF1F5;
-    --line:#D3DBE3; --line-soft:#E4EAF0;
-    --ink:#16212D; --ink-2:#4B5B6B; --ink-3:#7D8B99;
-    --accent:#1E3A7A; --accent-ink:#12224A; --accent-soft:#E7ECF7;
-    --brand-mark:#D2392F;
+    /* Corporate brand tokens (variables.css): Congress Blue and Crimson Red
+       are the only two brand colors given, so Crimson Red does double duty
+       as both the brand flourish (brand-mark) and the critical/error color -
+       a common pattern, and the file names no other red. Warn/good aren't
+       covered by the brand sheet at all, so they keep their own values.
+       Dark mode is intentionally dropped: the brand sheet is light-only. */
+    --ground:#F8F9FA; --surface:#FFFFFF; --surface-2:#F8F9FA; --surface-3:#EEF1F4;
+    --line:#E2E8F0; --line-soft:#E2E8F0;
+    --ink:#222222; --ink-2:#666666; --ink-3:#8A8A8A;
+    --accent:#004289; --accent-ink:#00336B; --accent-soft:#E6EEF7;
+    --brand-mark:#EC1C2D;
     --good:#1E7A44; --good-soft:#E1F2E8;
     --warn:#A85700; --warn-soft:#FBEEDC;
-    --crit:#AE1717; --crit-soft:#FBE5E5;
+    --crit:#EC1C2D; --crit-soft:#FCE7E8;
     --shadow:0 1px 2px rgba(22,33,45,.08), 0 8px 24px rgba(22,33,45,.06);
-    --radius:6px;
-    --f-display:"Poppins","Archivo","Helvetica Neue",Arial,sans-serif;
-    --f-body:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
+    --radius:4px;
+    --f-display:"Frutiger LT Std",Frutiger,Arial,sans-serif;
+    --f-body:"Frutiger LT Std",Frutiger,Arial,sans-serif;
     --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --ground:#0F151B; --surface:#1A2128; --surface-2:#212A32; --surface-3:#273240;
-      --line:#33404C; --line-soft:#2A3540;
-      --ink:#E7EDF3; --ink-2:#A9B7C3; --ink-3:#7F8E9C;
-      --accent:#7C9BE0; --accent-ink:#C7D6F5; --accent-soft:#1C2C4C;
-      --brand-mark:#FF6F63;
-      --good:#56C085; --good-soft:#13291D;
-      --warn:#E79139; --warn-soft:#2E2113;
-      --crit:#FF8585; --crit-soft:#2E1616;
-      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
-    }
-  }
-  :root[data-theme="dark"]{
-    --ground:#0F151B; --surface:#1A2128; --surface-2:#212A32; --surface-3:#273240;
-    --line:#33404C; --line-soft:#2A3540;
-    --ink:#E7EDF3; --ink-2:#A9B7C3; --ink-3:#7F8E9C;
-    --accent:#7C9BE0; --accent-ink:#C7D6F5; --accent-soft:#1C2C4C;
-    --brand-mark:#FF6F63;
-    --good:#56C085; --good-soft:#13291D;
-    --warn:#E79139; --warn-soft:#2E2113;
-    --crit:#FF8585; --crit-soft:#2E1616;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.35);
+    /* 8px structural grid, for spacing that isn't already covered by an
+       existing, more specific rule elsewhere in this file. */
+    --space-xs:4px; --space-sm:8px; --space-md:16px; --space-lg:24px; --space-xl:32px;
   }
 
   *{box-sizing:border-box}
