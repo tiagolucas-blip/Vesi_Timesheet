@@ -2349,11 +2349,21 @@
       if(m.locked) err = "Week already approved, the line was left untouched.";
       else if(!isEligibleForProject(m, pIdx)) err = m.name.split(" ")[0] + " is not allocated to " + PROJECTS[pIdx].code + ".";
       else {
+        var already = alreadyHoursFor(m, WEEKS[weekIdx].num);
+        var cap = teamDailyCap(m);
         for(var d=0; d<7; d++){
           if(!st.h[d]) continue;
           if(memberBlocked(m,d)){ err = DAYS[d] + " has an approved " + m.abs[d].toLowerCase() + "."; break; }
           if(!periodOpen(WORKDATES[d], m.bukrs)){ err = DAYS[d] + " falls in a closed period."; break; }
           if(st.h[d] > 24){ err = DAYS[d] + " is above 24 hours."; break; }
+          /* The authoritative capacity gate: every path that stages hours
+             (a manual cell, Apply to selected, or the chat assistant) ends
+             up here before anything is actually saved, so this is the one
+             place that has to catch all of them, not just the UI paths
+             that already guard themselves on the way in. */
+          if(already[d] + st.h[d] > cap){
+            err = DAYS[d] + "'s capacity is " + fmt(cap) + " h for " + m.name.split(" ")[0] + "."; break;
+          }
           if(profileFor(WORKDATES[d], m.bukrs).clock && (!st.t[d] || st.t[d].b === null || st.t[d].e === null)){
             err = DAYS[d] + " needs both a start and an end for " + m.name.split(" ")[0] + "."; break;
           }
@@ -3494,9 +3504,15 @@
       return;
     }
     var livre = capacity(day) - dayTotal(day);
-    var warn = null;
     if(dur > livre){
-      warn = "This entry leaves the day at " + fmt(dayTotal(day) + dur) + " h, above the capacity of " + fmt(capacity(day)) + " h. It will raise an error at submission.";
+      /* Same hard rule as a manual grid cell (durCell): never let a day go
+         over capacity, not even with a warning, refuse it here instead. */
+      var abs = absOn(day, "approved")[0];
+      var capMsg = abs
+        ? DAYS[day] + " has an approved " + abs.type.toLowerCase() + "."
+        : DAYS[day] + "'s capacity is " + fmt(capacity(day)) + " h.";
+      botSay("bot", capMsg + (livre > 0 ? " Only " + fmt(livre) + " h available, I didn't record anything." : " No hours available on this day, I didn't record anything."));
+      return;
     }
     chat.pending = "entry";
     chat.draft = {day:day, dur:dur, p:pIdx, desc:desc};
@@ -3518,7 +3534,7 @@
       flashCell(row.id, day);
       botSay("bot", fmt(dur) + " h saved on " + DAYS[day] + ", " + pr.code + ". " + weekSummaryText());
       botChips(["Submit the week","My absences"]);
-    }, warn));
+    }));
   }
   /* Same idea as offerEntry, but for "8h RTL-TT all days this week": one
      duration, repeated on every working day, skipping days with an approved
@@ -3530,20 +3546,24 @@
       botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
       return;
     }
-    var applicable = days.filter(function(d){ return !isBlocked(d) && periodOpen(WORKDATES[d]); });
+    var free = days.filter(function(d){ return !isBlocked(d) && periodOpen(WORKDATES[d]); });
     var blocked = days.filter(function(d){ return isBlocked(d); });
     var closed = days.filter(function(d){ return !isBlocked(d) && !periodOpen(WORKDATES[d]); });
+    /* Same hard rule as offerEntry: a day that can't take the full amount
+       is left out, not just flagged, matching a manual grid cell. */
+    var over = free.filter(function(d){ return dur > capacity(d) - dayTotal(d); });
+    var applicable = free.filter(function(d){ return dur <= capacity(d) - dayTotal(d); });
     if(!applicable.length){
-      botSay("bot","Every day in that range has an approved absence or falls in a closed period. I didn't record anything.");
+      botSay("bot","Every day in that range has an approved absence, falls in a closed period, or doesn't have room for that much. I didn't record anything.");
       return;
     }
-    var over = applicable.filter(function(d){ return dur > capacity(d) - dayTotal(d); });
-    var warn = over.length
-      ? "This leaves " + over.map(function(d){ return DAYS[d]; }).join(", ") + " above capacity. It will raise an error at submission."
-      : null;
-    var skippedLabel = blocked.map(function(d){ return DAYS[d]; }).concat(closed.map(function(d){ return DAYS[d]; })).join(", ");
+    var skipParts = [];
+    if(blocked.length || closed.length){
+      skipParts.push(blocked.concat(closed).map(function(d){ return DAYS[d]; }).join(", ") + " (approved absence or closed period)");
+    }
+    if(over.length) skipParts.push(over.map(function(d){ return DAYS[d]; }).join(", ") + " (over capacity)");
     var daysLabel = applicable.map(function(d){ return DAYS[d]; }).join(", ")
-      + ((blocked.length || closed.length) ? " (" + skippedLabel + " skipped, approved absence or closed period)" : "");
+      + (skipParts.length ? " (" + skipParts.join("; ") + " skipped)" : "");
 
     chat.pending = "entryWeek";
     chat.draftWeek = {days:applicable, dur:dur, p:pIdx, desc:desc};
@@ -3567,7 +3587,7 @@
       botSay("bot", fmt(dur) + " h saved on " + applicable.length + (applicable.length === 1 ? " day" : " days")
         + " (" + fmt(dur * applicable.length) + " h total), " + pr.code + ". " + weekSummaryText());
       botChips(["Submit the week","My absences"]);
-    }, warn));
+    }));
   }
 
   /* asks Claude, at /api/chat, to interpret the text and choose a function.
@@ -4226,24 +4246,39 @@
     var members = teamOf(state.leader).filter(function(m){ return !m.locked; });
     var name = String(pessoaArg || "").trim().toLowerCase();
     var matched = name ? members.filter(function(m){ return m.name.toLowerCase().indexOf(name) !== -1; }) : members;
-    var plan = matched.map(function(m){ return {member:m, days:missingWeekdaysFor(m)}; })
-      .filter(function(p){ return p.days.length; });
+    var startMin = parseClock("09:00");
+    var clockWindow = {b:startMin, e:startMin + dur*60 + LUNCH_MIN};
+    /* dur is the same for every day filled here, so a person whose own
+       daily cap (teamDailyCap, a reduced schedule) is below it can't take
+       any of it - never offer, let alone save, a fill above what's
+       allowed, the same rule a manual cell or Apply to selected enforce. */
+    var overCap = [];
+    var plan = matched.map(function(m){
+      var clock = profileFor(WORKDATES[0], m.bukrs).clock;
+      var hoursThatDay = clock ? slotHours(clockWindow) : dur;
+      var days = missingWeekdaysFor(m);
+      if(days.length && hoursThatDay > teamDailyCap(m)){
+        overCap.push(m.name);
+        days = [];
+      }
+      return {member:m, days:days};
+    }).filter(function(p){ return p.days.length; });
     if(!plan.length){
       var msg;
-      if(!name) msg = "Ninguém na equipa de " + PROJECTS[massProject()].code + " tem dias úteis por preencher esta semana.";
+      if(overCap.length) msg = fmt(dur) + " h excede a capacidade diária de " + overCap.join(", ") + ", na equipa de " + PROJECTS[massProject()].code + ".";
+      else if(!name) msg = "Ninguém na equipa de " + PROJECTS[massProject()].code + " tem dias úteis por preencher esta semana.";
       else if(matched.length) msg = matched.map(function(m){ return m.name; }).join(", ") + " já tem todos os dias úteis desta semana preenchidos, na equipa de " + PROJECTS[massProject()].code + ".";
       else msg = "Não encontrei ninguém chamada \"" + pessoaArg + "\" na equipa de " + PROJECTS[massProject()].code + ".";
       botSay("bot", msg);
       botChips(["Help"]);
       return;
     }
-    var startMin = parseClock("09:00");
-    var clockWindow = {b:startMin, e:startMin + dur*60 + LUNCH_MIN};
     var lines = plan.map(function(p){
       return [p.member.name, p.days.map(function(d){ return DAYS[d]; }).join(", ")];
     });
     lines.push(["Duração por dia", fmt(dur) + " h"]);
     lines.push(["Projeto", PROJECTS[massProject()].code]);
+    if(overCap.length) lines.push(["Excluído (acima da capacidade diária)", overCap.join(", ")]);
     botSay("bot", "Preencher estes dias em falta com " + fmt(dur) + " h cada?", botCard(lines, "Preencher e gravar", function(){
       teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
       plan.forEach(function(p){
