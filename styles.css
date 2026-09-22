@@ -192,6 +192,7 @@
   .blk.abs{border-left-color:var(--ink-3); background:repeating-linear-gradient(135deg,var(--surface-3),var(--surface-3) 5px,var(--surface-2) 5px,var(--surface-2) 10px); color:var(--ink-3); cursor:default}
   .calfree{border:1px dashed var(--line); border-radius:4px; background:transparent; color:var(--ink-3); font-size:11px; min-height:30px; text-align:center}
   .calfree:hover{border-color:var(--accent); color:var(--accent); background:var(--accent-soft)}
+  .cal.month .blk{cursor:default}
 
   /* suggestions */
   .sugs{display:grid; gap:10px; padding:12px}

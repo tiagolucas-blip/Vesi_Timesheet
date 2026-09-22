@@ -425,7 +425,21 @@
      always has to use the capacity/absences of the week it actually sits
      in, whichever week the rest of the app happens to be pointed at. */
   function isMonthly(){ return IT0001.bukrs === "PT01"; }
-  function monthKeyOf(week){ return week.start.slice(0,6); }
+  /* A week that spans two calendar months (e.g. starts the last Monday of
+     August, mostly runs into September) belongs to whichever month has
+     most of its 7 days, not to the month its start date happens to fall
+     in - otherwise a week that's six-sevenths September gets filed under
+     August, and the September grid opens on day 7 with nothing before it. */
+  function monthKeyOf(week){
+    var counts = {};
+    datesFor(week.start).forEach(function(d){
+      var k = d.slice(0,6);
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    var best = week.start.slice(0,6), bestN = -1;
+    Object.keys(counts).forEach(function(k){ if(counts[k] > bestN){ bestN = counts[k]; best = k; } });
+    return best;
+  }
   function activeMonthWeeks(){
     var ym = monthKeyOf(WEEKS[weekIdx]);
     return WEEKS.filter(function(w){ return monthKeyOf(w) === ym; });
@@ -473,9 +487,14 @@
     state.rows = savedRows; state.allow = savedAllow; state.sugs = savedSugs; state.submitted = savedSubmitted;
     return result;
   }
+  /* Only the weeks still open need to be error-free to submit the month -
+     an already-submitted week (its own history, frozen before this month
+     even existed as a grouping) can carry an old conflict, like hours on
+     a day whose period closed after the fact, without holding the weeks
+     that still need submitting hostage to it. */
   function monthErrors(weeks){
     var out = [];
-    weeks.forEach(function(w){
+    weeks.filter(function(w){ return !w.submitted; }).forEach(function(w){
       withWeek(w, function(){
         validate().filter(function(m){ return m.sev === "e"; }).forEach(function(m){ m.week = w; out.push(m); });
       });
@@ -1136,9 +1155,67 @@
   }
 
   /* ---------- render: calendar ---------- */
-  function renderCal(){
+  /* Read-only overview, for consulting's monthly view: every week's day
+     laid out side by side on the same hour axis. Editing still happens on
+     the Grid - the blocks here aren't clickable and there's no "+ log
+     time", both of which would otherwise need to know which week a click
+     landed in, the same problem the Grid's own month cells solve with the
+     *Of() helpers; not worth it for a read-only summary. */
+  function renderCalMonth(){
     var cal = $("cal");
     cal.innerHTML = "";
+    var weeks = activeMonthWeeks();
+    var dayCols = weeks.length * 5;
+    cal.className = "cal month";
+    cal.style.gridTemplateColumns = "52px repeat(" + dayCols + ",minmax(90px,1fr))";
+    cal.style.minWidth = (52 + dayCols*90) + "px";
+
+    cal.appendChild(el("div","ch","Time"));
+    weeks.forEach(function(w){
+      for(var i=0; i<5; i++) cal.appendChild(el("div","ch", monthDayLabel(w,i)));
+    });
+
+    var hours = el("div","hours","");
+    for(var h=9; h<19; h++){ hours.appendChild(el("span","", h+":00")); }
+    cal.appendChild(hours);
+
+    weeks.forEach(function(w){
+      for(var d=0; d<5; d++){
+        var col = el("div","col","");
+        w.absences.filter(function(a){ return a.day === d; }).forEach(function(a){
+          var ab = el("div","blk abs" + (a.status === "pending" ? " pend" : ""), "");
+          ab.style.minHeight = Math.max(30, a.hours*26) + "px";
+          ab.appendChild(el("b","", fmt(a.hours)+" h"));
+          ab.appendChild(document.createTextNode(a.type + " · " + ABSTATUS[a.status]));
+          ab.title = a.src + ", AWART " + a.awart;
+          col.appendChild(ab);
+        });
+        var any = false;
+        w.rows.forEach(function(r){
+          var v = r.h[d];
+          if(!v) return;
+          any = true;
+          var pr = PROJECTS[r.p];
+          var b = el("div","blk" + (pr.proj ? "" : " nb"), "");
+          b.style.minHeight = Math.max(30, v*26) + "px";
+          b.appendChild(el("b","", fmt(v)+" h"));
+          b.appendChild(document.createTextNode(pr.code + " · " + (r.desc || pr.act)));
+          col.appendChild(b);
+        });
+        if(isBlockedOf(w,d) && !any){
+          col.appendChild(el("div","calfree off","day not available"));
+        }
+        cal.appendChild(col);
+      }
+    });
+  }
+  function renderCal(){
+    if(isMonthly()) return renderCalMonth();
+    var cal = $("cal");
+    cal.innerHTML = "";
+    cal.className = "cal";
+    cal.style.gridTemplateColumns = "";
+    cal.style.minWidth = "";
     cal.appendChild(el("div","ch","Time"));
     for(var i=0; i<7; i++) cal.appendChild(el("div","ch", DAYS[i]));
 
@@ -1304,8 +1381,13 @@
   function renderKpisMonth(){
     var weeks = activeMonthWeeks();
     var first = weeks[0];
-    var y = first.start.slice(0,4), mIdx = +first.start.slice(4,6) - 1;
-    var label = MONTHS[mIdx] + " " + y + " · weeks " + weeks.map(function(w){ return w.num; }).join(", ");
+    var ym = monthKeyOf(first);
+    var y = ym.slice(0,4), mIdx = +ym.slice(4,6) - 1;
+    /* A clean month selector, not a week one - the week numbers already
+       label their own columns in the grid below, repeating them here read
+       as if this picked a week, not a month. */
+    var monthName = MONTHS_NLP[mIdx].charAt(0).toUpperCase() + MONTHS_NLP[mIdx].slice(1);
+    var label = monthName + " " + y;
     $("weekLabel").textContent = label;
     var months = monthList();
     var mi = months.indexOf(monthKeyOf(first));
@@ -2694,8 +2776,10 @@
   function openSubmitMonth(){
     var weeks = activeMonthWeeks();
     var first = weeks[0];
-    var y = first.start.slice(0,4), mIdx = +first.start.slice(4,6) - 1;
-    $("subTitle").textContent = "Submit " + MONTHS[mIdx] + " " + y;
+    var ym = monthKeyOf(first);
+    var y = ym.slice(0,4), mIdx = +ym.slice(4,6) - 1;
+    var monthName = MONTHS_NLP[mIdx].charAt(0).toUpperCase() + MONTHS_NLP[mIdx].slice(1);
+    $("subTitle").textContent = "Submit " + monthName + " " + y;
     var byP = {};
     weeks.forEach(function(w){
       w.rows.forEach(function(r){
