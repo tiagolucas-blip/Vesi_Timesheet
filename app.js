@@ -2614,7 +2614,7 @@
     var cap = $("capture");
     cap.classList.toggle("off", state.privateMode);
     $("captureTxt").textContent = state.privateMode ? "Capture paused" : "Suggestions on, private timeline";
-    $("privBtn").textContent = state.privateMode ? "Resume capture" : "Private mode";
+    if($("privBtn")) $("privBtn").textContent = state.privateMode ? "Resume capture" : "Private mode";
     render();
   }
 
@@ -3045,7 +3045,6 @@
   $("tplBtn").onclick = applyTemplate;
   $("quickBtn").onclick = function(){ openQuick("", 2); };
   $("submitBtn").onclick = openSubmit;
-  $("privBtn").onclick = togglePrivate;
   $("sugChip").onclick = function(){ $("sugPanel").scrollIntoView({block:"center"}); };
   $("acceptHi").onclick = function(){
     var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
