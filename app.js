@@ -415,6 +415,93 @@
     return c;
   }
 
+  /* ---------- monthly reporting, consulting only ----------
+     Building Solutions stays weekly, unchanged. Consulting reports by
+     calendar month, so the weekly data underneath (still one object per
+     week, with its own rows/absences/allow) is grouped and shown together
+     instead of navigated week by week.
+     The *Of() helpers below take a week explicitly and never read the
+     app's single "current week" globals - a month cell's own input handler
+     always has to use the capacity/absences of the week it actually sits
+     in, whichever week the rest of the app happens to be pointed at. */
+  function isMonthly(){ return IT0001.bukrs === "PT01"; }
+  function monthKeyOf(week){ return week.start.slice(0,6); }
+  function activeMonthWeeks(){
+    var ym = monthKeyOf(WEEKS[weekIdx]);
+    return WEEKS.filter(function(w){ return monthKeyOf(w) === ym; });
+  }
+  function absHoursOf(week, day){
+    return week.absences.filter(function(a){ return a.day === day && a.status === "approved"; })
+      .reduce(function(s,a){ return s + a.hours; }, 0);
+  }
+  function capacityOf(week, day){
+    if(day > 4) return 0;
+    return Math.max(0, dailyCapFor() - absHoursOf(week, day));
+  }
+  function isBlockedOf(week, day){ return day <= 4 && capacityOf(week, day) === 0; }
+  function weekCapacityOf(week){
+    var c = 0;
+    for(var i=0; i<5; i++) c += capacityOf(week, i);
+    return c;
+  }
+  function dayTotalOf(week, day){
+    return week.rows.reduce(function(a,r){ return a + (r.h[day] || 0); }, 0);
+  }
+  function weekTotalOf(week){
+    return week.rows.reduce(function(a,r){ return a + rowTotal(r); }, 0);
+  }
+  function cellLockedOf(week, day, v){
+    return week.submitted || !periodOpen(datesFor(week.start)[day]) || (isBlockedOf(week, day) && !v);
+  }
+  /* Points the app's single-week globals at `week`, runs fn(), restores
+     them. Safe only for code that finishes before this call returns -
+     never for an event handler whose closure outlives it, which is why
+     month grid cells use the *Of() helpers above instead of this. */
+  function withWeek(week, fn){
+    var savedIdx = weekIdx, savedRows = state.rows, savedAllow = state.allow, savedSugs = state.sugs,
+        savedAbs = ABSENCES, savedDates = WORKDATES, savedDays = DAYS, savedSubmitted = state.submitted;
+    weekIdx = WEEKS.indexOf(week);
+    ABSENCES = week.absences;
+    WORKDATES = datesFor(week.start);
+    DAYS = daysFor(WORKDATES);
+    state.rows = week.rows;
+    state.allow = week.allow || (week.allow = []);
+    state.sugs = week.sugs || [];
+    state.submitted = week.submitted;
+    var result = fn(week);
+    weekIdx = savedIdx; ABSENCES = savedAbs; WORKDATES = savedDates; DAYS = savedDays;
+    state.rows = savedRows; state.allow = savedAllow; state.sugs = savedSugs; state.submitted = savedSubmitted;
+    return result;
+  }
+  function monthErrors(weeks){
+    var out = [];
+    weeks.forEach(function(w){
+      withWeek(w, function(){
+        validate().filter(function(m){ return m.sev === "e"; }).forEach(function(m){ m.week = w; out.push(m); });
+      });
+    });
+    return out;
+  }
+  function monthCapacityTotal(weeks){ return weeks.reduce(function(a,w){ return a + weekCapacityOf(w); }, 0); }
+  function monthTotalHours(weeks){ return weeks.reduce(function(a,w){ return a + weekTotalOf(w); }, 0); }
+  /* One logical row per project across the whole month, sourced from
+     whichever weeks already have a row for it; desc is shared, taken from
+     the first week that has one. Hours stay per week, read through
+     monthRowIn() below - there is no merged hours array. */
+  function monthProjectRows(weeks){
+    var byP = {}, order = [];
+    weeks.forEach(function(w){
+      w.rows.forEach(function(r){
+        if(!byP[r.p]){ byP[r.p] = {p:r.p, desc:r.desc || ""}; order.push(r.p); }
+        else if(!byP[r.p].desc && r.desc) byP[r.p].desc = r.desc;
+      });
+    });
+    return order.map(function(p){ return byP[p]; });
+  }
+  function monthRowIn(week, p){
+    return week.rows.filter(function(r){ return r.p === p; })[0] || null;
+  }
+
   var state = {
     submitted: WEEKS[weekIdx].submitted,
     privateMode:false,
@@ -797,6 +884,257 @@
     }
   }
 
+  /* ---------- render: monthly grid, consulting only ----------
+     One row per project for the whole month; hours still live on the
+     underlying week's own row (created lazily on first edit in a week
+     that doesn't have one yet), read/written through the week-scoped
+     helpers above so a cell always uses its own week's capacity and
+     absences, never whichever week the rest of the app is pointed at. */
+  function monthDayLabel(week, i){ return WEEKDAY_ABBR[i] + " " + (+datesFor(week.start)[i].slice(6,8)); }
+  function dayAbsBadgeOf(week, a, label, extraClass){
+    var b = el("button","dayabs" + extraClass, label);
+    b.type = "button";
+    b.setAttribute("aria-label", a.type + ", " + monthDayLabel(week, a.day) + ", " + ABSTATUS[a.status].toLowerCase());
+    b.onmouseenter = function(){ withWeek(week, function(){ showAbsTip(a, b); }); };
+    b.onmouseleave = hideAbsTip;
+    b.onfocus = function(){ withWeek(week, function(){ showAbsTip(a, b); }); };
+    b.onblur = hideAbsTip;
+    return b;
+  }
+  function monthDecorateCell(node, week, i){
+    var dates = datesFor(week.start);
+    if(!periodOpen(dates[i])){
+      node.classList.add("closed");
+      node.title = "Period " + periodFor(dates[i]).ym + " is closed for " + IT0001.bukrs + ". Reopening is an HR action.";
+    } else if(isBlockedOf(week, i)){
+      node.classList.add("abs");
+      var ap = week.absences.filter(function(a){ return a.day === i && a.status === "approved"; })[0];
+      node.title = "Approved " + (ap ? ap.type.toLowerCase() : "absence") + ", day not available for time entry";
+    } else if(absHoursOf(week, i) > 0){
+      node.title = "Approved partial absence, capacity of " + fmt(capacityOf(week,i)) + " h this day";
+    }
+  }
+  function monthDurCell(monthRow, week, i, pr){
+    var existing = monthRowIn(week, monthRow.p);
+    var v = existing ? (existing.h[i] || 0) : 0;
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "cell";
+    inp.value = v ? fmt(v) : "";
+    inp.inputMode = "decimal";
+    inp.setAttribute("aria-label","Duration in hours, "+pr.name+", "+monthDayLabel(week,i));
+    inp.disabled = cellLockedOf(week, i, v);
+    monthDecorateCell(inp, week, i);
+    inp.addEventListener("change", function(){
+      var parsed = parseDur(inp.value);
+      if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 1.5 or 1:30 or 90m."); inp.value = v ? fmt(v) : ""; return; }
+      var newVal = round15(parsed);
+      if(absHoursOf(week, i) > 0){
+        var row0 = monthRowIn(week, monthRow.p);
+        var otherTotal = dayTotalOf(week, i) - (row0 ? (row0.h[i]||0) : 0);
+        var cap = capacityOf(week, i);
+        if(otherTotal + newVal > cap){
+          var abs = week.absences.filter(function(a){ return a.day === i && a.status === "approved"; })[0];
+          var kind = abs ? abs.type.toLowerCase() : "absence";
+          var left = Math.max(0, cap - otherTotal);
+          var dayLabel = monthDayLabel(week, i);
+          toast(left > 0
+            ? dayLabel+" has an approved "+kind+". Only "+fmt(left)+" h available."
+            : dayLabel+" has an approved "+kind+". No hours available on this day.");
+          inp.value = v ? fmt(v) : "";
+          return;
+        }
+      }
+      var row = monthRowIn(week, monthRow.p);
+      if(!row){
+        row = {id:nextId++, p:monthRow.p, desc:monthRow.desc || "", h:[0,0,0,0,0,0,0], origin:"Manual"};
+        week.rows.push(row);
+      }
+      row.h[i] = newVal;
+      render();
+    });
+    return inp;
+  }
+  function renderMonthGrid(){
+    var g = $("tsgrid");
+    g.innerHTML = "";
+    g.className = "tsgrid month";
+    var weeks = activeMonthWeeks();
+    var dayCols = weeks.length * 5;
+    var gridCols = "minmax(230px,1fr) repeat(" + dayCols + ",50px) 70px 34px";
+    g.style.minWidth = (230 + dayCols*50 + 70 + 34) + "px";
+
+    var head = document.createElement("div");
+    head.className = "row head";
+    head.style.gridTemplateColumns = gridCols;
+    head.appendChild(el("div","","Project, WBS and activity"));
+    weeks.forEach(function(w){
+      for(var i=0; i<5; i++){
+        var c = el("div","","");
+        c.appendChild(el("span","dname", WEEKDAY_ABBR[i]));
+        c.appendChild(el("span","dnum", "" + (+datesFor(w.start)[i].slice(6,8))));
+        var ap = w.absences.filter(function(a){ return a.day===i && a.status==="approved"; })[0];
+        var pe = w.absences.filter(function(a){ return a.day===i && a.status==="pending"; })[0];
+        if(ap) c.appendChild(dayAbsBadgeOf(w, ap, capacityOf(w,i)===0 ? ap.type : "half day", capacityOf(w,i)===0 ? " full" : ""));
+        else if(pe) c.appendChild(dayAbsBadgeOf(w, pe, "pending", " pend"));
+        head.appendChild(c);
+      }
+    });
+    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",""));
+    g.appendChild(head);
+
+    var sub = document.createElement("div");
+    sub.className = "row monthsub";
+    sub.style.gridTemplateColumns = gridCols;
+    sub.appendChild(el("div","",""));
+    weeks.forEach(function(w){
+      var span = el("div","monthweeklabel","Week "+w.num);
+      span.style.gridColumn = "span 5";
+      sub.appendChild(span);
+    });
+    sub.appendChild(el("div","",""));
+    sub.appendChild(el("div","",""));
+    g.appendChild(sub);
+
+    var monthRows = monthProjectRows(weeks);
+    var allSubmitted = weeks.every(function(w){ return w.submitted; });
+
+    if(monthRows.length === 0){
+      var e = document.createElement("div");
+      e.className = "empty";
+      e.innerHTML = '<p><strong>No hours recorded this month yet.</strong> Start with the shortest path.</p>';
+      var acts = el("div","acts","");
+      acts.appendChild(btn("Add the first project","btn", addMonthRow));
+      e.appendChild(acts);
+      g.appendChild(e);
+    }
+
+    monthRows.forEach(function(monthRow){
+      var pr = PROJECTS[monthRow.p];
+      var row = document.createElement("div");
+      row.className = "row" + (allSubmitted ? " locked" : "");
+      row.style.gridTemplateColumns = gridCols;
+
+      var meta = el("div","rowmeta","");
+      var p = el("div","p","");
+      p.appendChild(el("span","", pr.name));
+      var c = document.createElement("code"); c.textContent = pr.wbs || pr.sap.rkostl; p.appendChild(c);
+      p.appendChild(el("span","bill" + (pr.proj?"":" no"), pr.proj ? "PEP" : "INTERNAL"));
+      meta.appendChild(p);
+      var descInp = document.createElement("input");
+      descInp.type = "text";
+      descInp.className = "monthdesc";
+      descInp.placeholder = pr.proj ? "Description (required once hours are logged)" : "Description";
+      descInp.value = monthRow.desc || "";
+      descInp.disabled = allSubmitted;
+      descInp.setAttribute("aria-label","Description, "+pr.name);
+      descInp.addEventListener("change", function(){
+        var val = descInp.value;
+        weeks.forEach(function(w){ var r = monthRowIn(w, monthRow.p); if(r) r.desc = val; });
+        render();
+      });
+      meta.appendChild(descInp);
+      row.appendChild(meta);
+
+      var rowTot = 0;
+      weeks.forEach(function(w){
+        var existing = monthRowIn(w, monthRow.p);
+        for(var i=0; i<5; i++){
+          rowTot += existing ? (existing.h[i]||0) : 0;
+          row.appendChild(monthDurCell(monthRow, w, i, pr));
+        }
+      });
+
+      row.appendChild(el("div","rowtot", rowTot ? fmt(rowTot) : "–"));
+      var act = el("div","rowact","");
+      var rm = btn("×","", function(){
+        var removed = [];
+        weeks.forEach(function(w){
+          var r = monthRowIn(w, monthRow.p);
+          if(r){ w.rows = w.rows.filter(function(x){ return x.id !== r.id; }); removed.push({week:w, row:r}); }
+        });
+        render();
+        toast("Row removed.", "Undo", function(){
+          removed.forEach(function(item){ item.week.rows.push(item.row); });
+          render();
+        });
+      });
+      rm.setAttribute("aria-label","Remove row "+pr.name);
+      rm.disabled = allSubmitted;
+      act.appendChild(rm);
+      row.appendChild(act);
+      g.appendChild(row);
+    });
+
+    if(monthRows.length){
+      var tr = document.createElement("div");
+      tr.className = "row totals";
+      tr.style.gridTemplateColumns = gridCols;
+      tr.appendChild(el("div","rowmeta","Total per day"));
+      weeks.forEach(function(w){
+        for(var d=0; d<5; d++){
+          var v = dayTotalOf(w, d), cap = capacityOf(w, d);
+          var cls = "t";
+          if(v > 24 || v > cap) cls += " over";
+          else if(v === 0 && cap > 0) cls += " zero";
+          else if(cap === 0) cls += " off";
+          tr.appendChild(el("div", cls, cap === 0 && !v ? "–" : (v ? fmt(v) : "0.0")));
+        }
+      });
+      tr.appendChild(el("div","t", fmt(monthTotalHours(weeks))));
+      tr.appendChild(el("div","",""));
+      g.appendChild(tr);
+    }
+  }
+  function addMonthRow(){
+    var weeks = activeMonthWeeks();
+    if(weeks.every(function(w){ return w.submitted; })) return;
+    var used = {};
+    weeks.forEach(function(w){ w.rows.forEach(function(r){ used[r.p] = true; }); });
+    var p = 0;
+    for(var i=0; i<PROJECTS.length; i++){ if(!used[i]){ p = i; break; } }
+    var target = weeks.filter(function(w){ return !w.submitted; })[0] || weeks[0];
+    target.rows.push({id:nextId++, p:p, desc:"", h:[0,0,0,0,0,0,0], origin:"Manual"});
+    render();
+    var descs = document.querySelectorAll(".monthdesc");
+    var last = descs[descs.length-1];
+    if(last) last.focus();
+  }
+  function monthList(){
+    var seen = {}, out = [];
+    WEEKS_PT01.forEach(function(w){ var k = monthKeyOf(w); if(!seen[k]){ seen[k] = 1; out.push(k); } });
+    return out;
+  }
+  function changeMonth(delta){
+    var months = monthList();
+    var mi = months.indexOf(monthKeyOf(WEEKS[weekIdx]));
+    var nextMi = mi + delta;
+    if(nextMi < 0 || nextMi >= months.length){
+      toast(delta < 0 ? "No earlier sample months." : "No later sample months.");
+      return;
+    }
+    var target = WEEKS.filter(function(w){ return monthKeyOf(w) === months[nextMi]; })[0];
+    saveCurrentWeek();
+    loadWeek(WEEKS.indexOf(target));
+    render();
+  }
+  /* Hides the parts of the screen that only make sense for one week at a
+     time (calendar view, copy/template, suggestions, allowances) while in
+     the monthly view - each ties to a single week's WORKDATES/state.rows,
+     and extending them to span a month is future work, not this ask. */
+  /* Only Copy previous week and Apply template are hidden for consulting's
+     monthly view - "previous week" and a per-week template don't carry a
+     clear meaning once the whole month is already on screen. Calendar,
+     Quick add, Suggestions and Allowances stay available and keep working
+     exactly as before, against the one week the app is currently pointed
+     at (WEEKS[weekIdx]) - the same week the month grid highlights first. */
+  function applyMonthlyUI(){
+    var monthly = isMonthly();
+    if($("copyWeek")) $("copyWeek").hidden = monthly;
+    if($("tplBtn")) $("tplBtn").hidden = monthly;
+  }
+
   /* ---------- render: calendar ---------- */
   function renderCal(){
     var cal = $("cal");
@@ -913,7 +1251,30 @@
   }
 
   /* ---------- render: messages, KPIs ---------- */
+  /* Month messages skip the one-click "resolve"/"go to day" actions the
+     weekly view offers - those assume state.rows is the row they'd act
+     on, which isn't reliably true once a message can belong to any of
+     several weeks. Each line names its week instead. */
+  function renderMsgsMonth(){
+    var weeks = activeMonthWeeks();
+    var list = [];
+    weeks.forEach(function(w){
+      withWeek(w, function(){ validate().forEach(function(m){ list.push({sev:m.sev, txt:"Week "+w.num+": "+m.txt}); }); });
+    });
+    var box = $("msgs");
+    box.innerHTML = "";
+    $("msgPanel").hidden = list.length === 0;
+    $("msgCount").textContent = list.length + (list.length === 1 ? " message" : " messages");
+    var names = {e:"ERROR", w:"WARNING", i:"INFO"};
+    list.forEach(function(m){
+      var row = el("div","msg "+m.sev,"");
+      row.appendChild(el("span","ic", names[m.sev]));
+      row.appendChild(el("span","", m.txt));
+      box.appendChild(row);
+    });
+  }
   function renderMsgs(){
+    if(isMonthly()) return renderMsgsMonth();
     var list = validate();
     var box = $("msgs");
     box.innerHTML = "";
@@ -940,7 +1301,69 @@
       box.appendChild(row);
     });
   }
+  function renderKpisMonth(){
+    var weeks = activeMonthWeeks();
+    var first = weeks[0];
+    var y = first.start.slice(0,4), mIdx = +first.start.slice(4,6) - 1;
+    var label = MONTHS[mIdx] + " " + y + " · weeks " + weeks.map(function(w){ return w.num; }).join(", ");
+    $("weekLabel").textContent = label;
+    var months = monthList();
+    var mi = months.indexOf(monthKeyOf(first));
+    $("prevW").disabled = mi <= 0;
+    $("nextW").disabled = mi >= months.length - 1;
+    /* Team keeps its own week-by-week navigator even when My week steps by
+       month for consulting - a leader stepping through the team's log
+       still needs single weeks, so this mirrors the *week*, not the month. */
+    if($("weekLabel2")) $("weekLabel2").textContent = weekLabelFor(WORKDATES, WEEKS[weekIdx].num);
+    if($("prevW2")) $("prevW2").disabled = weekIdx === 0;
+    if($("nextW2")) $("nextW2").disabled = weekIdx === WEEKS.length - 1;
+
+    var tot = monthTotalHours(weeks), expect = monthCapacityTotal(weeks);
+    var proj = weeks.reduce(function(a,w){ return a + w.rows.reduce(function(x,r){ return x + (PROJECTS[r.p].proj ? rowTotal(r) : 0); }, 0); }, 0);
+    $("kTot").innerHTML = fmt(tot) + "<small> / " + fmt(expect) + " h</small>";
+    var pct = expect ? Math.min(100, tot/expect*100) : 0;
+    var bar = $("kBar");
+    bar.style.width = pct + "%";
+    bar.className = tot >= expect ? "ok" : (pct < 80 ? "low" : "");
+    $("kProj").innerHTML = fmt(proj) + "<small> h</small>";
+    $("kProjBar").style.width = (tot ? proj/tot*100 : 0) + "%";
+
+    var absW = 0, zeros = 0;
+    weeks.forEach(function(w){
+      for(var i=0; i<5; i++){
+        absW += absHoursOf(w, i);
+        if(capacityOf(w,i) > 0 && dayTotalOf(w,i) === 0) zeros++;
+      }
+    });
+    var reduced = dailyCapFor() !== DAYCAP;
+    if($("kExtra")) $("kExtra").textContent = weeks.length + (weeks.length===1?" week":" weeks") + " this month · "
+      + (reduced ? "Reduced schedule, " + fmt(dailyCapFor()) + " h/day · " : "")
+      + fmt(absW) + " h absences deducted · " + zeros + (zeros === 1 ? " empty working day" : " empty working days");
+
+    var errs = monthErrors(weeks).length;
+    $("kVal").textContent = errs ? (errs + (errs===1 ? " error" : " errors")) : "No errors";
+    $("kVal").style.color = errs ? "var(--crit)" : "var(--good)";
+    var allSubmitted = weeks.every(function(w){ return w.submitted; });
+    $("submitBtn").disabled = allSubmitted || errs > 0 || tot === 0;
+    $("submitBtn").textContent = allSubmitted ? "Month submitted" : "Submit month";
+    var chip = $("stateChip");
+    chip.textContent = allSubmitted ? "In approval" : "Draft";
+    chip.className = allSubmitted ? "chip blue" : "chip grey";
+    var sc = $("sugChip"), nv = visibleSugs().length;
+    sc.hidden = state.privateMode || nv === 0;
+    sc.textContent = nv + (nv === 1 ? " suggestion to review" : " suggestions to review");
+    var pf = profileFor(WORKDATES[0]);
+    var pc = $("profChip");
+    if(pc){
+      pc.textContent = pf.code;
+      pc.title = companyName(IT0001.bukrs) + " · " + pf.fields;
+      pc.className = pf.clock ? "chip blue" : "chip grey";
+    }
+    var co = $("coSel");
+    if(co && co.value !== IT0001.bukrs) co.value = IT0001.bukrs;
+  }
   function renderKpis(){
+    if(isMonthly()) return renderKpisMonth();
     $("weekLabel").textContent = weekLabelFor(WORKDATES, WEEKS[weekIdx].num);
     $("prevW").disabled = weekIdx === 0;
     $("nextW").disabled = weekIdx === WEEKS.length - 1;
@@ -985,7 +1408,12 @@
     if(co && co.value !== IT0001.bukrs) co.value = IT0001.bukrs;
   }
 
-  function render(){ renderGrid(); renderCal(); renderSugs(); renderAllow(); renderMsgs(); renderKpis(); renderApprovals(); renderTeam(); renderCats(); }
+  function render(){
+    applyMonthlyUI();
+    if(isMonthly()){ renderMonthGrid(); } else { renderGrid(); }
+    renderCal(); renderSugs(); renderAllow();
+    renderMsgs(); renderKpis(); renderApprovals(); renderTeam(); renderCats();
+  }
 
   /* ---------- absences: a badge on the grid's day header, detail on hover ----------
      Used to be a permanent side panel listing every absence, open or not.
@@ -1989,6 +2417,7 @@
 
   /* ---------- actions ---------- */
   function addRow(){
+    if(isMonthly()) return addMonthRow();
     if(state.submitted) return;
     var used = state.rows.map(function(r){ return r.p; });
     var p = 0;
@@ -2043,7 +2472,12 @@
     state.submitted = w.submitted;
     state.deviationNote = w.deviationNote || "";
   }
-  function changeWeek(delta){
+  /* My week's own arrows step by month for consulting (changeWeek below);
+     the Team screen's arrows (prevW2/nextW2) call this directly instead,
+     because a leader stepping through the team's log week by week isn't
+     the same navigation as the monthly My week view, even though both
+     screens read the same underlying "current week". */
+  function changeWeekByOne(delta){
     var next = weekIdx + delta;
     if(next < 0 || next >= WEEKS.length){
       toast(delta < 0 ? "No earlier sample weeks." : "No later sample weeks.");
@@ -2052,6 +2486,10 @@
     saveCurrentWeek();
     loadWeek(next);
     render();
+  }
+  function changeWeek(delta){
+    if(isMonthly()) return changeMonth(delta);
+    return changeWeekByOne(delta);
   }
   function applyTemplate(){
     if(state.submitted) return;
@@ -2253,7 +2691,80 @@
   }
 
   /* ---------- submit ---------- */
+  function openSubmitMonth(){
+    var weeks = activeMonthWeeks();
+    var first = weeks[0];
+    var y = first.start.slice(0,4), mIdx = +first.start.slice(4,6) - 1;
+    $("subTitle").textContent = "Submit " + MONTHS[mIdx] + " " + y;
+    var byP = {};
+    weeks.forEach(function(w){
+      w.rows.forEach(function(r){
+        var t = rowTotal(r);
+        if(!t) return;
+        var k = PROJECTS[r.p].code;
+        if(!byP[k]) byP[k] = {name:PROJECTS[r.p].name, t:0, b:PROJECTS[r.p].proj, wbs:PROJECTS[r.p].sap.rproj || PROJECTS[r.p].sap.rkostl};
+        byP[k].t += t;
+      });
+    });
+    var body = $("subBody");
+    body.innerHTML = "";
+    var sum = el("div","sum","");
+    Object.keys(byP).forEach(function(k){
+      var o = byP[k];
+      var r = el("div","r","");
+      r.appendChild(el("span","", o.name));
+      r.appendChild(el("span","chip "+(o.b?"blue":"grey"), o.wbs));
+      r.appendChild(el("span","n", fmt(o.t)+" h"));
+      sum.appendChild(r);
+    });
+    var monthProj = weeks.reduce(function(a,w){ return a + w.rows.reduce(function(x,r){ return x + (PROJECTS[r.p].proj ? rowTotal(r) : 0); }, 0); }, 0);
+    var tr = el("div","r t","");
+    tr.appendChild(el("span","","Month total"));
+    tr.appendChild(el("span","", fmt(monthProj)+" h in project"));
+    tr.appendChild(el("span","n", fmt(monthTotalHours(weeks))+" h"));
+    sum.appendChild(tr);
+    body.appendChild(sum);
+
+    var warns = [];
+    weeks.forEach(function(w){
+      withWeek(w, function(){ validate().filter(function(m){ return m.sev === "w"; }).forEach(function(m){ warns.push({week:w, txt:m.txt}); }); });
+    });
+    if(warns.length){
+      var wDiv = el("div","","");
+      wDiv.innerHTML = "<div class='field'><label>"+warns.length+" warnings, they don't block submission</label></div>";
+      var ul = el("div","sum","");
+      warns.forEach(function(m){
+        var r = el("div","r","");
+        r.appendChild(el("span","", "Week "+m.week.num+": "+m.txt));
+        r.appendChild(el("span","chip amber","warning"));
+        r.appendChild(el("span","",""));
+        ul.appendChild(r);
+      });
+      wDiv.appendChild(ul);
+      body.appendChild(wDiv);
+      var f = el("div","field","");
+      f.innerHTML = "<label for='subWhy'>Justification for the deviation from the expected total</label><textarea id='subWhy' placeholder='One line is enough. Stays in the month's history.'></textarea>";
+      body.appendChild(f);
+      $("subWhy").value = first.deviationNote || "";
+    }
+    $("dlgSubmit").showModal();
+  }
+  function doSubmitMonth(){
+    var weeks = activeMonthWeeks();
+    var why = $("subWhy");
+    var note = why ? why.value.trim() : "";
+    weeks.forEach(function(w){ w.deviationNote = note; w.submitted = true; });
+    state.submitted = true;
+    state.deviationNote = note;
+    $("dlgSubmit").close();
+    render();
+    toast(weeks.length + (weeks.length===1?" week":" weeks") + " submitted for approval.", "Reopen", function(){
+      weeks.forEach(function(w){ w.submitted = false; });
+      render();
+    });
+  }
   function openSubmit(){
+    if(isMonthly()) return openSubmitMonth();
     $("subTitle").textContent = "Submit week " + WEEKS[weekIdx].num;
     var byP = {};
     state.rows.forEach(function(r){
@@ -2303,6 +2814,7 @@
     $("dlgSubmit").showModal();
   }
   function doSubmit(){
+    if(isMonthly()) return doSubmitMonth();
     var why = $("subWhy");
     state.deviationNote = why ? why.value.trim() : "";
     WEEKS[weekIdx].deviationNote = state.deviationNote;
@@ -2477,8 +2989,8 @@
   $("helpClose").onclick = function(){ $("dlgHelp").close(); };
   $("prevW").onclick = function(){ changeWeek(-1); };
   $("nextW").onclick = function(){ changeWeek(1); };
-  if($("prevW2")) $("prevW2").onclick = function(){ changeWeek(-1); };
-  if($("nextW2")) $("nextW2").onclick = function(){ changeWeek(1); };
+  if($("prevW2")) $("prevW2").onclick = function(){ changeWeekByOne(-1); };
+  if($("nextW2")) $("nextW2").onclick = function(){ changeWeekByOne(1); };
 
   $("fTbl").onclick = function(){ setFmt(true); };
   $("fPay").onclick = function(){ setFmt(false); };
@@ -3081,7 +3593,7 @@
      needs to be matched against WORKDATES instead. Returns the day index if
      the date falls in the visible week, -1 if it's a real date outside it,
      or null if nothing date-shaped was found at all. */
-  var MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+  var MONTHS_NLP = ["january","february","march","april","may","june","july","august","september","october","november","december"];
   /* Finds the WORKDATES index whose day-of-month matches dd, and whose
      month matches mm when mm is given; -1 when nothing in the visible week
      fits. parseDateMention, resolveDayArg and matchDaysMention each used
@@ -3095,8 +3607,8 @@
   function parseDateMention(rest){
     var m, dd, mm;
     if((m = rest.match(/\b(\d{1,2})[\/\-](\d{1,2})\b/))){ dd = +m[1]; mm = +m[2]; }
-    else if((m = rest.match(new RegExp("\\b("+MONTHS.join("|")+")\\s+(\\d{1,2})\\b","i")))){ mm = MONTHS.indexOf(m[1].toLowerCase())+1; dd = +m[2]; }
-    else if((m = rest.match(new RegExp("\\b(\\d{1,2})\\s+("+MONTHS.join("|")+")\\b","i")))){ dd = +m[1]; mm = MONTHS.indexOf(m[2].toLowerCase())+1; }
+    else if((m = rest.match(new RegExp("\\b("+MONTHS_NLP.join("|")+")\\s+(\\d{1,2})\\b","i")))){ mm = MONTHS_NLP.indexOf(m[1].toLowerCase())+1; dd = +m[2]; }
+    else if((m = rest.match(new RegExp("\\b(\\d{1,2})\\s+("+MONTHS_NLP.join("|")+")\\b","i")))){ dd = +m[1]; mm = MONTHS_NLP.indexOf(m[2].toLowerCase())+1; }
     else return null;
     return {day: workdateIndexFor(dd, mm), match:m[0]};
   }
@@ -3213,10 +3725,10 @@
      one day in the same request. Falls back to matchDayMention (single
      day, or today by default) when no list is found. */
   function matchDaysMention(rest){
-    var monthListRe = new RegExp("\\b("+MONTHS.join("|")+")\\s+(\\d{1,2}(?:\\s*(?:,|and)\\s*\\d{1,2})*)\\b","i");
+    var monthListRe = new RegExp("\\b("+MONTHS_NLP.join("|")+")\\s+(\\d{1,2}(?:\\s*(?:,|and)\\s*\\d{1,2})*)\\b","i");
     var mm = rest.match(monthListRe);
     if(mm){
-      var month = MONTHS.indexOf(mm[1].toLowerCase())+1;
+      var month = MONTHS_NLP.indexOf(mm[1].toLowerCase())+1;
       var nums = mm[2].match(/\d{1,2}/g).map(Number);
       var days = [];
       nums.forEach(function(dd){
@@ -3369,7 +3881,7 @@
       .replace(/\b(log|record|add|please|stage|enter|on|this|the)\b/gi," ")
       .replace(/\b(today|yesterday)\b/gi," ")
       .replace(new RegExp("\\b("+weekdayNames.join("|")+")\\b","gi")," ")
-      .replace(new RegExp("\\b("+MONTHS.join("|")+")\\b","gi")," ")
+      .replace(new RegExp("\\b("+MONTHS_NLP.join("|")+")\\b","gi")," ")
       .replace(/\b\d{1,2}\b/g," ")
       .replace(/^[\s,]+|[\s,]+$/g,"")
       .replace(/\s+/g," ")
@@ -3610,7 +4122,7 @@
     if(document.querySelector("dialog[open]")) return;
     if(ev.key === "j" || ev.key === "J"){ ev.preventDefault(); botToggle(); }
     else if(ev.key === "n" || ev.key === "N"){ ev.preventDefault(); openQuick("", 2); }
-    else if(ev.key === "c" || ev.key === "C"){ ev.preventDefault(); copyWeek(); }
+    else if((ev.key === "c" || ev.key === "C") && !isMonthly()){ ev.preventDefault(); copyWeek(); }
     else if(ev.key === "ArrowLeft"){ ev.preventDefault(); changeWeek(-1); }
     else if(ev.key === "ArrowRight"){ ev.preventDefault(); changeWeek(1); }
     else if(ev.key === "?"){ ev.preventDefault(); $("dlgHelp").showModal(); }

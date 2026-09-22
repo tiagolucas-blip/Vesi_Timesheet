@@ -132,6 +132,15 @@
   .rowmeta .p{font-weight:600; display:flex; align-items:center; gap:7px; flex-wrap:wrap}
   .rowmeta .p code{font-family:var(--f-mono); font-size:11px; color:var(--ink-2); background:var(--surface-3); padding:1px 5px; border-radius:3px}
   .rowmeta .s{font-size:12px; color:var(--ink-3); overflow-wrap:anywhere}
+
+  /* monthly grid, consulting only: a week-number divider row under the
+     day headers, and a plain description field per project row (shared
+     across the whole month) instead of the weekly view's static text */
+  .row.monthsub{background:var(--surface-2); border-bottom:1px solid var(--line-soft)}
+  .monthweeklabel{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-3); text-align:center; padding:4px 0; border-left:1px solid var(--line-soft)}
+  .monthdesc{border:1px solid transparent; background:none; font:inherit; font-size:12px; color:var(--ink-3); padding:1px 0; width:100%; min-width:0}
+  .monthdesc:hover, .monthdesc:focus{border-color:var(--line-soft); background:var(--surface); border-radius:4px; padding:1px 4px; color:var(--ink)}
+  .monthdesc:disabled{color:var(--ink-3); opacity:.7}
   .bill{font-size:10px; font-weight:700; letter-spacing:.06em; padding:1px 5px; border-radius:3px; background:var(--accent-soft); color:var(--accent-ink)}
   .bill.no{background:var(--surface-3); color:var(--ink-3)}
   .cell{width:100%; height:100%; min-height:44px; border:none; border-left:1px solid var(--line-soft); background:transparent; color:var(--ink); font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:14px; text-align:center; padding:0 4px}
