@@ -74,8 +74,10 @@
   var PERIODS = [
     {bukrs:"PT01", ym:"202608", open:false, by:"HR, 3 Sep 2026"},
     {bukrs:"PT01", ym:"202609", open:true,  by:""},
+    {bukrs:"PT01", ym:"202610", open:true,  by:""},
     {bukrs:"PT02", ym:"202608", open:false, by:"HR, 3 Sep 2026"},
-    {bukrs:"PT02", ym:"202609", open:true,  by:""}
+    {bukrs:"PT02", ym:"202609", open:true,  by:""},
+    {bukrs:"PT02", ym:"202610", open:true,  by:""}
   ];
   function periodFor(dateISO, bukrs){
     var b = bukrs || IT0001.bukrs, ym = String(dateISO).slice(0,6);
@@ -285,6 +287,15 @@
      as someone assigned to that company, projects and absences included,
      not just a different input layout. */
   var WEEKS_PT01 = [
+    { num:35, start:"20260824", submitted:true,
+      absences:[],
+      rows:[
+        {id:96, p:0, desc:"Payroll cutover planning", h:[4,4,4,4,4,0,0], origin:"Manual"},
+        {id:97, p:1, desc:"Time tracking rollout scoping", h:[4,4,4,4,4,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[]
+    },
     { num:36, start:"20260831", submitted:true,
       absences:[],
       rows:[
@@ -336,6 +347,27 @@
       sugs:[
         {id:"s5", hours:2, day:1, p:0, why:"2 client meetings on the calendar", conf:"hi", desc:"Payroll steering follow-up"}
       ]
+    },
+    { num:40, start:"20260928", submitted:false,
+      absences:[
+        {id:"ab40a", day:1, type:"Medical appointment", awart:"0210", hours:2, status:"approved", src:"Request 4500270"}
+      ],
+      rows:[
+        {id:98, p:0, desc:"Payroll go-live support", h:[4,4,0,4,0,0,0], origin:"Manual"},
+        {id:94, p:2, desc:"WFM rollout stabilization", h:[0,0,4,0,0,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[
+        {id:"s6", hours:2, day:3, p:0, why:"3 tickets handled in Cloud ALM", conf:"hi", desc:"Payroll post-go-live fixes"}
+      ]
+    },
+    { num:41, start:"20261005", submitted:false,
+      absences:[],
+      rows:[
+        {id:95, p:1, desc:"Retail rollout wave 2 kickoff", h:[4,4,0,0,0,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[]
     }
   ];
   var WEEKS_PT02 = [
@@ -393,7 +425,7 @@
     }
   ];
   var WEEKS = WEEKS_PT01;
-  var weekIdx = 2;
+  var weekIdx = 3; // week 38, the default landing week (index shifts whenever a week is added before it)
   var ABSENCES = WEEKS[weekIdx].absences;
   WORKDATES = datesFor(WEEKS[weekIdx].start);
   DAYS = daysFor(WORKDATES);
@@ -2598,9 +2630,17 @@
   function switchCompany(bukrs){
     if(bukrs === IT0001.bukrs) return;
     saveCurrentWeek();
+    var curNum = WEEKS[weekIdx].num;
     IT0001.bukrs = bukrs;
     WEEKS = bukrs === "PT02" ? WEEKS_PT02 : WEEKS_PT01;
-    loadWeek(weekIdx);
+    /* WEEKS_PT01 and WEEKS_PT02 no longer line up index for index - PT01
+       alone has weeks either side for the monthly view - so land on the
+       same week NUMBER in the new array, not the same array position;
+       falling back to week 38 (present in both) if this company doesn't
+       have that number at all. */
+    var match = WEEKS.filter(function(w){ return w.num === curNum; })[0];
+    if(!match) match = WEEKS.filter(function(w){ return w.num === 38; })[0];
+    loadWeek(match ? WEEKS.indexOf(match) : 0);
     if(isClock()) seedClock();
     renderLeaderOptions();
     clearMass();
