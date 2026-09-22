@@ -21,6 +21,9 @@
   var PERNR = "00104567";
   var WORKDATES = [];
   var DAYCAP = 8;
+  /* Every clock window (Z_BSRV) is assumed to carry its own 1h lunch break
+     in the middle; worked hours are the span minus this, see slotHours. */
+  var LUNCH_MIN = 60;
 
   /* ---------- companies, IT0001 and CATS data entry profiles ----------
      The entry mode is a business setting per company, never a user preference.
@@ -771,6 +774,9 @@
     if(!s || s.b === null || s.e === null) return 0;
     var d = s.e - s.b;
     if(d < 0) d = profileFor(WORKDATES[0]).overnight ? d + 1440 : 0;
+    /* Every clock window is assumed to carry its own 1h lunch break in the
+       middle, worked hours are the span minus that break. */
+    d = Math.max(0, d - LUNCH_MIN);
     return round15(d/60);
   }
   /* Recomputes every duration from the time window. Called whenever a window
@@ -2735,16 +2741,17 @@
   /* Shared by seedClock (the currently loaded week) and the PT02 sample
      data itself (every week, at definition time, see below): lays out
      start/end times sequentially from 8:00, for whichever rows have an
-     hour value but no slot yet, with a one-hour lunch break once the
-     cursor crosses 13:00. */
+     hour value but no slot yet. Each row's own span bakes in the 1h lunch
+     break slotHours() now always subtracts, so reading it back gives the
+     same r.h[d] it started from. */
   function seedClockRows(rows){
     for(var d=0; d<7; d++){
-      var cursor = 8*60, lunched = false;
+      var cursor = 9*60;
       rows.forEach(function(r){
         if(!r.h[d] || slot(r,d)) return;
-        if(!lunched && cursor >= 13*60){ cursor += 60; lunched = true; }
-        setSlot(r, d, {b:cursor, e:cursor + Math.round(r.h[d]*60)});
-        cursor += Math.round(r.h[d]*60);
+        var span = Math.round(r.h[d]*60) + LUNCH_MIN;
+        setSlot(r, d, {b:cursor, e:cursor + span});
+        cursor += span;
       });
     }
   }
@@ -4230,8 +4237,8 @@
       botChips(["Help"]);
       return;
     }
-    var startMin = parseClock("08:00");
-    var clockWindow = {b:startMin, e:startMin + dur*60};
+    var startMin = parseClock("09:00");
+    var clockWindow = {b:startMin, e:startMin + dur*60 + LUNCH_MIN};
     var lines = plan.map(function(p){
       return [p.member.name, p.days.map(function(d){ return DAYS[d]; }).join(", ")];
     });
