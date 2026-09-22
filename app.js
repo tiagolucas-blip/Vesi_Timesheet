@@ -623,7 +623,25 @@
     inp.addEventListener("change", function(){
       var parsed = parseDur(inp.value);
       if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 1.5 or 1:30 or 90m."); inp.value = v ? fmt(v) : ""; return; }
-      r.h[i] = round15(parsed);
+      var newVal = round15(parsed);
+      /* a day with an approved absence (full or partial) has a reduced
+         capacity; block typing past it here, at the field, instead of
+         only flagging it once the week is validated */
+      if(absHours(i) > 0){
+        var otherTotal = dayTotal(i) - (r.h[i] || 0);
+        var cap = capacity(i);
+        if(otherTotal + newVal > cap){
+          var abs = absOn(i, "approved")[0];
+          var kind = abs ? abs.type.toLowerCase() : "absence";
+          var left = Math.max(0, cap - otherTotal);
+          toast(left > 0
+            ? DAYS[i]+" has an approved "+kind+". Only "+fmt(left)+" h available."
+            : DAYS[i]+" has an approved "+kind+". No hours available on this day.");
+          inp.value = v ? fmt(v) : "";
+          return;
+        }
+      }
+      r.h[i] = newVal;
       render();
     });
     inp.addEventListener("keydown", function(ev){
