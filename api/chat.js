@@ -43,7 +43,7 @@ const FUNCTIONS = [
   },
   {
     name: "preencher_horas_em_falta",
-    description: "Preencher, na semana visível da própria pessoa (My Timesheet), os dias úteis em que ainda não tem nenhuma hora registada (nem já gravada, nem em falta por ausência ou período fechado), com a mesma duração por dia, contra um único projeto. Os dias em falta já vêm calculados em 'dias_uteis_sem_horas_pessoa' no contexto - nunca inventes dias fora dessa lista. Usar quando o pedido for para completar/preencher as PRÓPRIAS horas em falta da semana, sem indicar dias e duração exatos para cada um (nesse caso usar registar_horas ou registar_horas_semana).",
+    description: "Preencher os dias úteis em que a própria pessoa ainda não tem nenhuma hora registada (nem já gravada, nem em falta por ausência ou período fechado), com a mesma duração por dia, contra um único projeto. Para consulting (My Timesheet mensal), cobre TODO o mês visível, todas as semanas que o mês toca, não só a semana onde a pessoa está a editar agora - o ecrã mostra o mês inteiro, por isso 'este mês' e 'esta semana' não são a mesma coisa aqui. Para building solutions (My Timesheet semanal), cobre só a semana visível. Os dias em falta já vêm calculados em 'dias_uteis_sem_horas_pessoa' no contexto, sempre no âmbito certo consoante a empresa - nunca inventes dias fora dessa lista, e nunca digas que só consegues ver ou preencher a semana atual, isso não é verdade para consulting. Usar quando o pedido for para completar/preencher as PRÓPRIAS horas em falta (da semana ou do mês, conforme a empresa), sem indicar dias e duração exatos para cada um (nesse caso usar registar_horas ou registar_horas_semana).",
     parameters: {
       type: "object",
       properties: {

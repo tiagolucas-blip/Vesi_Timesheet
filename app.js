@@ -1198,6 +1198,14 @@
       p.appendChild(el("span","", pr.name));
       var c = document.createElement("code"); c.textContent = pr.wbs || pr.sap.rkostl; p.appendChild(c);
       p.appendChild(el("span","bill" + (pr.proj?"":" no"), pr.proj ? "PEP" : "INTERNAL"));
+      /* Scoped to the project name/PEP area, not the whole rowmeta - the
+         description right below is its own editable input, and treating
+         a click there as "open the project picker" would just get in the
+         way of typing. This is also the only way to change a month row's
+         project at all: it was never wired up here, unlike the weekly
+         grid's own click-to-open-detail. */
+      p.style.cursor = "pointer";
+      p.onclick = function(){ openMonthDetail(monthRow, weeks); };
       meta.appendChild(p);
       var descInp = document.createElement("input");
       descInp.type = "text";
@@ -1267,10 +1275,19 @@
     if(weeks.every(function(w){ return w.submitted; })) return;
     var used = {};
     weeks.forEach(function(w){ w.rows.forEach(function(r){ used[r.p] = true; }); });
-    var p = 0;
-    for(var i=0; i<PROJECTS.length; i++){ if(!used[i]){ p = i; break; } }
+    /* Only a project this company actually does (its own, or a shared one
+       with no bukrs) is eligible - otherwise, once every PT01 project is
+       already on the month, this fell through to the first PT02-only one
+       (Hospital campus) on a Consulting person's own timesheet. */
+    var eligible = -1;
+    for(var i=0; i<PROJECTS.length; i++){
+      if(!used[i] && (PROJECTS[i].bukrs === IT0001.bukrs || PROJECTS[i].bukrs === null)){ eligible = i; break; }
+    }
+    if(eligible === -1) return;
+    var p = eligible;
     var target = weeks.filter(function(w){ return !w.submitted; })[0] || weeks[0];
     target.rows.push({id:nextId++, p:p, desc:"", h:[0,0,0,0,0,0,0], origin:"Manual"});
+    state.needsSave = true;
     render();
     var descs = document.querySelectorAll(".monthdesc");
     var last = descs[descs.length-1];
@@ -2708,9 +2725,15 @@
     if(isMonthly()) return addMonthRow();
     if(state.submitted) return;
     var used = state.rows.map(function(r){ return r.p; });
-    var p = 0;
-    for(var i=0; i<PROJECTS.length; i++){ if(used.indexOf(i) === -1){ p = i; break; } }
-    state.rows.push({id:nextId++, p:p, desc:"", h:[0,0,0,0,0,0,0], origin:"Manual"});
+    /* Same eligibility rule as addMonthRow: only a project this company
+       actually does (its own, or a shared one with no bukrs). */
+    var eligible = -1;
+    for(var i=0; i<PROJECTS.length; i++){
+      if(used.indexOf(i) === -1 && (PROJECTS[i].bukrs === IT0001.bukrs || PROJECTS[i].bukrs === null)){ eligible = i; break; }
+    }
+    if(eligible === -1) return;
+    state.rows.push({id:nextId++, p:eligible, desc:"", h:[0,0,0,0,0,0,0], origin:"Manual"});
+    state.needsSave = true;
     render();
     var last = state.rows[state.rows.length-1];
     var c = document.getElementById("c-"+last.id+"-0");
@@ -2958,12 +2981,19 @@
 
   /* ---------- detail ---------- */
   var dtRow = null;
+  /* Set instead of dtRow when the detail dialog is opened from the month
+     grid: {monthRow, weeks}. A month row isn't one row object, it's one
+     per week that happens to have hours against that project (see
+     monthProjectRows/monthRowIn), so changing its project or description
+     has to reach every one of them, not just whichever week is loaded. */
+  var dtMonthCtx = null;
   /* day is which calendar column was clicked, only meaningful for Z_BSRV
      (Building Solutions): that profile records start and end per day, not
      one duration for the week, so a day-specific click there needs to
      show that day's actual window, not the row's total. */
   function openDetail(r, day){
     dtRow = r;
+    dtMonthCtx = null;
     var pr = PROJECTS[r.p];
     $("dtTitle").textContent = pr.name;
     var pj = $("dtProj");
@@ -3000,7 +3030,47 @@
     $("dtSave").disabled = state.submitted;
     $("dlgDetail").showModal();
   }
+  /* Same dialog, opened from a month-grid row instead: monthRow is the
+     {p, desc} placeholder monthProjectRows() hands out, weeks is every
+     week the visible month touches. There's no single row to point at
+     (see dtMonthCtx above), so this reads the total and description live
+     across whichever of those weeks actually has a row for the project. */
+  function openMonthDetail(monthRow, weeks){
+    dtRow = null;
+    dtMonthCtx = {monthRow: monthRow, weeks: weeks};
+    var pr = PROJECTS[monthRow.p];
+    var allSubmitted = weeks.every(function(w){ return w.submitted; });
+    $("dtTitle").textContent = pr.name;
+    var pj = $("dtProj");
+    pj.innerHTML = "";
+    PROJECTS.forEach(function(p,i){
+      var o = document.createElement("option");
+      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
+      pj.appendChild(o);
+    });
+    pj.value = String(monthRow.p);
+    pj.disabled = allSubmitted;
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
+    var total = weeks.reduce(function(a,w){
+      var r = monthRowIn(w, monthRow.p);
+      return a + (r ? rowTotal(r) : 0);
+    }, 0);
+    $("dtDur").value = fmt(total);
+    $("dtDesc").value = monthRow.desc || "";
+    $("dtAct").value = pr.act;
+    $("dtOrigin").textContent = "Manual";
+    $("dtStartField").hidden = true;
+    $("dtEndField").hidden = true;
+    var st = $("dtState");
+    st.textContent = allSubmitted ? "In approval, read-only" : "Draft";
+    st.className = allSubmitted ? "chip blue" : "chip grey";
+    $("dtDesc").readOnly = allSubmitted;
+    $("dtDur").readOnly = true;
+    $("dtSave").disabled = allSubmitted;
+    $("dlgDetail").showModal();
+  }
   function saveDetail(){
+    if(dtMonthCtx) return saveMonthDetail();
     if(!dtRow) return;
     var pj = $("dtProj");
     if(pj && !pj.disabled){
@@ -3021,7 +3091,36 @@
         dtRow.p = newP;
       }
     }
-    dtRow.desc = $("dtDesc").value; render(); toast("Entry updated.");
+    dtRow.desc = $("dtDesc").value;
+    state.needsSave = true;
+    render();
+    toast("Entry updated.");
+    $("dlgDetail").close();
+  }
+  /* Same clash rule as saveDetail, checked across every week the month
+     row touches: re-pointing it at a project that already has its own
+     row in ANY of those weeks would collide with monthRowIn() there. */
+  function saveMonthDetail(){
+    var ctx = dtMonthCtx;
+    if(!ctx) return;
+    var rows = ctx.weeks.map(function(w){ return monthRowIn(w, ctx.monthRow.p); }).filter(function(r){ return r; });
+    var pj = $("dtProj");
+    if(pj && !pj.disabled){
+      var newP = +pj.value;
+      if(newP !== ctx.monthRow.p){
+        var clash = ctx.weeks.some(function(w){ return w.rows.some(function(r){ return r.p === newP; }); });
+        if(clash){
+          toast(PROJECTS[newP].code + " already has a row this month. Remove or merge it first.");
+          return;
+        }
+        rows.forEach(function(r){ r.p = newP; });
+      }
+    }
+    var newDesc = $("dtDesc").value;
+    rows.forEach(function(r){ r.desc = newDesc; });
+    state.needsSave = true;
+    render();
+    toast("Entry updated.");
     $("dlgDetail").close();
   }
 
@@ -3745,7 +3844,18 @@
             projetos: PROJECTS.map(function(p,i){ return {codigo: p.code.split("-")[0], nome: p.name, indice: i}; }),
             ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
             capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
-            dias_uteis_sem_horas_pessoa: [0,1,2,3,4].filter(function(d){ return capacity(d) > 0 && dayTotal(d) === 0; }).map(function(d){ return DAYS[d]; }),
+            /* For consulting (monthly), this has to cover every week the
+               visible month touches, the same scope offerFillMissingMonth
+               actually fills - a context scoped to just the anchor week
+               would tell the assistant there's nothing to fill even when
+               other weeks in the month clearly have gaps. */
+            dias_uteis_sem_horas_pessoa: isMonthly()
+              ? activeMonthDates().filter(function(dateISO){
+                  var wd = weekDayFor(dateISO);
+                  return wd && wd.day <= 4 && !wd.week.submitted && periodOpen(dateISO)
+                    && capacityOf(wd.week, wd.day) > 0 && dayTotalOf(wd.week, wd.day) === 0;
+                }).map(function(dateISO){ var wd = weekDayFor(dateISO); return monthDayLabel(wd.week, wd.day); })
+              : [0,1,2,3,4].filter(function(d){ return capacity(d) > 0 && dayTotal(d) === 0; }).map(function(d){ return DAYS[d]; }),
             semana: {total: weekTotal(), esperado: weekCapacity(), erros: errors().length, submetida: state.submitted},
             semanas_anteriores: WEEKS.slice(0, weekIdx).map(function(w){
               var porProjeto = {};
