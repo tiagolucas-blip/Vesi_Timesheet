@@ -229,7 +229,14 @@
   .dlg{display:grid}
   .dlg > header{padding:13px 16px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px}
   .dlg > header h3{font-size:15px; font-weight:600; margin-right:auto}
-  .dlg .body{padding:16px; display:grid; gap:13px; max-height:64vh; overflow-y:auto}
+  /* grid-auto-rows:min-content matters here: .body scrolls (max-height +
+     overflow-y:auto) and holds children like .sum that set overflow:hidden
+     of their own, and a plain "auto" track for a grid item with a non-
+     visible overflow resolves its automatic minimum size to 0 instead of
+     its content size - without this, a warnings-heavy Submit dialog
+     collapsed the project summary above it down to a couple of pixels
+     instead of showing it at its natural height. */
+  .dlg .body{padding:16px; display:grid; gap:13px; grid-auto-rows:min-content; max-height:64vh; overflow-y:auto}
   .dlg > footer{padding:12px 16px; border-top:1px solid var(--line); display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap}
   .field{display:grid; gap:5px}
   .field label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600}
