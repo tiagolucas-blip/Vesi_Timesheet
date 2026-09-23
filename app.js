@@ -1291,23 +1291,19 @@
     /* Only a project this company actually does (its own, or a shared one
        with no bukrs) is eligible - otherwise, once every PT01 project is
        already on the month, this fell through to the first PT02-only one
-       (Hospital campus) on a Consulting person's own timesheet. */
-    var eligible = -1;
+       (Hospital campus) on a Consulting person's own timesheet. The person
+       then picks which of the remaining ones in the dialog - see
+       openNewMonthRowDetail. */
+    var eligible = [];
     for(var i=0; i<PROJECTS.length; i++){
-      if(!used[i] && (PROJECTS[i].bukrs === IT0001.bukrs || PROJECTS[i].bukrs === null)){ eligible = i; break; }
+      if(!used[i] && (PROJECTS[i].bukrs === IT0001.bukrs || PROJECTS[i].bukrs === null)) eligible.push(i);
     }
-    if(eligible === -1){
+    if(!eligible.length){
       toast("Every project available to this company already has a row this month.");
       return;
     }
-    var p = eligible;
     var target = weeks.filter(function(w){ return !w.submitted; })[0] || weeks[0];
-    target.rows.push({id:nextId++, p:p, desc:"", h:[0,0,0,0,0,0,0], origin:"Manual"});
-    state.needsSave = true;
-    render();
-    var descs = document.querySelectorAll(".monthdesc");
-    var last = descs[descs.length-1];
-    if(last) last.focus();
+    openNewMonthRowDetail(eligible, target, weeks);
   }
   function monthList(){
     var seen = {}, out = [];
@@ -2745,21 +2741,18 @@
     }
     var used = state.rows.map(function(r){ return r.p; });
     /* Same eligibility rule as addMonthRow: only a project this company
-       actually does (its own, or a shared one with no bukrs). */
-    var eligible = -1;
+       actually does (its own, or a shared one with no bukrs), and not
+       already on a row this week. The person then picks which one of
+       those in the dialog - see openNewRowDetail. */
+    var eligible = [];
     for(var i=0; i<PROJECTS.length; i++){
-      if(used.indexOf(i) === -1 && (PROJECTS[i].bukrs === IT0001.bukrs || PROJECTS[i].bukrs === null)){ eligible = i; break; }
+      if(used.indexOf(i) === -1 && (PROJECTS[i].bukrs === IT0001.bukrs || PROJECTS[i].bukrs === null)) eligible.push(i);
     }
-    if(eligible === -1){
+    if(!eligible.length){
       toast("Every project available to this company already has a row this week.");
       return;
     }
-    state.rows.push({id:nextId++, p:eligible, desc:"", h:[0,0,0,0,0,0,0], origin:"Manual"});
-    state.needsSave = true;
-    render();
-    var last = state.rows[state.rows.length-1];
-    var c = document.getElementById("c-"+last.id+"-0");
-    if(c) c.focus();
+    openNewRowDetail(eligible);
   }
   function copyWeek(){
     if(state.submitted) return;
@@ -3009,6 +3002,12 @@
      monthProjectRows/monthRowIn), so changing its project or description
      has to reach every one of them, not just whichever week is loaded. */
   var dtMonthCtx = null;
+  /* Set instead of dtRow/dtMonthCtx when the detail dialog is opened from
+     "Add row" to let the person pick which still-unused project the new
+     row is for, rather than the app silently picking one: {eligible} for
+     the week grid, {eligible, target, weeks, monthly:true} for the month
+     grid (target is the week the new row is pushed into). */
+  var dtNewRow = null;
   /* day is which calendar column was clicked, only meaningful for Z_BSRV
      (Building Solutions): that profile records start and end per day, not
      one duration for the week, so a day-specific click there needs to
@@ -3016,6 +3015,7 @@
   function openDetail(r, day){
     dtRow = r;
     dtMonthCtx = null;
+    dtNewRow = null;
     var pr = PROJECTS[r.p];
     $("dtTitle").textContent = pr.name;
     var pj = $("dtProj");
@@ -3060,6 +3060,7 @@
   function openMonthDetail(monthRow, weeks){
     dtRow = null;
     dtMonthCtx = {monthRow: monthRow, weeks: weeks};
+    dtNewRow = null;
     var pr = PROJECTS[monthRow.p];
     var allSubmitted = weeks.every(function(w){ return w.submitted; });
     $("dtTitle").textContent = pr.name;
@@ -3091,7 +3092,95 @@
     $("dtSave").disabled = allSubmitted;
     $("dlgDetail").showModal();
   }
+  /* Same dialog again, this time with no row behind it yet: opened from
+     "Add row" so the person picks the project themselves instead of the
+     app auto-assigning the first still-unused one. pj only lists eligible
+     (not yet used this week/month, and belonging to this company or
+     shared) projects, so there's nothing here saveDetail's clash-check
+     would ever need to reject. */
+  function openNewRowDetail(eligible){
+    dtRow = null;
+    dtMonthCtx = null;
+    dtNewRow = {eligible: eligible};
+    $("dtTitle").textContent = "New entry";
+    var pj = $("dtProj");
+    pj.innerHTML = "";
+    eligible.forEach(function(i){
+      var p = PROJECTS[i];
+      var o = document.createElement("option");
+      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
+      pj.appendChild(o);
+    });
+    pj.value = String(eligible[0]);
+    pj.disabled = false;
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
+    $("dtDur").value = fmt(0);
+    $("dtDesc").value = "";
+    $("dtAct").value = PROJECTS[eligible[0]].act;
+    $("dtOrigin").textContent = "Manual";
+    $("dtStartField").hidden = true;
+    $("dtEndField").hidden = true;
+    var st = $("dtState");
+    st.textContent = "Draft";
+    st.className = "chip grey";
+    $("dtDesc").readOnly = false;
+    $("dtDur").readOnly = true;
+    $("dtSave").disabled = false;
+    $("dlgDetail").showModal();
+  }
+  function openNewMonthRowDetail(eligible, target, weeks){
+    dtRow = null;
+    dtMonthCtx = null;
+    dtNewRow = {eligible: eligible, target: target, weeks: weeks, monthly: true};
+    $("dtTitle").textContent = "New entry";
+    var pj = $("dtProj");
+    pj.innerHTML = "";
+    eligible.forEach(function(i){
+      var p = PROJECTS[i];
+      var o = document.createElement("option");
+      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
+      pj.appendChild(o);
+    });
+    pj.value = String(eligible[0]);
+    pj.disabled = false;
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
+    $("dtDur").value = fmt(0);
+    $("dtDesc").value = "";
+    $("dtAct").value = PROJECTS[eligible[0]].act;
+    $("dtOrigin").textContent = "Manual";
+    $("dtStartField").hidden = true;
+    $("dtEndField").hidden = true;
+    var st = $("dtState");
+    st.textContent = "Draft";
+    st.className = "chip grey";
+    $("dtDesc").readOnly = false;
+    $("dtDur").readOnly = true;
+    $("dtSave").disabled = false;
+    $("dlgDetail").showModal();
+  }
+  function saveNewRow(){
+    var ctx = dtNewRow;
+    if(!ctx) return;
+    var p = +$("dtProj").value;
+    var row = {id:nextId++, p:p, desc:$("dtDesc").value, h:[0,0,0,0,0,0,0], origin:"Manual"};
+    if(ctx.monthly) ctx.target.rows.push(row);
+    else state.rows.push(row);
+    state.needsSave = true;
+    dtNewRow = null;
+    render();
+    toast("Entry added.");
+    $("dlgDetail").close();
+    if(ctx.monthly){
+      var descs = document.querySelectorAll(".monthdesc");
+      var last = descs[descs.length-1];
+      if(last) last.focus();
+    } else {
+      var c = document.getElementById("c-"+row.id+"-0");
+      if(c) c.focus();
+    }
+  }
   function saveDetail(){
+    if(dtNewRow) return saveNewRow();
     if(dtMonthCtx) return saveMonthDetail();
     if(!dtRow) return;
     var pj = $("dtProj");
@@ -3452,7 +3541,7 @@
   $("nlq").addEventListener("input", parseNL);
   $("nlSave").onclick = function(ev){ if(!saveNL()) ev.preventDefault(); };
   $("dtSave").onclick = saveDetail;
-  $("dtCancel").onclick = function(){ $("dlgDetail").close(); };
+  $("dtCancel").onclick = function(){ dtNewRow = null; $("dlgDetail").close(); };
   $("subCancel").onclick = function(){ $("dlgSubmit").close(); };
   $("subOk").onclick = doSubmit;
   $("dataBtn").onclick = function(){ $("dlgData").showModal(); };
