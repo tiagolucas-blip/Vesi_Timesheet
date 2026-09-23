@@ -1628,7 +1628,10 @@
     var allSubmitted = weeks.every(function(w){ return w.submitted; });
     $("submitBtn").disabled = allSubmitted || errs > 0 || tot === 0;
     $("submitBtn").textContent = allSubmitted ? "Month submitted" : "Submit month";
-    if($("saveBtn")) $("saveBtn").hidden = !state.needsSave;
+    /* Always visible on My Timesheet, not just while there's something
+       unsaved - the person can reach for it any time as reassurance,
+       not only when the app is telling them they have to. */
+    if($("saveBtn")) $("saveBtn").hidden = false;
     var chip = $("stateChip");
     chip.textContent = state.needsSave ? "Save to finish" : (allSubmitted ? "In approval" : "Draft");
     chip.className = state.needsSave ? "chip amber" : (allSubmitted ? "chip blue" : "chip grey");
@@ -1673,7 +1676,9 @@
     $("kVal").style.color = errs ? "var(--crit)" : "var(--good)";
     $("submitBtn").disabled = state.submitted || errs > 0 || tot === 0;
     $("submitBtn").textContent = state.submitted ? "Week submitted" : "Submit week";
-    if($("saveBtn")) $("saveBtn").hidden = !state.needsSave;
+    /* Always visible on My Timesheet, not just while there's something
+       unsaved - see renderKpisMonth. */
+    if($("saveBtn")) $("saveBtn").hidden = false;
     var chip = $("stateChip");
     chip.textContent = state.needsSave ? "Save to finish" : (state.submitted ? "In approval" : "Draft");
     chip.className = state.needsSave ? "chip amber" : (state.submitted ? "chip blue" : "chip grey");
