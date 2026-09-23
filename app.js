@@ -289,6 +289,38 @@
      as someone assigned to that company, projects and absences included,
      not just a different input layout. */
   var WEEKS_PT01 = [
+    { num:32, start:"20260803", submitted:true,
+      absences:[
+        {id:"ab32a", day:4, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500301"}
+      ],
+      rows:[
+        {id:601, p:0, desc:"Payroll requirements review", h:[4,4,4,4,0,0,0], origin:"Manual"},
+        {id:602, p:1, desc:"Time tracking rollout support", h:[4,4,4,4,0,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[]
+    },
+    { num:33, start:"20260810", submitted:true,
+      absences:[],
+      rows:[
+        {id:603, p:0, desc:"Payroll requirements review", h:[4,4,4,4,4,0,0], origin:"Manual"},
+        {id:604, p:2, desc:"WFM rollout kickoff prep", h:[4,4,4,4,4,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[]
+    },
+    { num:34, start:"20260817", submitted:true,
+      absences:[
+        {id:"ab34a", day:0, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500312"},
+        {id:"ab34b", day:1, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500312"},
+        {id:"ab34c", day:2, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500312"},
+        {id:"ab34d", day:3, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500312"},
+        {id:"ab34e", day:4, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500312"}
+      ],
+      rows:[],
+      allow:[],
+      sugs:[]
+    },
     { num:35, start:"20260824", submitted:true,
       absences:[],
       rows:[
@@ -344,7 +376,9 @@
       absences:[
         {id:"ab39a", day:0, type:"Vacation", awart:"0100", hours:8, status:"pending", src:"Request 4500255"}
       ],
-      rows:[],
+      rows:[
+        {id:605, p:0, desc:"Payroll steering follow-up", h:[4,4,2,0,0,0,0], origin:"Manual"}
+      ],
       allow:[],
       sugs:[
         {id:"s5", hours:2, day:1, p:0, why:"2 client meetings on the calendar", conf:"hi", desc:"Payroll steering follow-up"}
@@ -367,6 +401,31 @@
       absences:[],
       rows:[
         {id:95, p:1, desc:"Retail rollout wave 2 kickoff", h:[4,4,0,0,0,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[]
+    },
+    { num:42, start:"20261012", submitted:false,
+      absences:[],
+      rows:[
+        {id:607, p:0, desc:"Payroll go-live support", h:[4,4,4,4,0,0,0], origin:"Manual"},
+        {id:608, p:2, desc:"WFM rollout stabilization", h:[4,4,0,4,4,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[]
+    },
+    { num:43, start:"20261019", submitted:false,
+      absences:[],
+      rows:[
+        {id:609, p:1, desc:"Retail rollout wave 2 support", h:[4,4,0,0,0,0,0], origin:"Manual"}
+      ],
+      allow:[],
+      sugs:[]
+    },
+    { num:44, start:"20261026", submitted:false,
+      absences:[],
+      rows:[
+        {id:610, p:0, desc:"Payroll go-live support", h:[4,0,0,0,0,0,0], origin:"Manual"}
       ],
       allow:[],
       sugs:[]
@@ -432,7 +491,7 @@
      when seedClock() next runs. */
   WEEKS_PT02.forEach(function(w){ seedClockRows(w.rows); });
   var WEEKS = WEEKS_PT01;
-  var weekIdx = 3; // week 38, the default landing week (index shifts whenever a week is added before it)
+  var weekIdx = 6; // week 38, the default landing week (index shifts whenever a week is added before it)
   var ABSENCES = WEEKS[weekIdx].absences;
   WORKDATES = datesFor(WEEKS[weekIdx].start);
   DAYS = daysFor(WORKDATES);
@@ -602,9 +661,12 @@
 
   var state = {
     submitted: WEEKS[weekIdx].submitted,
-    /* Submit alone doesn't close the loop: after submitting, Save still
-       has to be clicked before the week/month is really done. True only
-       in the window between a submit and the Save that follows it. */
+    /* True whenever there's an edit (to any week, hours or a status
+       change) not yet confirmed with Save: set on every hour-cell edit,
+       template/suggestion/quick-add/chat entry, and on Submit itself
+       (submitting changes the week's status, which also needs saving).
+       Only Save clears it - navigating to a different week doesn't,
+       since the pending work isn't tied to whichever week is on screen. */
     needsSave: false,
     privateMode:false,
     rows: WEEKS[weekIdx].rows,
@@ -843,6 +905,7 @@
         return;
       }
       r.h[i] = newVal;
+      state.needsSave = true;
       render();
     });
     inp.addEventListener("keydown", function(ev){
@@ -1056,6 +1119,7 @@
         week.rows.push(row);
       }
       row.h[i] = newVal;
+      state.needsSave = true;
       render();
     });
     return inp;
@@ -1416,6 +1480,7 @@
     if(!row){ row = {id:nextId++, p:s.p, desc:s.desc, h:[0,0,0,0,0,0,0], origin:"Suggested"}; state.rows.push(row); }
     if(!row.desc) row.desc = s.desc;
     row.h[s.day] += s.hours;
+    state.needsSave = true;
     dropSug(s, false);
     toast("Suggestion accepted on "+DAYS[s.day]+".");
   }
@@ -2694,10 +2759,6 @@
     state.sugs = w.sugs;
     state.submitted = w.submitted;
     state.deviationNote = w.deviationNote || "";
-    /* The "Save to finish" prompt is about the week/month just submitted;
-       navigating elsewhere leaves that reminder behind, it shouldn't
-       follow onto an unrelated week. */
-    state.needsSave = false;
   }
   /* My week's own arrows step by month for consulting (changeWeek below);
      the Team screen's arrows (prevW2/nextW2) call this directly instead,
@@ -2739,6 +2800,7 @@
     state.rows.forEach(function(r){
       for(var i=0; i<5; i++){ if(!r.h[i]) r.h[i] = PROJECTS[r.p].proj ? 1.5 : 0.5; }
     });
+    state.needsSave = true;
     render();
     toast("Allocation template applied to working days.", "Undo", function(){ location.reload(); });
   }
@@ -2888,6 +2950,7 @@
     if(!row){ row = {id:nextId++, p:nlParsed.p, desc:nlParsed.desc, h:[0,0,0,0,0,0,0], origin:"Manual"}; state.rows.push(row); }
     if(nlParsed.desc) row.desc = nlParsed.desc;
     row.h[nlParsed.day] += nlParsed.dur;
+    state.needsSave = true;
     render();
     toast(fmt(nlParsed.dur)+" h recorded in "+PROJECTS[nlParsed.p].code+", "+DAYS[nlParsed.day]+".");
     return true;
@@ -3530,6 +3593,7 @@
       if(desc) row.desc = desc;
       row.origin = "Joule";
       row.h[day] += dur;
+      state.needsSave = true;
       render();
       flashCell(row.id, day);
       botSay("bot", fmt(dur) + " h saved on " + DAYS[day] + ", " + pr.code + ". " + weekSummaryText());
@@ -3582,6 +3646,7 @@
       if(desc) row.desc = desc;
       row.origin = "Joule";
       applicable.forEach(function(d){ row.h[d] += dur; });
+      state.needsSave = true;
       render();
       applicable.forEach(function(d){ flashCell(row.id, d); });
       botSay("bot", fmt(dur) + " h saved on " + applicable.length + (applicable.length === 1 ? " day" : " days")
@@ -3591,17 +3656,22 @@
   }
 
   /* "fill in my missing hours [on BNK]": the personal equivalent of
-     offerFillMissingTeam, scoped to the visible week like every other
-     personal chat entry (registar_horas/registar_horas_semana never
-     reach across weeks either). Missing = a working day with nothing
-     recorded at all yet, the same definition the "empty working day" KPI
-     uses. Reuses offerEntryWeek for the actual staging, so it inherits
-     the same capacity/absence/closed-period handling as a manual entry. */
+     offerFillMissingTeam. For PT02 (weekly), scoped to the visible week
+     like every other personal chat entry (registar_horas/registar_horas_
+     semana never reach across weeks either); for PT01 (monthly), covers
+     every week touched by the visible month, the same scope the month
+     grid and its Submit already use - a person filling in a whole
+     month's gaps one week at a time would defeat the point of this
+     command. Missing = a working day with nothing recorded at all yet,
+     the same definition the "empty working day" KPI uses. */
   function offerFillMissing(pIdx, dur){
+    if(isMonthly()) return offerFillMissingMonth(pIdx, dur);
     if(state.submitted){
       botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
       return;
     }
+    /* Reuses offerEntryWeek for the actual staging, so it inherits the
+       same capacity/absence/closed-period handling as a manual entry. */
     var missing = [0,1,2,3,4].filter(function(d){ return capacity(d) > 0 && dayTotal(d) === 0; });
     if(!missing.length){
       botSay("bot", "You don't have any working days without hours this week.");
@@ -3609,6 +3679,54 @@
       return;
     }
     offerEntryWeek(missing, dur, pIdx, "");
+  }
+  function offerFillMissingMonth(pIdx, dur){
+    var pr = PROJECTS[pIdx];
+    var dates = activeMonthDates().filter(function(dateISO){
+      var wd = weekDayFor(dateISO);
+      return wd && wd.day <= 4 && !wd.week.submitted && periodOpen(dateISO)
+        && capacityOf(wd.week, wd.day) > 0 && dayTotalOf(wd.week, wd.day) === 0;
+    });
+    if(!dates.length){
+      botSay("bot", "You don't have any working days without hours this month.");
+      botChips(["How many hours do I have?"]);
+      return;
+    }
+    var dateLabel = function(dateISO){ var wd = weekDayFor(dateISO); return monthDayLabel(wd.week, wd.day); };
+    var over = dates.filter(function(dateISO){ var wd = weekDayFor(dateISO); return dur > capacityOf(wd.week, wd.day); });
+    var applicable = dates.filter(function(dateISO){ var wd = weekDayFor(dateISO); return dur <= capacityOf(wd.week, wd.day); });
+    if(!applicable.length){
+      botSay("bot", "Capacity on those days is below " + fmt(dur) + " h. I didn't record anything.");
+      return;
+    }
+    var daysLabel = applicable.map(dateLabel).join(", ")
+      + (over.length ? " (" + over.map(dateLabel).join(", ") + " over capacity, skipped)" : "");
+
+    chat.pending = "entryWeek";
+    botSay("bot","Confirm this entry?", botCard([
+      ["Days", daysLabel],
+      ["Duration per day", fmt(dur) + " h"],
+      ["Total", fmt(dur * applicable.length) + " h"],
+      ["Project", pr.name],
+      ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
+      ["Activity type", pr.sap.lstar + ", " + pr.act],
+      ["Origin", "Joule"]
+    ], "Save", function(){
+      applicable.forEach(function(dateISO){
+        var wd = weekDayFor(dateISO);
+        var row = monthRowIn(wd.week, pIdx);
+        if(!row){ row = {id:nextId++, p:pIdx, desc:"", h:[0,0,0,0,0,0,0], origin:"Joule"}; wd.week.rows.push(row); }
+        row.origin = "Joule";
+        row.h[wd.day] += dur;
+      });
+      state.needsSave = true;
+      render();
+      var errs = monthErrors(activeMonthDates()).length;
+      botSay("bot", fmt(dur) + " h saved on " + applicable.length + (applicable.length === 1 ? " day" : " days")
+        + " (" + fmt(dur * applicable.length) + " h total), " + pr.code + ", this month. "
+        + (errs ? errs + (errs === 1 ? " error blocks submission." : " errors block submission.") : "No errors, you can submit."));
+      botChips(["Submit the month","My absences"]);
+    }));
   }
 
   /* asks Claude, at /api/chat, to interpret the text and choose a function.
