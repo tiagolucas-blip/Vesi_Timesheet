@@ -3590,6 +3590,27 @@
     }));
   }
 
+  /* "fill in my missing hours [on BNK]": the personal equivalent of
+     offerFillMissingTeam, scoped to the visible week like every other
+     personal chat entry (registar_horas/registar_horas_semana never
+     reach across weeks either). Missing = a working day with nothing
+     recorded at all yet, the same definition the "empty working day" KPI
+     uses. Reuses offerEntryWeek for the actual staging, so it inherits
+     the same capacity/absence/closed-period handling as a manual entry. */
+  function offerFillMissing(pIdx, dur){
+    if(state.submitted){
+      botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
+      return;
+    }
+    var missing = [0,1,2,3,4].filter(function(d){ return capacity(d) > 0 && dayTotal(d) === 0; });
+    if(!missing.length){
+      botSay("bot", "You don't have any working days without hours this week.");
+      botChips(["How many hours do I have?"]);
+      return;
+    }
+    offerEntryWeek(missing, dur, pIdx, "");
+  }
+
   /* asks Claude, at /api/chat, to interpret the text and choose a function.
      Returns null on any failure (no key configured, network, engine error),
      and in that case the caller falls back to the local regex interpreter. */
@@ -3606,6 +3627,7 @@
             projetos: PROJECTS.map(function(p,i){ return {codigo: p.code.split("-")[0], nome: p.name, indice: i}; }),
             ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
             capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
+            dias_uteis_sem_horas_pessoa: [0,1,2,3,4].filter(function(d){ return capacity(d) > 0 && dayTotal(d) === 0; }).map(function(d){ return DAYS[d]; }),
             semana: {total: weekTotal(), esperado: weekCapacity(), erros: errors().length, submetida: state.submitted},
             semanas_anteriores: WEEKS.slice(0, weekIdx).map(function(w){
               var porProjeto = {};
@@ -3764,6 +3786,22 @@
           return true;
         }
         offerEntryWeek([0,1,2,3,4], durW, pIdxW, aw.descricao || "");
+        return true;
+      case "preencher_horas_em_falta":
+        var af = intent.argumentos || {};
+        var pIdxF = -1;
+        if(af.projeto){
+          PROJECTS.forEach(function(pr,i){
+            if(pr.code.toLowerCase().indexOf(String(af.projeto).toLowerCase()) === 0) pIdxF = i;
+          });
+        }
+        if(pIdxF === -1){
+          botSay("bot", intent.texto || "A que projeto se destinam essas horas?");
+          botChips(["How many hours do I have?","My absences"]);
+          return true;
+        }
+        var durF = round15(Number(af.duracao_horas));
+        offerFillMissing(pIdxF, (durF && durF > 0) ? durF : 8);
         return true;
       default:
         if(intent.texto){
