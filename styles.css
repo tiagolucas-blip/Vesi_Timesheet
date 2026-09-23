@@ -35,15 +35,15 @@
   .shellbar{
     position:sticky; top:env(safe-area-inset-top,0px); z-index:30;
     background:var(--surface); border-bottom:1px solid var(--line);
-    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
-    padding:10px 16px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:16px 20px;
   }
-  .orglogo{height:28px; width:auto; display:block}
+  .orglogo{height:36px; width:auto; display:block}
   .brand{display:flex; align-items:baseline; gap:9px; margin-right:auto}
-  .brand strong{font-family:var(--f-display); font-size:15px; font-weight:600; letter-spacing:-.01em; color:var(--accent-ink); display:inline-flex; align-items:baseline; gap:6px}
+  .brand strong{font-family:var(--f-display); font-size:16px; font-weight:600; letter-spacing:-.01em; color:var(--accent-ink); display:inline-flex; align-items:baseline; gap:6px}
   .brand strong::before{content:""; display:inline-block; width:7px; height:7px; border-radius:1px; background:var(--brand-mark); transform:translateY(-1px)}
-  .brand span{font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em}
-  .capture{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line-soft); border-radius:999px; padding:4px 10px 4px 8px}
+  .brand span{font-size:13px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.1em}
+  .capture{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line-soft); border-radius:999px; padding:5px 11px 5px 9px}
   .dot{width:7px; height:7px; border-radius:50%; background:var(--good); box-shadow:0 0 0 3px var(--good-soft)}
   .capture.off .dot{background:var(--ink-3); box-shadow:0 0 0 3px var(--surface-3)}
   .btn{background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:var(--radius); padding:6px 12px; font-weight:500}
@@ -56,6 +56,7 @@
   .btn:disabled{opacity:.45; cursor:not-allowed}
   .arrow:disabled{opacity:.35; cursor:not-allowed}
   .btn.sm{padding:3px 9px; font-size:12px}
+  .shellbar .btn.sm{font-size:13px; padding:6px 12px}
 
   /* nav */
   .nav{display:flex; gap:2px; padding:0 16px; background:var(--surface); border-bottom:1px solid var(--line); overflow-x:auto}
@@ -380,6 +381,8 @@
   .coswitch{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-3)}
   .coswitch span{text-transform:uppercase; letter-spacing:.08em; font-weight:600}
   .coswitch select{font:inherit; font-size:12px; padding:3px 6px; border:1px solid var(--line); border-radius:5px; background:var(--surface); color:var(--ink)}
+  .shellbar .coswitch{font-size:13px}
+  .shellbar .coswitch select{font-size:13px; padding:5px 8px}
 
   /* ---------- start and end cells, profile Z_BSRV ---------- */
   .tsgrid.clock .row{grid-template-columns:minmax(210px,260px) repeat(7,92px) 70px 34px}
