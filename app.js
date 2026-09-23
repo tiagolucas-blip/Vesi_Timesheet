@@ -4028,12 +4028,11 @@
           }
         })
       });
-      if(!res.ok){ console.log("[assistant debug] /api/chat HTTP error:", res.status, await res.text().catch(function(){return "";})); return null; }
+      if(!res.ok) return null;
       var data = await res.json();
-      if(!data || data.error){ console.log("[assistant debug] /api/chat error payload:", data); return null; }
+      if(!data || data.error) return null;
       return data;
     }catch(e){
-      console.log("[assistant debug] /api/chat threw:", e);
       return null;
     }
   }
@@ -4209,7 +4208,6 @@
     var intentP = askAssistant(txt);
     var intent = (await Promise.all([intentP, thinkingDelay()]))[0];
     hideTyping();
-    console.log("[assistant debug] intent:", intent);
     if(intent && botDispatch(intent)){
       chat.history.push({role:"assistant", content: intent.texto || ("Called " + intent.funcao + ".")});
       return;
