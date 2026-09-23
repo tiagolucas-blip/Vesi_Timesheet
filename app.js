@@ -4123,18 +4123,25 @@
         return true;
       case "registar_horas":
         var a = intent.argumentos || {};
-        var dayIdx = resolveDayArg(a.dia);
         var pIdx = -1;
         PROJECTS.forEach(function(pr,i){
           if(pr.code.toLowerCase().indexOf(String(a.projeto || "").toLowerCase()) === 0) pIdx = i;
         });
         var dur = round15(Number(a.duracao_horas));
-        if(dayIdx === -1 || dayIdx > 4 || pIdx === -1 || !dur || dur <= 0){
+        /* 'dias' (several explicit dates, e.g. "nos dias 14, 15 e 16") takes
+           priority over the single 'dia' when both somehow show up. A single
+           resolved day still goes through offerEntry, which has its own
+           "day is blocked, suggest the next free one" handling that
+           offerEntryWeek doesn't need to duplicate for the common case. */
+        var rawDays = Array.isArray(a.dias) && a.dias.length ? a.dias : (a.dia ? [a.dia] : []);
+        var days = rawDays.map(function(d){ return resolveDayArg(d); }).filter(function(i){ return i !== -1 && i <= 4; });
+        if(!days.length || pIdx === -1 || !dur || dur <= 0){
           botSay("bot", intent.texto || "Não consegui confirmar todos os detalhes desse registo. Pode escrever de outra forma?");
           botChips(["How many hours do I have?","My absences"]);
           return true;
         }
-        offerEntry(dayIdx, dur, pIdx, a.descricao || "");
+        if(days.length === 1) offerEntry(days[0], dur, pIdx, a.descricao || "");
+        else offerEntryWeek(days, dur, pIdx, a.descricao || "");
         return true;
       case "registar_horas_semana":
         var aw = intent.argumentos || {};
