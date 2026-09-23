@@ -36,9 +36,9 @@
     position:sticky; top:env(safe-area-inset-top,0px); z-index:30;
     background:var(--surface); border-bottom:1px solid var(--line);
     display:flex; align-items:center; gap:16px; flex-wrap:wrap;
-    padding:16px 20px;
+    padding:14px 20px;
   }
-  .orglogo{height:36px; width:auto; display:block}
+  .orglogo{height:48px; width:auto; display:block}
   .brand{display:flex; align-items:baseline; gap:9px; margin-right:auto}
   .brand strong{font-family:var(--f-display); font-size:16px; font-weight:600; letter-spacing:-.01em; color:var(--accent-ink); display:inline-flex; align-items:baseline; gap:6px}
   .brand strong::before{content:""; display:inline-block; width:7px; height:7px; border-radius:1px; background:var(--brand-mark); transform:translateY(-1px)}
