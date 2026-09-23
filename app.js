@@ -230,23 +230,33 @@
     });
     return base;
   }
-  /* Weekdays (Mon-Fri) with zero hours for this person: nothing already
-     saved, nothing staged now, no approved absence and the period open -
-     the same three checks saveMass() itself applies, computed up front so
-     a "fill the gaps" request can target exactly the days that are
-     actually empty, one person at a time, instead of one day set forced
-     onto everyone selected. */
+  /* Weekdays (Mon-Fri) with room left in this person's own daily capacity:
+     not blocked by an approved absence, period open, and whatever's
+     already saved plus staged doesn't already reach teamDailyCap(m) - a
+     day sitting at 2h of an 8h day still has 6h missing, not just a day
+     at exactly 0h. Computed up front so a "fill the gaps" request can
+     target exactly the days that actually have room, one person at a
+     time, instead of one day set forced onto everyone selected. */
   function missingWeekdaysFor(m){
     var already = alreadyHoursFor(m, WEEKS[weekIdx].num);
     var st = stagedOf(m.pernr);
     var days = [];
     for(var d=0; d<5; d++){
-      if(already[d] || st.h[d]) continue;
       if(memberBlocked(m,d)) continue;
       if(!periodOpen(WORKDATES[d], m.bukrs)) continue;
+      if(teamDailyCap(m) - already[d] - (st.h[d]||0) <= 0) continue;
       days.push(d);
     }
     return days;
+  }
+  /* How much more this person can take on this day before hitting their
+     own capacity - the actual amount missingWeekdaysFor's filter checks
+     is > 0 for, exposed separately since the day list alone isn't enough
+     to stage anything. */
+  function teamGapFor(m, d){
+    var already = alreadyHoursFor(m, WEEKS[weekIdx].num);
+    var st = stagedOf(m.pernr);
+    return Math.max(0, teamDailyCap(m) - already[d] - (st.h[d]||0));
   }
 
   var WEEKDAY_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
@@ -1272,7 +1282,10 @@
   }
   function addMonthRow(){
     var weeks = activeMonthWeeks();
-    if(weeks.every(function(w){ return w.submitted; })) return;
+    if(weeks.every(function(w){ return w.submitted; })){
+      toast("This month is already submitted, no more rows can be added.");
+      return;
+    }
     var used = {};
     weeks.forEach(function(w){ w.rows.forEach(function(r){ used[r.p] = true; }); });
     /* Only a project this company actually does (its own, or a shared one
@@ -1283,7 +1296,10 @@
     for(var i=0; i<PROJECTS.length; i++){
       if(!used[i] && (PROJECTS[i].bukrs === IT0001.bukrs || PROJECTS[i].bukrs === null)){ eligible = i; break; }
     }
-    if(eligible === -1) return;
+    if(eligible === -1){
+      toast("Every project available to this company already has a row this month.");
+      return;
+    }
     var p = eligible;
     var target = weeks.filter(function(w){ return !w.submitted; })[0] || weeks[0];
     target.rows.push({id:nextId++, p:p, desc:"", h:[0,0,0,0,0,0,0], origin:"Manual"});
@@ -2723,7 +2739,10 @@
   /* ---------- actions ---------- */
   function addRow(){
     if(isMonthly()) return addMonthRow();
-    if(state.submitted) return;
+    if(state.submitted){
+      toast("This week is already submitted, no more rows can be added.");
+      return;
+    }
     var used = state.rows.map(function(r){ return r.p; });
     /* Same eligibility rule as addMonthRow: only a project this company
        actually does (its own, or a shared one with no bukrs). */
@@ -2731,7 +2750,10 @@
     for(var i=0; i<PROJECTS.length; i++){
       if(used.indexOf(i) === -1 && (PROJECTS[i].bukrs === IT0001.bukrs || PROJECTS[i].bukrs === null)){ eligible = i; break; }
     }
-    if(eligible === -1) return;
+    if(eligible === -1){
+      toast("Every project available to this company already has a row this week.");
+      return;
+    }
     state.rows.push({id:nextId++, p:eligible, desc:"", h:[0,0,0,0,0,0,0], origin:"Manual"});
     state.needsSave = true;
     render();
@@ -3761,68 +3783,87 @@
      every week touched by the visible month, the same scope the month
      grid and its Submit already use - a person filling in a whole
      month's gaps one week at a time would defeat the point of this
-     command. Missing = a working day with nothing recorded at all yet,
-     the same definition the "empty working day" KPI uses. */
+     command.
+     "Missing" tops a day up to its own capacity, not just days sitting
+     at exactly zero: a day already at 2h of an 8h capacity still has 6h
+     missing. dur, when given, caps how much gets added to any one day
+     instead of always closing the whole gap - never more than what's
+     actually left, same hard rule as everywhere else. */
   function offerFillMissing(pIdx, dur){
     if(isMonthly()) return offerFillMissingMonth(pIdx, dur);
     if(state.submitted){
       botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
       return;
     }
-    /* Reuses offerEntryWeek for the actual staging, so it inherits the
-       same capacity/absence/closed-period handling as a manual entry. */
-    var missing = [0,1,2,3,4].filter(function(d){ return capacity(d) > 0 && dayTotal(d) === 0; });
-    if(!missing.length){
-      botSay("bot", "You don't have any working days without hours this week.");
-      botChips(["How many hours do I have?"]);
-      return;
-    }
-    offerEntryWeek(missing, dur, pIdx, "");
-  }
-  function offerFillMissingMonth(pIdx, dur){
     var pr = PROJECTS[pIdx];
-    var dates = activeMonthDates().filter(function(dateISO){
-      var wd = weekDayFor(dateISO);
-      return wd && wd.day <= 4 && !wd.week.submitted && periodOpen(dateISO)
-        && capacityOf(wd.week, wd.day) > 0 && dayTotalOf(wd.week, wd.day) === 0;
-    });
-    if(!dates.length){
-      botSay("bot", "You don't have any working days without hours this month.");
+    var plan = [0,1,2,3,4].map(function(d){
+      var gap = capacity(d) - dayTotal(d);
+      return {day:d, add: dur ? Math.min(dur, gap) : gap};
+    }).filter(function(x){ return x.add > 0; });
+    if(!plan.length){
+      botSay("bot", "Every working day this week is already at capacity.");
       botChips(["How many hours do I have?"]);
       return;
     }
-    var dateLabel = function(dateISO){ var wd = weekDayFor(dateISO); return monthDayLabel(wd.week, wd.day); };
-    var over = dates.filter(function(dateISO){ var wd = weekDayFor(dateISO); return dur > capacityOf(wd.week, wd.day); });
-    var applicable = dates.filter(function(dateISO){ var wd = weekDayFor(dateISO); return dur <= capacityOf(wd.week, wd.day); });
-    if(!applicable.length){
-      botSay("bot", "Capacity on those days is below " + fmt(dur) + " h. I didn't record anything.");
-      return;
-    }
-    var daysLabel = applicable.map(dateLabel).join(", ")
-      + (over.length ? " (" + over.map(dateLabel).join(", ") + " over capacity, skipped)" : "");
-
+    var total = plan.reduce(function(a,x){ return a + x.add; }, 0);
+    var daysLabel = plan.map(function(x){ return DAYS[x.day] + " +" + fmt(x.add) + "h"; }).join(", ");
     chat.pending = "entryWeek";
     botSay("bot","Confirm this entry?", botCard([
       ["Days", daysLabel],
-      ["Duration per day", fmt(dur) + " h"],
-      ["Total", fmt(dur * applicable.length) + " h"],
+      ["Total", fmt(total) + " h"],
       ["Project", pr.name],
       ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
       ["Activity type", pr.sap.lstar + ", " + pr.act],
       ["Origin", "Joule"]
     ], "Save", function(){
-      applicable.forEach(function(dateISO){
-        var wd = weekDayFor(dateISO);
-        var row = monthRowIn(wd.week, pIdx);
-        if(!row){ row = {id:nextId++, p:pIdx, desc:"", h:[0,0,0,0,0,0,0], origin:"Joule"}; wd.week.rows.push(row); }
+      var row = state.rows.filter(function(r){ return r.p === pIdx; })[0];
+      if(!row){ row = {id:nextId++, p:pIdx, desc:"", h:[0,0,0,0,0,0,0], origin:"Joule"}; state.rows.push(row); }
+      row.origin = "Joule";
+      plan.forEach(function(x){ row.h[x.day] += x.add; });
+      state.needsSave = true;
+      render();
+      plan.forEach(function(x){ flashCell(row.id, x.day); });
+      botSay("bot", fmt(total) + " h saved across " + plan.length + (plan.length === 1 ? " day" : " days")
+        + ", " + pr.code + ". " + weekSummaryText());
+      botChips(["Submit the week","My absences"]);
+    }));
+  }
+  function offerFillMissingMonth(pIdx, dur){
+    var pr = PROJECTS[pIdx];
+    var plan = activeMonthDates().map(function(dateISO){
+      var wd = weekDayFor(dateISO);
+      if(!wd || wd.day > 4 || wd.week.submitted || !periodOpen(dateISO)) return null;
+      var gap = capacityOf(wd.week, wd.day) - dayTotalOf(wd.week, wd.day);
+      return gap > 0 ? {dateISO:dateISO, week:wd.week, day:wd.day, add: dur ? Math.min(dur, gap) : gap} : null;
+    }).filter(function(x){ return x; });
+    if(!plan.length){
+      botSay("bot", "Every working day this month is already at capacity.");
+      botChips(["How many hours do I have?"]);
+      return;
+    }
+    var total = plan.reduce(function(a,x){ return a + x.add; }, 0);
+    var daysLabel = plan.map(function(x){ return monthDayLabel(x.week, x.day) + " +" + fmt(x.add) + "h"; }).join(", ");
+
+    chat.pending = "entryWeek";
+    botSay("bot","Confirm this entry?", botCard([
+      ["Days", daysLabel],
+      ["Total", fmt(total) + " h"],
+      ["Project", pr.name],
+      ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
+      ["Activity type", pr.sap.lstar + ", " + pr.act],
+      ["Origin", "Joule"]
+    ], "Save", function(){
+      plan.forEach(function(x){
+        var row = monthRowIn(x.week, pIdx);
+        if(!row){ row = {id:nextId++, p:pIdx, desc:"", h:[0,0,0,0,0,0,0], origin:"Joule"}; x.week.rows.push(row); }
         row.origin = "Joule";
-        row.h[wd.day] += dur;
+        row.h[x.day] += x.add;
       });
       state.needsSave = true;
       render();
       var errs = monthErrors(activeMonthDates()).length;
-      botSay("bot", fmt(dur) + " h saved on " + applicable.length + (applicable.length === 1 ? " day" : " days")
-        + " (" + fmt(dur * applicable.length) + " h total), " + pr.code + ", this month. "
+      botSay("bot", fmt(total) + " h saved across " + plan.length + (plan.length === 1 ? " day" : " days")
+        + ", " + pr.code + ", this month. "
         + (errs ? errs + (errs === 1 ? " error blocks submission." : " errors block submission.") : "No errors, you can submit."));
       botChips(["Submit the month","My absences"]);
     }));
@@ -3959,7 +4000,7 @@
       case "preencher_horas_em_falta_equipa":
         var fp = intent.argumentos || {};
         var durFp = round15(Number(fp.duracao_horas));
-        offerFillMissingTeam(fp.pessoa, (durFp && durFp > 0) ? durFp : 8);
+        offerFillMissingTeam(fp.pessoa, durFp > 0 ? durFp : 0);
         return true;
       case "aprovar":
         var aa = intent.argumentos || {};
@@ -4029,7 +4070,7 @@
           return true;
         }
         var durF = round15(Number(af.duracao_horas));
-        offerFillMissing(pIdxF, (durF && durF > 0) ? durF : 8);
+        offerFillMissing(pIdxF, durF > 0 ? durF : 0);
         return true;
       default:
         if(intent.texto){
@@ -4506,54 +4547,54 @@
   /* "fill in whoever's missing hours" / "complete the team's week": unlike
      every other mass entry, this one can't share a single day set across
      everyone, since each person's gaps are their own. Computes
-     missingWeekdaysFor() per person, so someone on Tue and Wed alone
-     doesn't also get filled on Thu just because a teammate was free then. */
+     missingWeekdaysFor()/teamGapFor() per person, so someone on Tue and
+     Wed alone doesn't also get filled on Thu just because a teammate was
+     free then, and each day is topped up to that person's own capacity
+     rather than always the same flat amount. dur, when given, caps how
+     much gets added to any one day instead of always closing the whole
+     gap - never more than what's actually left, same hard rule as
+     everywhere else. */
   function offerFillMissingTeam(pessoaArg, dur){
     var members = teamOf(state.leader).filter(function(m){ return !m.locked; });
     var name = String(pessoaArg || "").trim().toLowerCase();
     var matched = name ? members.filter(function(m){ return m.name.toLowerCase().indexOf(name) !== -1; }) : members;
-    var startMin = parseClock("09:00");
-    var clockWindow = {b:startMin, e:startMin + dur*60 + LUNCH_MIN};
-    /* dur is the same for every day filled here, so a person whose own
-       daily cap (teamDailyCap, a reduced schedule) is below it can't take
-       any of it - never offer, let alone save, a fill above what's
-       allowed, the same rule a manual cell or Apply to selected enforce. */
-    var overCap = [];
     var plan = matched.map(function(m){
-      var clock = profileFor(WORKDATES[0], m.bukrs).clock;
-      var hoursThatDay = clock ? slotHours(clockWindow) : dur;
-      var days = missingWeekdaysFor(m);
-      if(days.length && hoursThatDay > teamDailyCap(m)){
-        overCap.push(m.name);
-        days = [];
-      }
+      var days = missingWeekdaysFor(m).map(function(d){
+        var gap = teamGapFor(m, d);
+        return {day:d, add: dur ? Math.min(dur, gap) : gap};
+      });
       return {member:m, days:days};
     }).filter(function(p){ return p.days.length; });
     if(!plan.length){
       var msg;
-      if(overCap.length) msg = fmt(dur) + " h excede a capacidade diária de " + overCap.join(", ") + ", na equipa de " + PROJECTS[massProject()].code + ".";
-      else if(!name) msg = "Ninguém na equipa de " + PROJECTS[massProject()].code + " tem dias úteis por preencher esta semana.";
-      else if(matched.length) msg = matched.map(function(m){ return m.name; }).join(", ") + " já tem todos os dias úteis desta semana preenchidos, na equipa de " + PROJECTS[massProject()].code + ".";
+      if(!name) msg = "Ninguém na equipa de " + PROJECTS[massProject()].code + " tem dias úteis por preencher esta semana.";
+      else if(matched.length) msg = matched.map(function(m){ return m.name; }).join(", ") + " já está com a capacidade completa esta semana, na equipa de " + PROJECTS[massProject()].code + ".";
       else msg = "Não encontrei ninguém chamada \"" + pessoaArg + "\" na equipa de " + PROJECTS[massProject()].code + ".";
       botSay("bot", msg);
       botChips(["Help"]);
       return;
     }
     var lines = plan.map(function(p){
-      return [p.member.name, p.days.map(function(d){ return DAYS[d]; }).join(", ")];
+      return [p.member.name, p.days.map(function(x){ return DAYS[x.day] + " +" + fmt(x.add) + "h"; }).join(", ")];
     });
-    lines.push(["Duração por dia", fmt(dur) + " h"]);
     lines.push(["Projeto", PROJECTS[massProject()].code]);
-    if(overCap.length) lines.push(["Excluído (acima da capacidade diária)", overCap.join(", ")]);
-    botSay("bot", "Preencher estes dias em falta com " + fmt(dur) + " h cada?", botCard(lines, "Preencher e gravar", function(){
+    var total = plan.reduce(function(a,p){ return a + p.days.reduce(function(b,x){ return b+x.add; }, 0); }, 0);
+    lines.push(["Total", fmt(total) + " h"]);
+    botSay("bot", "Preencher estes dias em falta até à capacidade de cada pessoa?", botCard(lines, "Preencher e gravar", function(){
       teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
       plan.forEach(function(p){
         var st = stagedOf(p.member.pernr);
         st.sel = true;
         var clock = profileFor(WORKDATES[0], p.member.bukrs).clock;
-        p.days.forEach(function(d){
-          if(clock){ st.t[d] = {b:clockWindow.b, e:clockWindow.e}; st.h[d] = slotHours(st.t[d]); }
-          else { st.t[d] = null; st.h[d] = dur; }
+        p.days.forEach(function(x){
+          var newTotal = (st.h[x.day] || 0) + x.add;
+          if(clock){
+            var startMin = parseClock("09:00");
+            var win = {b:startMin, e:startMin + newTotal*60 + LUNCH_MIN};
+            st.t[x.day] = win; st.h[x.day] = slotHours(win);
+          } else {
+            st.t[x.day] = null; st.h[x.day] = newTotal;
+          }
         });
       });
       var beforeLog = state.massLog.length;
@@ -4569,7 +4610,7 @@
       botSay("bot", msg);
       botChips(["Help"]);
     }));
-    chat.history.push({role:"assistant", content:"Proposto preencher dias em falta (" + fmt(dur) + "h/dia) para " + plan.map(function(p){return p.member.name;}).join(", ") + ". Aguardando confirmação."});
+    chat.history.push({role:"assistant", content:"Proposto preencher " + fmt(total) + "h em dias em falta para " + plan.map(function(p){return p.member.name;}).join(", ") + ". Aguardando confirmação."});
   }
 
   /* "approve João" / "approve everyone": mirrors exactly what the Approval
