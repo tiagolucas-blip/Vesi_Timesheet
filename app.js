@@ -679,6 +679,14 @@
     staged: {},
     stagedAllow: [],
     massLog: [],
+    /* Same idea as needsSave, but for the Team screen's own leader-side
+       action, kept separate so one person's pending work never shows as
+       "unsaved" on someone else's screen: "Save staged entries"/"Save
+       staged allowances" only move data from staged into massLog (the
+       "Recorded on behalf" log) - not yet reflected in the database, that
+       still needs the header Save. Bonus is excluded on purpose, it's
+       recorded and approved in the same click, there's nothing staged. */
+    teamNeedsSave: false,
     /* pure display state, not part of the timesheet data: which mass-entry
        tab is showing, and whether the person has manually opened/closed
        Suggestions this session (null = follow the automatic empty/non-empty
@@ -2116,6 +2124,10 @@
         if(total > 8) cls += " over";
         else if(total >= 8) cls += " full";
         if(memberBlocked(m,i)) cls += " abs";
+        /* A visible marker, not just the tooltip below - so "what did the
+           assistant/mass entry just add here" doesn't require hovering
+           every cell one by one. */
+        if(st.h[i]) cls += " staged";
         var cell = el("div", cls, total ? fmt(total) : "–");
         if(memberBlocked(m,i)) cell.title = "Approved " + m.abs[i].toLowerCase();
         else if(st.h[i]) cell.title = fmt(v) + " h already · " + fmt(st.h[i]) + " h staged now";
@@ -2211,6 +2223,11 @@
     var members = teamOf(state.leader);
 
     $("teamCount").textContent = members.length + (members.length === 1 ? " person" : " people");
+    var teamChip = $("teamStateChip");
+    if(teamChip){
+      teamChip.textContent = state.teamNeedsSave ? "Save to finish" : "Up to date";
+      teamChip.className = state.teamNeedsSave ? "chip amber" : "chip grey";
+    }
 
     renderAlreadyGrid(members);
     renderAlreadyAllowGrid(members);
@@ -2453,7 +2470,7 @@
      it, scoped to whoever its own confirmation card named, so a person's
      unrelated staged hours from an earlier, still-unconfirmed manual batch
      never get swept into a save the person never saw or confirmed. */
-  function saveMass(onlyPernrs){
+  function saveMass(onlyPernrs, silent){
     var leader = leaderById(state.leader);
     var members = teamOf(state.leader);
     if(onlyPernrs) members = members.filter(function(m){ return onlyPernrs.indexOf(m.pernr) !== -1; });
@@ -2503,12 +2520,18 @@
       savedPeople++;
       state.staged[m.pernr] = {sel:false, h:[0,0,0,0,0,0,0], t:[null,null,null,null,null,null,null], err:""};
     });
+    /* Recorded on behalf, but not yet persisted - same distinction as
+       Submit vs Save on My Timesheet. The header Save button is what
+       actually reflects this in the database. */
+    if(saved) state.teamNeedsSave = true;
     renderTeam();
+    if(silent) return saved;
     var who = savedPeople + (savedPeople === 1 ? " person" : " people");
     var left = kept + (kept === 1 ? " line stayed" : " lines stayed");
-    if(saved && kept) toast(saved + " entries saved for " + who + ". " + left + " on screen with the reason.");
-    else if(saved) toast(saved + " entries saved for " + who + ", recorded on their behalf.");
-    else toast("Nothing was saved. Every line has a reason next to it.");
+    if(saved && kept) toast(saved + " entries recorded for " + who + ". " + left + " on screen with the reason. Click Save to finish.");
+    else if(saved) toast(saved + " entries recorded for " + who + ", on their behalf. Click Save to finish.");
+    else toast("Nothing was recorded. Every line has a reason next to it.");
+    return saved;
   }
 
   /* ---------- allowances, mass entry ----------
@@ -2573,11 +2596,11 @@
      allowances" on screen means. The chat assistant passes it, scoped to
      its own confirmation card, so someone else's still-unconfirmed staged
      lines are left in place instead of being saved (or wiped) alongside it. */
-  function saveMassAllow(onlyPernrs){
+  function saveMassAllow(onlyPernrs, silent){
     var lines = onlyPernrs
       ? state.stagedAllow.filter(function(a){ return onlyPernrs.indexOf(a.pernr) !== -1; })
       : state.stagedAllow;
-    if(!lines.length){ toast("Nothing staged."); return; }
+    if(!lines.length){ if(!silent) toast("Nothing staged."); return 0; }
     var leader = leaderById(state.leader);
     lines.forEach(function(a){
       state.massLog.push({
@@ -2591,8 +2614,27 @@
     state.stagedAllow = onlyPernrs
       ? state.stagedAllow.filter(function(a){ return onlyPernrs.indexOf(a.pernr) === -1; })
       : [];
+    state.teamNeedsSave = true;
     renderTeam();
-    toast(n + " allowance " + (n === 1 ? "line" : "lines") + " saved, recorded on their behalf.");
+    if(!silent) toast(n + " allowance " + (n === 1 ? "line" : "lines") + " recorded, on their behalf. Click Save to finish.");
+    return n;
+  }
+  /* The header's single Save button: records whatever is still staged
+     (silently, same rules and same partial-save behaviour as the Hours/
+     Allowances tabs' own buttons) and then, in the same click, clears
+     teamNeedsSave - the step that actually reflects everything already
+     recorded on behalf of the team in the database. One safe click that
+     always finishes the job, whichever tab it was staged from. */
+  function saveTeamAll(){
+    var hoursSaved = saveMass(null, true);
+    var allowSaved = saveMassAllow(null, true);
+    if(!hoursSaved && !allowSaved && !state.teamNeedsSave){
+      toast("Nothing to save.");
+      return;
+    }
+    state.teamNeedsSave = false;
+    renderTeam();
+    toast("Changes saved.");
   }
   function renderMassAllowList(){
     var box = $("mAllowList");
@@ -4923,6 +4965,7 @@
   if($("mProj")) $("mProj").onchange = renderTeam;
   if($("mApply")) $("mApply").onclick = applyMass;
   if($("mSave")) $("mSave").onclick = function(){ saveMass(); };
+  if($("teamSaveAll")) $("teamSaveAll").onclick = saveTeamAll;
   if($("mClear")) $("mClear").onclick = function(){ clearMass(); toast("Staged entries cleared. Nothing had been saved."); };
   if($("bSave")) $("bSave").onclick = saveBonus;
   if($("mAllowCode")) $("mAllowCode").onchange = syncMassAllowForm;

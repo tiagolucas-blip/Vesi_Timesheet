@@ -427,11 +427,14 @@
   /* already-recorded, read-only grid */
   .tsgrid.readonly .row{grid-template-columns:minmax(230px,1fr) repeat(7,58px) 70px 34px}
   .tsgrid.readonly .rowmeta{padding:8px 10px; font-size:13px; font-weight:500}
-  .already-cell{display:flex; align-items:center; justify-content:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-2); border-left:1px solid var(--line-soft)}
+  .already-cell{display:flex; align-items:center; justify-content:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-2); border-left:1px solid var(--line-soft); position:relative}
   .already-cell.we{background:var(--surface-2)}
   .already-cell.full{background:var(--warn-soft); color:var(--warn); font-weight:600}
   .already-cell.over{background:var(--crit-soft); color:var(--crit); font-weight:600}
   .already-cell.abs{background:repeating-linear-gradient(135deg,var(--surface-3),var(--surface-3) 4px,var(--surface-2) 4px,var(--surface-2) 8px); color:var(--ink-3)}
+  /* A visible marker for hours staged in this session but not yet saved,
+     so it reads at a glance instead of only on hover (see the tooltip). */
+  .already-cell.staged::after{content:""; position:absolute; top:3px; right:3px; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 1.5px var(--surface)}
   .allowcell{display:flex; align-items:center; justify-content:center; text-align:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-3); border-left:1px solid var(--line-soft)}
   .allowcell.we{background:var(--surface-2)}
   .allowcell.pending{background:var(--accent-soft); color:var(--accent-ink); font-weight:600}
