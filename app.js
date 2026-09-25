@@ -591,16 +591,8 @@
     return Math.max(0, dailyCapFor() - absHoursOf(week, day));
   }
   function isBlockedOf(week, day){ return day <= 4 && capacityOf(week, day) === 0; }
-  function weekCapacityOf(week){
-    var c = 0;
-    for(var i=0; i<5; i++) c += capacityOf(week, i);
-    return c;
-  }
   function dayTotalOf(week, day){
     return week.rows.reduce(function(a,r){ return a + (r.h[day] || 0); }, 0);
-  }
-  function weekTotalOf(week){
-    return week.rows.reduce(function(a,r){ return a + rowTotal(r); }, 0);
   }
   function cellLockedOf(week, day, v){
     return week.submitted || !periodOpen(datesFor(week.start)[day]) || (isBlockedOf(week, day) && !v);
@@ -1575,6 +1567,7 @@
       }
       box.appendChild(row);
     });
+    return list.filter(function(m){ return m.sev === "e"; }).length;
   }
   function renderKpisMonth(){
     var dates = activeMonthDates();
@@ -1648,7 +1641,7 @@
     var co = $("coSel");
     if(co && co.value !== IT0001.bukrs) co.value = IT0001.bukrs;
   }
-  function renderKpis(){
+  function renderKpis(errCount){
     if(isMonthly()) return renderKpisMonth();
     $("weekLabel").textContent = weekLabelFor(WORKDATES, WEEKS[weekIdx].num);
     $("prevW").disabled = weekIdx === 0;
@@ -1671,7 +1664,7 @@
     var zeros = 0;
     for(var i=0; i<5; i++) if(capacity(i) > 0 && dayTotal(i) === 0) zeros++;
     if($("kExtra")) $("kExtra").textContent = fmt(absW) + " h absences deducted · " + zeros + (zeros === 1 ? " empty working day" : " empty working days");
-    var errs = errors().length;
+    var errs = errCount;
     $("kVal").textContent = errs ? (errs + (errs===1 ? " error" : " errors")) : "No errors";
     $("kVal").style.color = errs ? "var(--crit)" : "var(--good)";
     $("submitBtn").disabled = state.submitted || errs > 0 || tot === 0;
@@ -1700,7 +1693,14 @@
     applyMonthlyUI();
     if(isMonthly()){ renderMonthGrid(); } else { renderGrid(); }
     renderCal(); renderSugs(); renderAllow();
-    renderMsgs(); renderKpis(); renderApprovals(); renderTeam(); renderCats();
+    /* renderMsgs already runs validate() to build the message panel;
+       renderKpis only needs the error count from that same pass, so it's
+       passed through instead of validate() running a second time. Monthly
+       ignores it and computes its own (see renderKpisMonth): a submitted
+       week's errors still show in the month's message list but must not
+       count against whether the month can be submitted, so that count
+       can't be reused here. */
+    var errCount = renderMsgs(); renderKpis(errCount); renderApprovals(); renderTeam(); renderCats();
   }
 
   /* ---------- absences: a badge on the grid's day header, detail on hover ----------
@@ -3013,6 +3013,19 @@
      the week grid, {eligible, target, weeks, monthly:true} for the month
      grid (target is the week the new row is pushed into). */
   var dtNewRow = null;
+  /* Fills the detail dialog's project <select> with one <option> per index
+     in indices, "CODE · WBS". openDetail/openMonthDetail (every project) and
+     openNewRowDetail/openNewMonthRowDetail (only the eligible ones) each
+     built this same option list themselves. */
+  function fillProjectOptions(pj, indices){
+    pj.innerHTML = "";
+    indices.forEach(function(i){
+      var p = PROJECTS[i];
+      var o = document.createElement("option");
+      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
+      pj.appendChild(o);
+    });
+  }
   /* day is which calendar column was clicked, only meaningful for Z_BSRV
      (Building Solutions): that profile records start and end per day, not
      one duration for the week, so a day-specific click there needs to
@@ -3024,12 +3037,7 @@
     var pr = PROJECTS[r.p];
     $("dtTitle").textContent = pr.name;
     var pj = $("dtProj");
-    pj.innerHTML = "";
-    PROJECTS.forEach(function(p,i){
-      var o = document.createElement("option");
-      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
-      pj.appendChild(o);
-    });
+    fillProjectOptions(pj, PROJECTS.map(function(p,i){ return i; }));
     pj.value = String(r.p);
     pj.disabled = state.submitted;
     /* Activity type isn't its own choice here, it comes from whichever
@@ -3070,12 +3078,7 @@
     var allSubmitted = weeks.every(function(w){ return w.submitted; });
     $("dtTitle").textContent = pr.name;
     var pj = $("dtProj");
-    pj.innerHTML = "";
-    PROJECTS.forEach(function(p,i){
-      var o = document.createElement("option");
-      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
-      pj.appendChild(o);
-    });
+    fillProjectOptions(pj, PROJECTS.map(function(p,i){ return i; }));
     pj.value = String(monthRow.p);
     pj.disabled = allSubmitted;
     pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
@@ -3109,13 +3112,7 @@
     dtNewRow = {eligible: eligible};
     $("dtTitle").textContent = "New entry";
     var pj = $("dtProj");
-    pj.innerHTML = "";
-    eligible.forEach(function(i){
-      var p = PROJECTS[i];
-      var o = document.createElement("option");
-      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
-      pj.appendChild(o);
-    });
+    fillProjectOptions(pj, eligible);
     pj.value = String(eligible[0]);
     pj.disabled = false;
     pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
@@ -3139,13 +3136,7 @@
     dtNewRow = {eligible: eligible, target: target, weeks: weeks, monthly: true};
     $("dtTitle").textContent = "New entry";
     var pj = $("dtProj");
-    pj.innerHTML = "";
-    eligible.forEach(function(i){
-      var p = PROJECTS[i];
-      var o = document.createElement("option");
-      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
-      pj.appendChild(o);
-    });
+    fillProjectOptions(pj, eligible);
     pj.value = String(eligible[0]);
     pj.disabled = false;
     pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
@@ -3688,7 +3679,7 @@
     c.appendChild(acts);
     return c;
   }
-  function nextFreeDay(from){
+  function nextFreeDay(){
     for(var i=0; i<5; i++){ if(capacity(i) - dayTotal(i) > 0) return i; }
     return -1;
   }
@@ -4056,6 +4047,18 @@
     if(!hasAmount) missing.push("não percebi " + amountLabel);
     return missing.join("; ") + ".";
   }
+  /* Claude sends back a project code, possibly abbreviated or lowercased
+     ("bnk" for "BNK-2026"); resolves it to a PROJECTS index by matching the
+     start of the code, case-insensitively, or -1 if nothing matches.
+     registar_horas, registar_horas_semana and preencher_horas_em_falta each
+     used to run this same loop themselves. */
+  function matchProjectCodePrefix(str){
+    var pIdx = -1;
+    PROJECTS.forEach(function(pr,i){
+      if(pr.code.toLowerCase().indexOf(String(str || "").toLowerCase()) === 0) pIdx = i;
+    });
+    return pIdx;
+  }
   /* maps Claude's response (function + arguments) to the same bot actions */
   function botDispatch(intent){
     switch(intent.funcao){
@@ -4123,10 +4126,7 @@
         return true;
       case "registar_horas":
         var a = intent.argumentos || {};
-        var pIdx = -1;
-        PROJECTS.forEach(function(pr,i){
-          if(pr.code.toLowerCase().indexOf(String(a.projeto || "").toLowerCase()) === 0) pIdx = i;
-        });
+        var pIdx = matchProjectCodePrefix(a.projeto);
         var dur = round15(Number(a.duracao_horas));
         /* 'dias' (several explicit dates, e.g. "nos dias 14, 15 e 16") takes
            priority over the single 'dia' when both somehow show up. A single
@@ -4145,10 +4145,7 @@
         return true;
       case "registar_horas_semana":
         var aw = intent.argumentos || {};
-        var pIdxW = -1;
-        PROJECTS.forEach(function(pr,i){
-          if(pr.code.toLowerCase().indexOf(String(aw.projeto || "").toLowerCase()) === 0) pIdxW = i;
-        });
+        var pIdxW = matchProjectCodePrefix(aw.projeto);
         var durW = round15(Number(aw.duracao_horas));
         if(pIdxW === -1 || !durW || durW <= 0){
           botSay("bot", intent.texto || "Não consegui confirmar todos os detalhes desse registo. Pode escrever de outra forma?");
@@ -4159,12 +4156,7 @@
         return true;
       case "preencher_horas_em_falta":
         var af = intent.argumentos || {};
-        var pIdxF = -1;
-        if(af.projeto){
-          PROJECTS.forEach(function(pr,i){
-            if(pr.code.toLowerCase().indexOf(String(af.projeto).toLowerCase()) === 0) pIdxF = i;
-          });
-        }
+        var pIdxF = af.projeto ? matchProjectCodePrefix(af.projeto) : -1;
         if(pIdxF === -1){
           botSay("bot", intent.texto || "A que projeto se destinam essas horas?");
           botChips(["How many hours do I have?","My absences"]);
