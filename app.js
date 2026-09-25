@@ -942,9 +942,28 @@
         var parsed = parseClock(inp.value);
         if(isNaN(parsed)){ toast("Couldn't read “"+inp.value+"”. Use 08:00 or 8."); render(); return; }
         var cur = slot(r,i) || {b:null, e:null};
+        var prev = cur[k];
         cur[k] = parsed;
+        var newVal = (cur.b === null && cur.e === null) ? 0 : slotHours(cur);
+        /* Same hard rule as durCell: never let a day go over capacity, not
+           even with a warning - refuse it here instead, before the window
+           is ever stored. */
+        var otherTotal = dayTotal(i) - (r.h[i] || 0);
+        var cap = capacity(i);
+        if(otherTotal + newVal > cap){
+          var abs = absOn(i, "approved")[0];
+          var left = Math.max(0, cap - otherTotal);
+          var msg = abs
+            ? DAYS[i]+" has an approved "+abs.type.toLowerCase()+"."
+            : DAYS[i]+"'s capacity is "+fmt(cap)+" h.";
+          toast(msg + (left > 0 ? " Only "+fmt(left)+" h available." : " No hours available on this day."));
+          cur[k] = prev;
+          render();
+          return;
+        }
         if(cur.b === null && cur.e === null) setSlot(r,i,null); else setSlot(r,i,cur);
         syncClock();
+        state.needsSave = true;
         render();
       });
       box.appendChild(inp);
