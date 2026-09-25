@@ -235,6 +235,8 @@
   .dlg > footer{padding:12px 16px; border-top:1px solid var(--line); display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap}
   .field{display:grid; gap:5px}
   .field label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); font-weight:600}
+  /* Two fields side by side in a dialog body, e.g. Add allowance's Day/Quantity row. */
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:12px}
   input[type=text], select, textarea{font-family:var(--f-body); font-size:14px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius); padding:8px 10px; width:100%}
   textarea{min-height:60px; resize:vertical}
   .nlqa{font-family:var(--f-mono); font-size:15px}

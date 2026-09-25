@@ -4053,9 +4053,17 @@
      registar_horas, registar_horas_semana and preencher_horas_em_falta each
      used to run this same loop themselves. */
   function matchProjectCodePrefix(str){
+    /* An empty needle is a prefix of every code ("anything".indexOf("")
+       === 0), so without this guard a missing/blank project argument
+       silently resolved to the LAST project in the list instead of
+       failing - Claude omitting 'projeto' then booked hours against
+       whichever project happened to be last, rather than the caller
+       correctly treating it as unresolved. */
+    var needle = String(str || "").trim().toLowerCase();
+    if(!needle) return -1;
     var pIdx = -1;
     PROJECTS.forEach(function(pr,i){
-      if(pr.code.toLowerCase().indexOf(String(str || "").toLowerCase()) === 0) pIdx = i;
+      if(pr.code.toLowerCase().indexOf(needle) === 0) pIdx = i;
     });
     return pIdx;
   }
@@ -4156,7 +4164,7 @@
         return true;
       case "preencher_horas_em_falta":
         var af = intent.argumentos || {};
-        var pIdxF = af.projeto ? matchProjectCodePrefix(af.projeto) : -1;
+        var pIdxF = matchProjectCodePrefix(af.projeto);
         if(pIdxF === -1){
           botSay("bot", intent.texto || "A que projeto se destinam essas horas?");
           botChips(["How many hours do I have?","My absences"]);
