@@ -375,6 +375,8 @@
   .jchips:empty{display:none}
   .jform{display:flex; gap:7px; padding:11px 13px; border-top:1px solid var(--line)}
   .jform input{flex:1; min-width:0}
+  .jform #jMic{display:flex; align-items:center; justify-content:center}
+  .jform #jMic.listening{background:var(--warn); border-color:var(--warn); color:#fff}
   .jfoot{padding:9px 13px; border-top:1px solid var(--line-soft); font-size:11px; color:var(--ink-3); background:var(--surface-2)}
   @media (max-width:480px){
     .joule{right:8px; left:8px; width:auto; max-height:80vh}

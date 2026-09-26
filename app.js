@@ -4922,6 +4922,60 @@
     });
   };
 
+  (function setupVoiceInput(){
+    var micBtn = $("jMic"), langBtn = $("jMicLang");
+    if(!micBtn || !langBtn) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){
+      micBtn.disabled = true;
+      langBtn.disabled = true;
+      micBtn.title = "Voice input not supported in this browser";
+      return;
+    }
+    var LANGS = {PT:"pt-PT", EN:"en-US"};
+    var lang = "PT";
+    langBtn.textContent = lang;
+    langBtn.title = "Voice input language: Portuguese (click to switch to English)";
+    langBtn.onclick = function(){
+      lang = lang === "PT" ? "EN" : "PT";
+      langBtn.textContent = lang;
+      langBtn.title = "Voice input language: " + (lang === "PT" ? "Portuguese (click to switch to English)" : "English (click to switch to Portuguese)");
+    };
+
+    var recog = new SR();
+    recog.continuous = false;
+    recog.interimResults = true;
+    var listening = false;
+
+    function stopUI(){
+      listening = false;
+      micBtn.classList.remove("listening");
+    }
+    recog.onresult = function(ev){
+      var text = "";
+      for(var i = 0; i < ev.results.length; i++) text += ev.results[i][0].transcript;
+      $("jinput").value = text;
+    };
+    recog.onerror = function(ev){
+      stopUI();
+      if(ev.error !== "no-speech" && ev.error !== "aborted") toast("Voice input error: " + ev.error);
+    };
+    recog.onend = function(){
+      stopUI();
+      $("jinput").focus();
+    };
+
+    micBtn.onclick = function(){
+      if(listening){ recog.stop(); return; }
+      recog.lang = LANGS[lang];
+      try{
+        recog.start();
+        listening = true;
+        micBtn.classList.add("listening");
+      }catch(e){ stopUI(); }
+    };
+  })();
+
   document.addEventListener("keydown", function(ev){
     var tag = (ev.target.tagName || "").toLowerCase();
     var typing = tag === "input" || tag === "textarea" || tag === "select";
