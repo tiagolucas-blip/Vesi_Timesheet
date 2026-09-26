@@ -4593,7 +4593,7 @@
       ["Project", pr.name]
     ];
     if(locked.length) lines.push(["Skipped", locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ")]);
-    botSay("bot","Stage and save this?", botCard(lines, "Stage and save", function(){
+    botSay("bot","Register this on staging area?", botCard(lines, "Register", function(){
       teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
       selected.forEach(function(m){ stagedOf(m.pernr).sel = true; });
       if($("mDur")) $("mDur").value = clock ? "" : String(dur);
@@ -4705,7 +4705,7 @@
     ];
     if(note) lines.push([w.noteLabel || "Note", note]);
     if(locked.length) lines.push(["Skipped", locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ")]);
-    botSay("bot","Stage and save this?", botCard(lines, "Stage and save", function(){
+    botSay("bot","Register this on staging area?", botCard(lines, "Register", function(){
       teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
       selected.forEach(function(m){ stagedOf(m.pernr).sel = true; });
       if($("mAllowCode")){ $("mAllowCode").value = code; syncMassAllowForm(); }
@@ -4767,7 +4767,7 @@
     lines.push(["Projeto", PROJECTS[massProject()].code]);
     var total = plan.reduce(function(a,p){ return a + p.days.reduce(function(b,x){ return b+x.add; }, 0); }, 0);
     lines.push(["Total", fmt(total) + " h"]);
-    botSay("bot", "Preencher estes dias em falta até à capacidade de cada pessoa?", botCard(lines, "Preencher e gravar", function(){
+    botSay("bot", "Preencher estes dias em falta até à capacidade de cada pessoa?", botCard(lines, "Preencher e registar", function(){
       teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
       plan.forEach(function(p){
         var st = stagedOf(p.member.pernr);
