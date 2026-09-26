@@ -3674,12 +3674,23 @@
 
   /* ---------- conversational assistant, Joule pattern ---------- */
   var chat = {pending:null, greeted:false, draft:null, draftWeek:null, history:[], busy:false};
+  var VOICE_LANGS = {PT:"pt-PT", EN:"en-US"};
+  var voice = {lang:"PT", usedVoice:false, speakReply:false};
+  function speakText(txt){
+    if(!voice.speakReply || !window.speechSynthesis) return;
+    try{
+      var u = new SpeechSynthesisUtterance(txt);
+      u.lang = VOICE_LANGS[voice.lang];
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
 
   function botToggle(force){
     var p = $("joulePanel");
     var open = typeof force === "boolean" ? force : p.hidden;
     p.hidden = !open;
     $("jouleFab").setAttribute("aria-expanded", open ? "true" : "false");
+    if(!open && window.speechSynthesis) window.speechSynthesis.cancel();
     if(open){
       if(!chat.greeted){
         chat.greeted = true;
@@ -3706,6 +3717,7 @@
     if(node) b.appendChild(node);
     log.appendChild(b);
     log.scrollTop = log.scrollHeight;
+    if(who === "bot" && txt) speakText(txt);
     return b;
   }
   function sleep(ms){ return new Promise(function(resolve){ setTimeout(resolve, ms); }); }
@@ -4911,10 +4923,13 @@
     var v = $("jinput").value.trim();
     if(!v) return;
     $("jinput").value = "";
+    voice.speakReply = voice.usedVoice;
+    voice.usedVoice = false;
     chat.busy = true;
     $("jinput").disabled = true;
     if($("jsend")) $("jsend").disabled = true;
     botHandle(v).finally(function(){
+      voice.speakReply = false;
       chat.busy = false;
       $("jinput").disabled = false;
       if($("jsend")) $("jsend").disabled = false;
@@ -4932,14 +4947,12 @@
       micBtn.title = "Voice input not supported in this browser";
       return;
     }
-    var LANGS = {PT:"pt-PT", EN:"en-US"};
-    var lang = "PT";
-    langBtn.textContent = lang;
+    langBtn.textContent = voice.lang;
     langBtn.title = "Voice input language: Portuguese (click to switch to English)";
     langBtn.onclick = function(){
-      lang = lang === "PT" ? "EN" : "PT";
-      langBtn.textContent = lang;
-      langBtn.title = "Voice input language: " + (lang === "PT" ? "Portuguese (click to switch to English)" : "English (click to switch to Portuguese)");
+      voice.lang = voice.lang === "PT" ? "EN" : "PT";
+      langBtn.textContent = voice.lang;
+      langBtn.title = "Voice input language: " + (voice.lang === "PT" ? "Portuguese (click to switch to English)" : "English (click to switch to Portuguese)");
     };
 
     var recog = new SR();
@@ -4955,6 +4968,7 @@
       var text = "";
       for(var i = 0; i < ev.results.length; i++) text += ev.results[i][0].transcript;
       $("jinput").value = text;
+      voice.usedVoice = true;
     };
     recog.onerror = function(ev){
       stopUI();
@@ -4964,10 +4978,14 @@
       stopUI();
       $("jinput").focus();
     };
+    $("jinput").addEventListener("input", function(){
+      if(!listening) voice.usedVoice = false;
+    });
 
     micBtn.onclick = function(){
       if(listening){ recog.stop(); return; }
-      recog.lang = LANGS[lang];
+      if(window.speechSynthesis) window.speechSynthesis.cancel();
+      recog.lang = VOICE_LANGS[voice.lang];
       try{
         recog.start();
         listening = true;
