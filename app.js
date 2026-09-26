@@ -4610,8 +4610,8 @@
       var saved = selected.filter(function(m){ return savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
       var notSaved = selected.filter(function(m){ return !savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
       var msg = saved.length
-        ? "Staged and saved for " + saved.join(", ") + ", " + dayLabel + ", " + pr.code + "."
-        : "Nothing was actually saved.";
+        ? "Registered on staging area for " + saved.join(", ") + ", " + dayLabel + ", " + pr.code + ". Click Save to finish."
+        : "Nothing was actually recorded.";
       if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it this way (not allocated to " + pr.code + ", wrong profile for that field, absence, or closed period), the reason is on the Team screen.";
       botSay("bot", msg);
       botChips(["How many hours do I have?","Help"]);
@@ -4722,8 +4722,8 @@
       var saved = selected.filter(function(m){ return savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
       var notSaved = selected.filter(function(m){ return !savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
       var msg = saved.length
-        ? "Staged and saved for " + saved.join(", ") + ", " + dayLabel + ", " + w.name + "."
-        : "Nothing was actually saved.";
+        ? "Registered on staging area for " + saved.join(", ") + ", " + dayLabel + ", " + w.name + ". Click Save to finish."
+        : "Nothing was actually recorded.";
       if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it (not allocated to " + PROJECTS[massProject()].code + ", wrong company for that allowance, or closed period).";
       botSay("bot", msg);
       botChips(["How many hours do I have?","Help"]);
@@ -4791,8 +4791,8 @@
       var saved = plan.filter(function(p){ return savedPernrs[p.member.pernr]; }).map(function(p){ return p.member.name.split(" ")[0]; });
       var notSaved = plan.filter(function(p){ return !savedPernrs[p.member.pernr]; }).map(function(p){ return p.member.name.split(" ")[0]; });
       var msg = saved.length
-        ? "Preenchido e gravado para " + saved.join(", ") + "."
-        : "Nada foi gravado.";
+        ? "Preenchido, registered on staging area, para " + saved.join(", ") + ". Clica em Save para terminar."
+        : "Nada foi registado.";
       if(notSaved.length) msg += " " + notSaved.join(", ") + " não foi possível, o motivo fica na grelha da equipa.";
       botSay("bot", msg);
       botChips(["Help"]);
