@@ -687,6 +687,15 @@
        still needs the header Save. Bonus is excluded on purpose, it's
        recorded and approved in the same click, there's nothing staged. */
     teamNeedsSave: false,
+    /* massLog is append-only (see the beforeLog = massLog.length pattern
+       already used for the assistant's own flows below), so "everything
+       from this index on is still unsaved" is enough to mark exactly
+       which recorded-but-not-saved hours entries a cell should highlight,
+       even once they're no longer in state.staged - a mass fill that goes
+       straight to massLog (the assistant's team fill does, it never
+       leaves anything sitting in staged) would otherwise show no marker
+       at all once it's recorded. */
+    teamSavedThrough: 0,
     /* pure display state, not part of the timesheet data: which mass-entry
        tab is showing, and whether the person has manually opened/closed
        Suggestions this session (null = follow the automatic empty/non-empty
@@ -2113,6 +2122,16 @@
     members.forEach(function(m){
       var st = stagedOf(m.pernr);
       var already = alreadyHoursFor(m, WEEKS[weekIdx].num);
+      /* Recorded on this person's behalf since the last header Save (see
+         teamSavedThrough) - a mass fill that goes straight to massLog,
+         like the assistant's team fill, never sits in state.staged, so
+         that alone would miss it entirely. */
+      var pendingHours = {};
+      state.massLog.slice(state.teamSavedThrough).forEach(function(e){
+        if(e.kind !== "hours" || e.pernr !== m.pernr) return;
+        var idx = WORKDATES.indexOf(e.date);
+        if(idx !== -1) pendingHours[idx] = (pendingHours[idx] || 0) + e.hours;
+      });
       var row = document.createElement("div");
       row.className = "row";
       row.appendChild(el("div","rowmeta", m.name));
@@ -2126,11 +2145,16 @@
         if(memberBlocked(m,i)) cls += " abs";
         /* A visible marker, not just the tooltip below - so "what did the
            assistant/mass entry just add here" doesn't require hovering
-           every cell one by one. */
-        if(st.h[i]) cls += " staged";
+           every cell one by one. Either still staged, or recorded but
+           not yet through the header Save. */
+        var stagedNow = st.h[i] || 0;
+        var pendingNow = pendingHours[i] || 0;
+        if(stagedNow || pendingNow) cls += " staged";
         var cell = el("div", cls, total ? fmt(total) : "–");
         if(memberBlocked(m,i)) cell.title = "Approved " + m.abs[i].toLowerCase();
-        else if(st.h[i]) cell.title = fmt(v) + " h already · " + fmt(st.h[i]) + " h staged now";
+        else if(stagedNow && pendingNow) cell.title = fmt(v - pendingNow) + " h already · " + fmt(pendingNow) + " h recorded, " + fmt(stagedNow) + " h staged - Save to finish";
+        else if(pendingNow) cell.title = fmt(v - pendingNow) + " h already · " + fmt(pendingNow) + " h recorded, not yet saved";
+        else if(stagedNow) cell.title = fmt(v) + " h already · " + fmt(stagedNow) + " h staged now";
         row.appendChild(cell);
       });
       row.appendChild(el("div","rowtot", rowTotal ? fmt(rowTotal) : "–"));
@@ -2633,6 +2657,7 @@
       return;
     }
     state.teamNeedsSave = false;
+    state.teamSavedThrough = state.massLog.length;
     renderTeam();
     toast("Changes saved.");
   }
