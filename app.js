@@ -4791,7 +4791,7 @@
       var saved = plan.filter(function(p){ return savedPernrs[p.member.pernr]; }).map(function(p){ return p.member.name.split(" ")[0]; });
       var notSaved = plan.filter(function(p){ return !savedPernrs[p.member.pernr]; }).map(function(p){ return p.member.name.split(" ")[0]; });
       var msg = saved.length
-        ? "Preenchido, registered on staging area, para " + saved.join(", ") + ". Clica em Save para terminar."
+        ? "Preenchido e registado na área de staging para " + saved.join(", ") + ". Clica em Save para terminar."
         : "Nada foi registado.";
       if(notSaved.length) msg += " " + notSaved.join(", ") + " não foi possível, o motivo fica na grelha da equipa.";
       botSay("bot", msg);
