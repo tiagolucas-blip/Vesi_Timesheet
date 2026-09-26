@@ -3674,7 +3674,9 @@
 
   /* ---------- conversational assistant, Joule pattern ---------- */
   var chat = {pending:null, greeted:false, draft:null, draftWeek:null, history:[], busy:false};
-  var VOICE_LANGS = {PT:"pt-PT", EN:"en-US"};
+  var VOICE_LANGS = {PT:"pt-PT", EN:"en-US", FR:"fr-FR"};
+  var VOICE_LANG_NAMES = {PT:"Portuguese", EN:"English", FR:"French"};
+  var VOICE_LANG_ORDER = ["PT","EN","FR"];
   var voice = {lang:"PT", usedVoice:false, speakReply:false};
   function speakText(txt){
     if(!voice.speakReply || !window.speechSynthesis) return;
@@ -4947,12 +4949,15 @@
       micBtn.title = "Voice input not supported in this browser";
       return;
     }
-    langBtn.textContent = voice.lang;
-    langBtn.title = "Voice input language: Portuguese (click to switch to English)";
-    langBtn.onclick = function(){
-      voice.lang = voice.lang === "PT" ? "EN" : "PT";
+    function nextLang(l){ return VOICE_LANG_ORDER[(VOICE_LANG_ORDER.indexOf(l) + 1) % VOICE_LANG_ORDER.length]; }
+    function updateLangBtn(){
       langBtn.textContent = voice.lang;
-      langBtn.title = "Voice input language: " + (voice.lang === "PT" ? "Portuguese (click to switch to English)" : "English (click to switch to Portuguese)");
+      langBtn.title = "Voice input language: " + VOICE_LANG_NAMES[voice.lang] + " (click to switch to " + VOICE_LANG_NAMES[nextLang(voice.lang)] + ")";
+    }
+    updateLangBtn();
+    langBtn.onclick = function(){
+      voice.lang = nextLang(voice.lang);
+      updateLangBtn();
     };
 
     var recog = new SR();
