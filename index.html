@@ -17,22 +17,25 @@
 <body>
 <header class="shellbar">
   <img class="orglogo" src="assets/vinci-energies-logo.png" alt="Vinci Energies">
-  <div class="brand"><strong>Time Recording</strong><span>Fiori Prototype</span></div>
+  <div class="brand"><strong data-i18n="brand_title">Time Recording</strong><span data-i18n="brand_subtitle">Fiori Prototype</span></div>
   <div class="capture" id="capture"><span class="dot"></span><span id="captureTxt">Suggestions on, private timeline</span></div>
   <label class="coswitch" for="coSel"><span>IT0001</span>
-    <select id="coSel" aria-label="Company of the employee, from IT0001">
+    <select id="coSel" data-i18n-aria="aria_it0001" aria-label="Company of the employee, from IT0001">
       <option value="PT01">PT01 · Consulting</option>
       <option value="PT02">PT02 · Building Solutions</option>
     </select>
   </label>
-  <button class="btn sm" id="helpBtn" aria-label="Keyboard shortcuts">Shortcuts</button>
+  <button class="btn sm" id="settingsBtn" data-i18n-aria="aria_settings" aria-label="Language settings">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+  <button class="btn sm" id="helpBtn" data-i18n="btn_shortcuts" data-i18n-aria="aria_shortcuts" aria-label="Keyboard shortcuts">Shortcuts</button>
 </header>
 
 <nav class="nav" role="tablist">
-  <button role="tab" id="tab-semana" aria-current="true" data-screen="semana">My Timesheet</button>
-  <button role="tab" id="tab-team" data-screen="team">Team (mass entry)</button>
-  <button role="tab" id="tab-aprov" data-screen="aprov">Approval (manager)</button>
-  <button role="tab" id="tab-cats" data-screen="cats">CATS mapping</button>
+  <button role="tab" id="tab-semana" aria-current="true" data-screen="semana" data-i18n="nav_my_timesheet">My Timesheet</button>
+  <button role="tab" id="tab-team" data-screen="team" data-i18n="nav_team">Team (mass entry)</button>
+  <button role="tab" id="tab-aprov" data-screen="aprov" data-i18n="nav_approval">Approval (manager)</button>
+  <button role="tab" id="tab-cats" data-screen="cats" data-i18n="nav_cats">CATS mapping</button>
 </nav>
 
 <div class="wrap">
@@ -42,30 +45,30 @@
     <div class="pagehead">
       <div class="top">
         <div class="weeknav">
-          <button class="arrow" id="prevW" aria-label="Previous week">&#8249;</button>
+          <button class="arrow" id="prevW" data-i18n-aria="aria_prev_week" aria-label="Previous week">&#8249;</button>
           <span class="label" id="weekLabel">Week 38, 14 to 20 Sep 2026</span>
-          <button class="arrow" id="nextW" aria-label="Next week">&#8250;</button>
+          <button class="arrow" id="nextW" data-i18n-aria="aria_next_week" aria-label="Next week">&#8250;</button>
         </div>
         <span class="chip grey" id="stateChip">Draft</span>
         <span class="chip blue" id="sugChip" role="button" tabindex="0">4 suggestions to review</span>
         <span style="margin-left:auto"></span>
-        <button class="btn" id="quickBtn">Quick add <kbd>N</kbd></button>
+        <button class="btn" id="quickBtn"><span data-i18n="btn_quick_add">Quick add</span> <kbd>N</kbd></button>
         <button class="btn primary" id="submitBtn">Submit week</button>
-        <button class="btn primary warn" id="saveBtn">Save</button>
+        <button class="btn primary warn" id="saveBtn" data-i18n="btn_save">Save</button>
       </div>
       <div class="kpis">
         <div class="kpi">
-          <span class="k">Recorded</span>
+          <span class="k" data-i18n="kpi_recorded">Recorded</span>
           <span class="v" id="kTot">0.0<small> / 40 h</small></span>
           <div class="bar"><i id="kBar" style="width:0%"></i></div>
         </div>
         <div class="kpi">
-          <span class="k">In project</span>
+          <span class="k" data-i18n="kpi_in_project">In project</span>
           <span class="v" id="kProj">0.0<small> h</small></span>
           <div class="bar"><i id="kProjBar" class="ok" style="width:0%"></i></div>
         </div>
         <div class="kpi">
-          <span class="k">Validation</span>
+          <span class="k" data-i18n="kpi_validation">Validation</span>
           <span class="v" style="font-size:15px" id="kVal">No errors</span>
         </div>
       </div>
@@ -76,10 +79,10 @@
       <div style="display:grid; gap:16px; min-width:0">
         <div class="panel">
           <header>
-            <h2>Week entries</h2>
-            <div class="seg" role="group" aria-label="View">
-              <button id="vGrid" aria-pressed="true">Grid</button>
-              <button id="vCal" aria-pressed="false">Calendar</button>
+            <h2 data-i18n="hdr_week_entries">Week entries</h2>
+            <div class="seg" role="group" data-i18n-aria="aria_view" aria-label="View">
+              <button id="vGrid" aria-pressed="true" data-i18n="btn_grid">Grid</button>
+              <button id="vCal" aria-pressed="false" data-i18n="btn_calendar">Calendar</button>
             </div>
           </header>
 
@@ -88,27 +91,27 @@
               <div class="tsgrid" id="tsgrid"></div>
             </div>
             <div class="totlegend">
-              <span><i class="sw over"></i>Total per day: over capacity</span>
-              <span><i class="sw zero"></i>Empty working day</span>
-              <span><i class="sw off"></i>Not available (absence or non-working day)</span>
-              <span><i class="sw submitted"></i>Week already submitted</span>
+              <span><i class="sw over"></i><span data-i18n="legend_over">Total per day: over capacity</span></span>
+              <span><i class="sw zero"></i><span data-i18n="legend_empty">Empty working day</span></span>
+              <span><i class="sw off"></i><span data-i18n="legend_unavailable">Not available (absence or non-working day)</span></span>
+              <span><i class="sw submitted"></i><span data-i18n="legend_submitted">Week already submitted</span></span>
             </div>
             <div class="gridfoot">
-              <button class="btn" id="addRow">Add row</button>
-              <button class="btn" id="copyWeek">Copy previous week <kbd>C</kbd></button>
-              <button class="btn" id="tplBtn">Apply template</button>
-              <button type="button" class="hinttip" title="Accepts 1.5 · 1:30 · 90m. Enter moves down, Tab moves across.">?</button>
+              <button class="btn" id="addRow" data-i18n="btn_add_row">Add row</button>
+              <button class="btn" id="copyWeek"><span data-i18n="btn_copy_week">Copy previous week</span> <kbd>C</kbd></button>
+              <button class="btn" id="tplBtn" data-i18n="btn_apply_template">Apply template</button>
+              <button type="button" class="hinttip" data-i18n-title="hint_grid_entry" title="Accepts 1.5 · 1:30 · 90m. Enter moves down, Tab moves across.">?</button>
             </div>
           </div>
 
           <div id="viewCal" hidden>
             <div class="calscroll"><div class="cal" id="cal"></div></div>
-            <div class="gridfoot"><button type="button" class="hinttip" id="calHint" title="Click an empty slot to log time that day. Absences and public holidays are not editable.">?</button></div>
+            <div class="gridfoot"><button type="button" class="hinttip" id="calHint" data-i18n-title="hint_calendar" title="Click an empty slot to log time that day. Absences and public holidays are not editable.">?</button></div>
           </div>
         </div>
 
         <div class="panel" id="msgPanel" hidden>
-          <header><h2>Validation messages</h2><span class="chip grey" id="msgCount">0</span></header>
+          <header><h2 data-i18n="hdr_validation_messages">Validation messages</h2><span class="chip grey" id="msgCount">0</span></header>
           <div class="msgs" id="msgs"></div>
         </div>
       </div>
@@ -116,49 +119,49 @@
       <div style="display:grid; gap:16px; min-width:0">
       <aside class="panel" id="allowPanel">
         <header>
-          <h2>Allowances</h2>
+          <h2 data-i18n="hdr_allowances">Allowances</h2>
           <span class="chip grey" id="allowCount" style="margin-left:auto">0 allowances</span>
         </header>
         <div class="sugs" id="allowList"></div>
         <div class="gridfoot">
-          <button class="btn" id="allowAdd">Add allowance</button>
+          <button class="btn" id="allowAdd" data-i18n="btn_add_allowance">Add allowance</button>
         </div>
-        <div class="privacy">
+        <div class="privacy" data-i18n="privacy_allowances">
           Per diems, kilometres and shift allowances are recorded against a project and a date, as quantity and unit. No value is calculated here. The project bonus is the exception: it carries an amount and only the project owner records it.
         </div>
       </aside>
 
       <aside class="panel" id="sugPanel">
         <header>
-          <button type="button" class="pTog" id="sugTog" aria-expanded="true" aria-label="Collapse suggestions">&#9662;</button>
-          <h2>Suggestions this week</h2>
-          <button class="btn sm" id="acceptHi">Accept high-confidence ones</button>
+          <button type="button" class="pTog" id="sugTog" aria-expanded="true" data-i18n-aria="aria_collapse_suggestions" aria-label="Collapse suggestions">&#9662;</button>
+          <h2 data-i18n="hdr_suggestions">Suggestions this week</h2>
+          <button class="btn sm" id="acceptHi" data-i18n="btn_accept_high_confidence">Accept high-confidence ones</button>
         </header>
         <div class="sugs" id="sugs"></div>
         <div class="privacy">
-          Nothing enters the timesheet without confirmation.
-          <button id="dataBtn">What's collected and where it's stored</button>
+          <span data-i18n="privacy_suggestions_intro">Nothing enters the timesheet without confirmation.</span>
+          <button id="dataBtn" data-i18n="btn_data_collected">What's collected and where it's stored</button>
         </div>
       </aside>
       </div>
     </div>
 
     <details class="specmap">
-      <summary><h2>How this prototype maps to the specification</h2></summary>
-      <p>Each screen below corresponds to a section of the specification document, so refinement with the development team happens on the same vocabulary.</p>
+      <summary><h2 data-i18n="hdr_specmap">How this prototype maps to the specification</h2></summary>
+      <p data-i18n="text_specmap_intro">Each screen below corresponds to a section of the specification document, so refinement with the development team happens on the same vocabulary.</p>
       <div class="maplist">
-        <div><code>E1</code><span>Weekly grid with inline editing, day and row totals, copy week</span><em>sap.ui.table.Table</em></div>
-        <div><code>E2</code><span>Calendar view with project blocks and external events to convert</span><em>sap.m.PlanningCalendar</em></div>
-        <div><code>E3</code><span>Quick add with natural language and correctable chips</span><em>Input with value help</em></div>
-        <div><code>E4</code><span>Suggestions with reason, confidence level and explicit action</span><em>sap.f.Cards</em></div>
-        <div><code>E5</code><span>Entry detail with budget context and history</span><em>Object Page in dialog</em></div>
-        <div><code>E6</code><span>Three-severity validation and summary before submission</span><em>MessageView</em></div>
-        <div><code>E7</code><span>Bulk approval with exceptions singled out</span><em>Fiori elements List Report</em></div>
-        <div><code>E10</code><span>Absences from the Leave Request, day blocking and partial capacity</span><em>read from Time Management</em></div>
-        <div><code>E11</code><span>Conversational assistant with confirmation before saving</span><em>Joule capability</em></div>
-        <div><code>E12</code><span>Allowances against a project, wage type and quantity, bonus with an amount</span><em>CATSDB LGART, ANZHL and CATSAMOUNT</em></div>
-        <div><code>E13</code><span>Start and end by data entry profile, derived from IT0001</span><em>BEGUZ and ENDUZ</em></div>
-        <div><code>E14</code><span>Team leader mass entry with partial save and on-behalf-of trace</span><em>sap.ui.table with row states</em></div>
+        <div><code>E1</code><span data-i18n="spec_e1">Weekly grid with inline editing, day and row totals, copy week</span><em>sap.ui.table.Table</em></div>
+        <div><code>E2</code><span data-i18n="spec_e2">Calendar view with project blocks and external events to convert</span><em>sap.m.PlanningCalendar</em></div>
+        <div><code>E3</code><span data-i18n="spec_e3">Quick add with natural language and correctable chips</span><em>Input with value help</em></div>
+        <div><code>E4</code><span data-i18n="spec_e4">Suggestions with reason, confidence level and explicit action</span><em>sap.f.Cards</em></div>
+        <div><code>E5</code><span data-i18n="spec_e5">Entry detail with budget context and history</span><em>Object Page in dialog</em></div>
+        <div><code>E6</code><span data-i18n="spec_e6">Three-severity validation and summary before submission</span><em>MessageView</em></div>
+        <div><code>E7</code><span data-i18n="spec_e7">Bulk approval with exceptions singled out</span><em>Fiori elements List Report</em></div>
+        <div><code>E10</code><span data-i18n="spec_e10">Absences from the Leave Request, day blocking and partial capacity</span><em>read from Time Management</em></div>
+        <div><code>E11</code><span data-i18n="spec_e11">Conversational assistant with confirmation before saving</span><em>Joule capability</em></div>
+        <div><code>E12</code><span data-i18n="spec_e12">Allowances against a project, wage type and quantity, bonus with an amount</span><em>CATSDB LGART, ANZHL and CATSAMOUNT</em></div>
+        <div><code>E13</code><span data-i18n="spec_e13">Start and end by data entry profile, derived from IT0001</span><em>BEGUZ and ENDUZ</em></div>
+        <div><code>E14</code><span data-i18n="spec_e14">Team leader mass entry with partial save and on-behalf-of trace</span><em>sap.ui.table with row states</em></div>
       </div>
     </details>
   </section>
@@ -169,26 +172,26 @@
     <div class="pagehead">
       <div class="top">
         <div class="weeknav">
-          <button class="arrow" id="prevW2" aria-label="Previous week">&#8249;</button>
+          <button class="arrow" id="prevW2" data-i18n-aria="aria_prev_week" aria-label="Previous week">&#8249;</button>
           <span class="label" id="weekLabel2">Week 38, 14 to 20 Sep 2026</span>
-          <button class="arrow" id="nextW2" aria-label="Next week">&#8250;</button>
+          <button class="arrow" id="nextW2" data-i18n-aria="aria_next_week" aria-label="Next week">&#8250;</button>
         </div>
-        <span class="chip blue" id="teamScope">Project team</span>
+        <span class="chip blue" id="teamScope" data-i18n="chip_project_team">Project team</span>
         <span class="chip grey" id="teamCount">0 people</span>
-        <label class="coswitch" for="mProj"><span>Project</span>
-          <select id="mProj" aria-label="Project to bill and staff mass entries for"></select>
+        <label class="coswitch" for="mProj"><span data-i18n="label_project">Project</span>
+          <select id="mProj" data-i18n-aria="aria_project_billing" aria-label="Project to bill and staff mass entries for"></select>
         </label>
         <div class="spacer"></div>
-        <label class="coswitch" for="leadSel"><span>Acting as</span>
-          <select id="leadSel" aria-label="Leader and scope"></select>
+        <label class="coswitch" for="leadSel"><span data-i18n="label_acting_as">Acting as</span>
+          <select id="leadSel" data-i18n-aria="aria_leader_scope" aria-label="Leader and scope"></select>
         </label>
         <span class="chip grey" id="teamStateChip">Up to date</span>
-        <button class="btn primary warn" id="teamSaveAll">Save</button>
+        <button class="btn primary warn" id="teamSaveAll" data-i18n="btn_save">Save</button>
       </div>
       <div class="kpis">
-        <div class="kpi"><span class="k">Selected</span><span class="v" id="mSel">0 selected</span></div>
-        <div class="kpi"><span class="k">Staged, not saved</span><span class="v" id="mStaged">0.0<small> h staged</small></span></div>
-        <div class="kpi"><span class="k">Recorded on behalf</span><span class="v" id="massLogCount">0 entries</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_selected">Selected</span><span class="v" id="mSel">0 selected</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_staged_not_saved">Staged, not saved</span><span class="v" id="mStaged">0.0<small> h staged</small></span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_recorded_on_behalf">Recorded on behalf</span><span class="v" id="massLogCount">0 entries</span></div>
       </div>
     </div>
 
@@ -196,9 +199,9 @@
       <div style="min-width:0; display:grid; gap:16px">
         <div class="panel collapsed" id="alreadyPanel">
           <header id="alreadyHead" class="togHead">
-            <button type="button" class="pTog" id="alreadyTog" aria-expanded="false" aria-label="Expand already recorded">&#9656;</button>
+            <button type="button" class="pTog" id="alreadyTog" aria-expanded="false" data-i18n-aria="aria_expand_already" aria-label="Expand already recorded">&#9656;</button>
             <h2 id="alreadyTitle">Already recorded this week</h2>
-            <span class="chip grey">Read-only</span>
+            <span class="chip grey" data-i18n="chip_readonly">Read-only</span>
           </header>
           <div class="tablescroll" id="alreadyHoursWrap">
             <div class="tsgrid team readonly" id="alreadyGrid"></div>
@@ -206,18 +209,18 @@
           <div class="tablescroll" id="alreadyAllowWrap" hidden>
             <div class="tsgrid team readonly" id="alreadyAllowGrid"></div>
           </div>
-          <div class="gridfoot"><button type="button" class="hinttip" id="alreadyHint" title="From each person's own sheet or an earlier mass entry, plus whatever is staged below but not yet saved. Amber at 8h, red past it.">?</button></div>
+          <div class="gridfoot"><button type="button" class="hinttip" id="alreadyHint" data-i18n-title="hint_already" title="From each person's own sheet or an earlier mass entry, plus whatever is staged below but not yet saved. Amber at 8h, red past it.">?</button></div>
         </div>
 
-        <div class="seg teamtabs" role="group" aria-label="Mass entry section">
-          <button id="ttHours" aria-pressed="true">Hours</button>
-          <button id="ttAllow" aria-pressed="false">Allowances</button>
-          <button id="ttBonus" aria-pressed="false">Bonus</button>
+        <div class="seg teamtabs" role="group" data-i18n-aria="aria_mass_entry_section" aria-label="Mass entry section">
+          <button id="ttHours" aria-pressed="true" data-i18n="tab_hours">Hours</button>
+          <button id="ttAllow" aria-pressed="false" data-i18n="tab_allowances">Allowances</button>
+          <button id="ttBonus" aria-pressed="false" data-i18n="tab_bonus">Bonus</button>
         </div>
 
         <div class="panel" id="teamGridPanel">
           <header>
-            <h2>Team</h2>
+            <h2 data-i18n="hdr_team">Team</h2>
           </header>
           <div class="tablescroll">
             <div class="tsgrid team" id="teamGrid"></div>
@@ -226,77 +229,77 @@
 
         <div class="panel" id="hoursPanel">
           <header>
-            <h2>Fill several people at once</h2>
+            <h2 data-i18n="hdr_fill_several">Fill several people at once</h2>
           </header>
           <div class="massbar">
-            <label class="f" id="mDurWrap"><span>Duration</span><input type="text" id="mDur" value="8" inputmode="decimal" placeholder="8"></label>
-            <label class="f" id="mBegWrap"><span>Start time</span><input type="text" id="mBeg" value="09:00" inputmode="numeric" placeholder="09:00"></label>
-            <label class="f" id="mEndWrap"><span>End time</span><input type="text" id="mEnd" value="18:00" inputmode="numeric" placeholder="18:00"></label>
-            <div class="f mdayswrap"><span>Days</span>
+            <label class="f" id="mDurWrap"><span data-i18n="label_duration">Duration</span><input type="text" id="mDur" value="8" inputmode="decimal" placeholder="8"></label>
+            <label class="f" id="mBegWrap"><span data-i18n="label_start_time">Start time</span><input type="text" id="mBeg" value="09:00" inputmode="numeric" placeholder="09:00"></label>
+            <label class="f" id="mEndWrap"><span data-i18n="label_end_time">End time</span><input type="text" id="mEnd" value="18:00" inputmode="numeric" placeholder="18:00"></label>
+            <div class="f mdayswrap"><span data-i18n="label_days">Days</span>
               <div class="mdays mHoursDays">
-                <label class="mday"><input type="checkbox" value="0" checked>Mon</label>
-                <label class="mday"><input type="checkbox" value="1" checked>Tue</label>
-                <label class="mday"><input type="checkbox" value="2" checked>Wed</label>
-                <label class="mday"><input type="checkbox" value="3" checked>Thu</label>
-                <label class="mday"><input type="checkbox" value="4" checked>Fri</label>
-                <label class="mday"><input type="checkbox" value="5">Sat</label>
-                <label class="mday"><input type="checkbox" value="6">Sun</label>
+                <label class="mday"><input type="checkbox" value="0" checked><span class="wd" data-wd="0">Mon</span></label>
+                <label class="mday"><input type="checkbox" value="1" checked><span class="wd" data-wd="1">Tue</span></label>
+                <label class="mday"><input type="checkbox" value="2" checked><span class="wd" data-wd="2">Wed</span></label>
+                <label class="mday"><input type="checkbox" value="3" checked><span class="wd" data-wd="3">Thu</span></label>
+                <label class="mday"><input type="checkbox" value="4" checked><span class="wd" data-wd="4">Fri</span></label>
+                <label class="mday"><input type="checkbox" value="5"><span class="wd" data-wd="5">Sat</span></label>
+                <label class="mday"><input type="checkbox" value="6"><span class="wd" data-wd="6">Sun</span></label>
               </div>
             </div>
-            <button class="btn" id="mApply">Apply to selected</button>
+            <button class="btn" id="mApply" data-i18n="btn_apply_selected">Apply to selected</button>
           </div>
           <div class="gridfoot">
-            <button class="btn primary" id="mSave" disabled>Save staged entries</button>
-            <button class="btn" id="mClear">Clear</button>
-            <button type="button" class="hinttip" title="Saving is partial. Lines that fail stay on screen with the reason. Duration fills people on a duration profile, Start/End fills people on Z_BSRV, in the same click.">?</button>
+            <button class="btn primary" id="mSave" disabled data-i18n="btn_save_staged_entries">Save staged entries</button>
+            <button class="btn" id="mClear" data-i18n="btn_clear">Clear</button>
+            <button type="button" class="hinttip" data-i18n-title="hint_mass_save" title="Saving is partial. Lines that fail stay on screen with the reason. Duration fills people on a duration profile, Start/End fills people on Z_BSRV, in the same click.">?</button>
           </div>
         </div>
 
         <div class="panel" id="teamAllowPanel" hidden>
           <header>
-            <h2>Allowances for selected people</h2>
+            <h2 data-i18n="hdr_allowances_selected">Allowances for selected people</h2>
             <span class="chip green" id="mAllowProj">Project</span>
             <span class="chip grey" id="mAllowStagedCount">0 staged</span>
           </header>
           <div class="massbar">
-            <label class="f"><span>Wage type</span><select id="mAllowCode"></select></label>
-            <label class="f"><span>Quantity</span>
+            <label class="f"><span data-i18n="label_wage_type">Wage type</span><select id="mAllowCode"></select></label>
+            <label class="f"><span data-i18n="label_quantity">Quantity</span>
               <div class="qtywrap"><input type="text" id="mAllowQty" inputmode="decimal" value="1"><span id="mAllowUnit">days</span></div>
             </label>
-            <label class="f wide" id="mAllowNoteWrap"><span id="mAllowNoteLbl">Note</span><input type="text" id="mAllowNote" placeholder="Required for this allowance"></label>
-            <div class="f mdayswrap"><span>Days</span>
+            <label class="f wide" id="mAllowNoteWrap"><span id="mAllowNoteLbl" data-i18n="label_note">Note</span><input type="text" id="mAllowNote" data-i18n-placeholder="placeholder_note_required" placeholder="Required for this allowance"></label>
+            <div class="f mdayswrap"><span data-i18n="label_days">Days</span>
               <div class="mdays mAllowDays">
-                <label class="mday"><input type="checkbox" value="0">Mon</label>
-                <label class="mday"><input type="checkbox" value="1">Tue</label>
-                <label class="mday"><input type="checkbox" value="2">Wed</label>
-                <label class="mday"><input type="checkbox" value="3">Thu</label>
-                <label class="mday"><input type="checkbox" value="4">Fri</label>
-                <label class="mday"><input type="checkbox" value="5">Sat</label>
-                <label class="mday"><input type="checkbox" value="6">Sun</label>
+                <label class="mday"><input type="checkbox" value="0"><span class="wd" data-wd="0">Mon</span></label>
+                <label class="mday"><input type="checkbox" value="1"><span class="wd" data-wd="1">Tue</span></label>
+                <label class="mday"><input type="checkbox" value="2"><span class="wd" data-wd="2">Wed</span></label>
+                <label class="mday"><input type="checkbox" value="3"><span class="wd" data-wd="3">Thu</span></label>
+                <label class="mday"><input type="checkbox" value="4"><span class="wd" data-wd="4">Fri</span></label>
+                <label class="mday"><input type="checkbox" value="5"><span class="wd" data-wd="5">Sat</span></label>
+                <label class="mday"><input type="checkbox" value="6"><span class="wd" data-wd="6">Sun</span></label>
               </div>
             </div>
-            <button class="btn" id="mAllowApply">Stage for selected</button>
+            <button class="btn" id="mAllowApply" data-i18n="btn_stage_selected">Stage for selected</button>
           </div>
           <div class="sugs" id="mAllowList"></div>
           <div class="gridfoot">
-            <button class="btn primary" id="mAllowSave" disabled>Save staged allowances</button>
-            <button class="btn" id="mAllowClear">Clear</button>
-            <button type="button" class="hinttip" title="Billed to the Project picked at the top of the screen, the same one Hours uses. The bonus is recorded separately, in the Bonus tab.">?</button>
+            <button class="btn primary" id="mAllowSave" disabled data-i18n="btn_save_staged_allowances">Save staged allowances</button>
+            <button class="btn" id="mAllowClear" data-i18n="btn_clear">Clear</button>
+            <button type="button" class="hinttip" data-i18n-title="hint_mass_allow" title="Billed to the Project picked at the top of the screen, the same one Hours uses. The bonus is recorded separately, in the Bonus tab.">?</button>
           </div>
         </div>
 
         <div class="panel" id="bonusPanel" hidden>
           <header>
-            <h2>Project bonus</h2>
+            <h2 data-i18n="hdr_project_bonus">Project bonus</h2>
             <span class="chip green" id="bProj">Project</span>
           </header>
           <div class="massbar">
-            <label class="f"><span>Amount, EUR</span><input type="text" id="bAmount" inputmode="decimal" placeholder="500"></label>
-            <label class="f wide"><span>Reason</span><input type="text" id="bNote" placeholder="Go-live weekend, payroll cutover"></label>
-            <button class="btn primary" id="bSave">Record and approve for selected</button>
+            <label class="f"><span data-i18n="label_amount_eur">Amount, EUR</span><input type="text" id="bAmount" inputmode="decimal" placeholder="500"></label>
+            <label class="f wide"><span data-i18n="label_reason">Reason</span><input type="text" id="bNote" data-i18n-placeholder="placeholder_bonus_reason" placeholder="Go-live weekend, payroll cutover"></label>
+            <button class="btn primary" id="bSave" data-i18n="btn_record_approve_selected">Record and approve for selected</button>
           </div>
           <div class="sugs" id="bonusList"></div>
-          <div class="privacy">
+          <div class="privacy" data-i18n="privacy_bonus">
             The bonus is the only allowance the employee does not record. The project owner defines the amount and approves in the same act, because the project carries the cost. The amount lives in a customer field, since CATSDB is a quantity structure.
           </div>
         </div>
@@ -304,10 +307,10 @@
 
       <aside class="panel">
         <header>
-          <h2>Recorded on behalf</h2>
+          <h2 data-i18n="hdr_recorded_on_behalf">Recorded on behalf</h2>
         </header>
         <div class="sugs" id="massLog"></div>
-        <div class="privacy">
+        <div class="privacy" data-i18n="privacy_recorded_on_behalf">
           Every line keeps CREATED_BY and ON_BEHALF_OF. There is no self-confirmation step: the employee sees the entry marked as recorded by the leader, which informs without blocking. On the CATS side the submitting user still lands in ERNAM.
         </div>
       </aside>
@@ -318,37 +321,37 @@
   <section id="screen-aprov" hidden>
     <div class="pagehead">
       <div class="top">
-        <div class="weeknav"><span class="label">Timesheet approval, week 37</span></div>
+        <div class="weeknav"><span class="label" data-i18n="label_approval_week37">Timesheet approval, week 37</span></div>
         <span class="chip blue" id="apSel">0 selected</span>
         <div class="spacer"></div>
-        <label class="coswitch"><span>Acting as</span><b id="apActingAs">Sofia Almeida &middot; Delivery Manager, Consulting</b></label>
-        <button class="btn" id="apSelClean">Select the 4 without warnings</button>
-        <button class="btn primary" id="apApprove" disabled>Approve selected</button>
+        <label class="coswitch"><span data-i18n="label_acting_as">Acting as</span><b id="apActingAs">Sofia Almeida &middot; Delivery Manager, Consulting</b></label>
+        <button class="btn" id="apSelClean" data-i18n="btn_select_no_warnings">Select the 4 without warnings</button>
+        <button class="btn primary" id="apApprove" disabled data-i18n="btn_approve_selected">Approve selected</button>
       </div>
-      <p class="sub" style="margin:6px 0 0; font-size:13px; color:var(--ink-3)">A different person's queue, not your own week. It covers the people on Sofia's consulting projects (Banking, Retail, Airports) &mdash; nothing you submit under My Timesheet lands here.</p>
+      <p class="sub" style="margin:6px 0 0; font-size:13px; color:var(--ink-3)" data-i18n="text_approval_sub">A different person's queue, not your own week. It covers the people on Sofia's consulting projects (Banking, Retail, Airports) &mdash; nothing you submit under My Timesheet lands here.</p>
       <div class="kpis">
-        <div class="kpi"><span class="k">Pending approval</span><span class="v" id="apPend">6</span></div>
-        <div class="kpi"><span class="k">Hours submitted</span><span class="v" id="apHours">0.0<small> h</small></span></div>
-        <div class="kpi"><span class="k">With warnings</span><span class="v" id="apWarn" style="color:var(--warn)">2</span></div>
-        <div class="kpi"><span class="k">Deviation from plan</span><span class="v" id="apDev">0.0<small> h</small></span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_pending_approval">Pending approval</span><span class="v" id="apPend">6</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_hours_submitted">Hours submitted</span><span class="v" id="apHours">0.0<small> h</small></span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_with_warnings">With warnings</span><span class="v" id="apWarn" style="color:var(--warn)">2</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_deviation_from_plan">Deviation from plan</span><span class="v" id="apDev">0.0<small> h</small></span></div>
       </div>
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <header><h2>Team allocated to my projects</h2><span class="chip grey">Integrates with My Inbox and SAP Task Center</span></header>
+      <header><h2 data-i18n="hdr_team_allocated">Team allocated to my projects</h2><span class="chip grey" data-i18n="chip_integrates">Integrates with My Inbox and SAP Task Center</span></header>
       <div class="tablescroll">
         <table class="lr">
           <thead>
             <tr>
-              <th style="width:34px"><input type="checkbox" id="apAll" aria-label="Select all"></th>
-              <th>Employee</th><th>Project</th><th style="text-align:right">Total</th>
-              <th style="text-align:right">In project</th><th style="text-align:right">Deviation</th><th>Status</th>
+              <th style="width:34px"><input type="checkbox" id="apAll" data-i18n-aria="aria_select_all" aria-label="Select all"></th>
+              <th data-i18n="th_employee">Employee</th><th data-i18n="label_project">Project</th><th style="text-align:right" data-i18n="th_total">Total</th>
+              <th style="text-align:right" data-i18n="kpi_in_project">In project</th><th style="text-align:right" data-i18n="th_deviation">Deviation</th><th data-i18n="th_status">Status</th>
             </tr>
           </thead>
           <tbody id="apBody"></tbody>
         </table>
       </div>
-      <div class="gridfoot"><button type="button" class="hinttip" title="Bulk approval is only available for rows without warnings. Rejection requires a reason, per the SAP standard.">?</button></div>
+      <div class="gridfoot"><button type="button" class="hinttip" data-i18n-title="hint_bulk_approval" title="Bulk approval is only available for rows without warnings. Rejection requires a reason, per the SAP standard.">?</button></div>
     </div>
   </section>
 
@@ -356,39 +359,39 @@
   <section id="screen-cats" hidden>
     <div class="pagehead">
       <div class="top">
-        <div class="weeknav"><span class="label">From the interface to CATS</span></div>
-        <span class="chip grey">Annex A of the specification</span>
+        <div class="weeknav"><span class="label" data-i18n="label_cats_header">From the interface to CATS</span></div>
+        <span class="chip grey" data-i18n="chip_annex_a">Annex A of the specification</span>
         <span style="margin-left:auto"></span>
         <span class="chip blue" id="catsCount">0 records generated</span>
       </div>
       <div class="kpis">
-        <div class="kpi"><span class="k">Recording target</span><span class="v" style="font-size:15px">CATSDB</span></div>
-        <div class="kpi"><span class="k">Assistance layer</span><span class="v" style="font-size:15px">CAP on BTP</span></div>
-        <div class="kpi"><span class="k">Direct table write</span><span class="v" style="font-size:15px; color:var(--crit)">Never</span></div>
-        <div class="kpi"><span class="k">Customer fields</span><span class="v" style="font-size:15px">CI_CATSDB</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_recording_target">Recording target</span><span class="v" style="font-size:15px">CATSDB</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_assistance_layer">Assistance layer</span><span class="v" style="font-size:15px">CAP on BTP</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_direct_table_write">Direct table write</span><span class="v" style="font-size:15px; color:var(--crit)" data-i18n="val_never">Never</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_customer_fields">Customer fields</span><span class="v" style="font-size:15px">CI_CATSDB</span></div>
       </div>
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <header><h2>State chain and transfer</h2></header>
+      <header><h2 data-i18n="hdr_state_chain">State chain and transfer</h2></header>
       <div class="flow">
-        <div class="step"><b>Draft</b><span>BTP only</span></div><span class="sep">&#8594;</span>
-        <div class="step"><b>Saved</b><span>CATSDB, in process</span></div><span class="sep">&#8594;</span>
-        <div class="step"><b>In approval</b><span>released, STATUS</span></div><span class="sep">&#8594;</span>
-        <div class="step"><b>Approved</b><span>APNAM, APDAT</span></div><span class="sep">&#8594;</span>
-        <div class="step post"><b>Posted</b><span>CATA, CAT5, CAT7, CAT9</span></div>
+        <div class="step"><b data-i18n="step_draft">Draft</b><span data-i18n="step_draft_sub">BTP only</span></div><span class="sep">&#8594;</span>
+        <div class="step"><b data-i18n="step_saved">Saved</b><span data-i18n="step_saved_sub">CATSDB, in process</span></div><span class="sep">&#8594;</span>
+        <div class="step"><b data-i18n="step_in_approval">In approval</b><span data-i18n="step_in_approval_sub">released, STATUS</span></div><span class="sep">&#8594;</span>
+        <div class="step"><b data-i18n="step_approved">Approved</b><span data-i18n="step_approved_sub">APNAM, APDAT</span></div><span class="sep">&#8594;</span>
+        <div class="step post"><b data-i18n="step_posted">Posted</b><span data-i18n="step_posted_sub">CATA, CAT5, CAT7, CAT9</span></div>
       </div>
       <div class="msgs">
-        <div class="msg i"><span class="ic">RULE</span><span>From <strong>In approval</strong> onward, editing is no longer a change. The correction creates a new record pointing to the original via <span class="num">REFCOUNTER</span>, and goes back through approval.</span></div>
-        <div class="msg i"><span class="ic">RULE</span><span>Cell locking reflects what has already been transferred, not just what has been approved. The transfer runs as a job, so the interface shows the date of the next cycle instead of pretending it's instant.</span></div>
+        <div class="msg i"><span class="ic">RULE</span><span data-i18n-html="rule_1">From <strong>In approval</strong> onward, editing is no longer a change. The correction creates a new record pointing to the original via <span class="num">REFCOUNTER</span>, and goes back through approval.</span></div>
+        <div class="msg i"><span class="ic">RULE</span><span data-i18n="rule_2">Cell locking reflects what has already been transferred, not just what has been approved. The transfer runs as a job, so the interface shows the date of the next cycle instead of pretending it's instant.</span></div>
       </div>
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <header><h2>Field-by-field mapping</h2><span class="chip grey">CATS, BTP or customer field</span></header>
+      <header><h2 data-i18n="hdr_field_mapping">Field-by-field mapping</h2><span class="chip grey" data-i18n="chip_cats_or_btp">CATS, BTP or customer field</span></header>
       <div class="tablescroll">
         <table class="maptbl">
-          <thead><tr><th>Interface element</th><th>SAP concept</th><th>Field</th><th>Where it lives</th></tr></thead>
+          <thead><tr><th data-i18n="th_interface_element">Interface element</th><th data-i18n="th_sap_concept">SAP concept</th><th data-i18n="th_field">Field</th><th data-i18n="th_where_lives">Where it lives</th></tr></thead>
           <tbody id="mapBody"></tbody>
         </table>
       </div>
@@ -396,10 +399,10 @@
 
     <div class="panel" style="margin-top:16px">
       <header>
-        <h2>CATS records generated from the filled week</h2>
-        <div class="seg" role="group" aria-label="Format">
-          <button id="fTbl" aria-pressed="true">Table</button>
-          <button id="fPay" aria-pressed="false">API payload</button>
+        <h2 data-i18n="hdr_cats_records">CATS records generated from the filled week</h2>
+        <div class="seg" role="group" data-i18n-aria="aria_format" aria-label="Format">
+          <button id="fTbl" aria-pressed="true" data-i18n="btn_table">Table</button>
+          <button id="fPay" aria-pressed="false" data-i18n="btn_api_payload">API payload</button>
         </div>
       </header>
       <div id="catsTable" class="tablescroll">
@@ -412,53 +415,53 @@
         </table>
       </div>
       <pre class="payload" id="catsPayload" hidden></pre>
-      <div class="gridfoot"><button type="button" class="hinttip" title="Generated live from the grid on the My Timesheet screen. LTXA1 is truncated to 40 characters, the field's real limit.">?</button></div>
+      <div class="gridfoot"><button type="button" class="hinttip" data-i18n-title="hint_cats_table" title="Generated live from the grid on the My Timesheet screen. LTXA1 is truncated to 40 characters, the field's real limit.">?</button></div>
     </div>
   </section>
 </div>
 
 <button class="joule-fab" id="jouleFab" aria-expanded="false" aria-controls="joulePanel">
-  <span class="jdot"></span>Assistant <kbd>J</kbd>
+  <span class="jdot"></span><span data-i18n="assistant_fab">Assistant</span> <kbd>J</kbd>
 </button>
 
-<section class="joule" id="joulePanel" hidden aria-label="Time recording assistant">
+<section class="joule" id="joulePanel" hidden data-i18n-aria="assistant_title" aria-label="Time recording assistant">
   <header>
     <span class="jdot"></span>
-    <h3>Assistant</h3>
-    <span class="chip grey">Joule pattern</span>
-    <button class="btn sm" id="jClose" aria-label="Close the assistant">Close</button>
+    <h3 data-i18n="assistant_title">Assistant</h3>
+    <span class="chip grey" data-i18n="chip_joule_pattern">Joule pattern</span>
+    <button class="btn sm" id="jClose" data-i18n="btn_close" data-i18n-aria="aria_close_assistant" aria-label="Close the assistant">Close</button>
   </header>
   <div class="jlog" id="jlog" aria-live="polite"></div>
   <div class="jchips" id="jchips"></div>
   <form class="jform" id="jform">
-    <input type="text" id="jinput" autocomplete="off" placeholder="2h BNK payroll testing yesterday">
+    <input type="text" id="jinput" autocomplete="off" data-i18n-placeholder="placeholder_chat" placeholder="2h BNK payroll testing yesterday">
     <button type="button" class="btn sm" id="jMicLang" aria-label="Voice input language, click to switch">PT</button>
-    <button type="button" class="btn sm" id="jMic" aria-label="Dictate by voice" title="Dictate by voice">
+    <button type="button" class="btn sm" id="jMic" data-i18n-aria="aria_dictate" data-i18n-title="aria_dictate" aria-label="Dictate by voice" title="Dictate by voice">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
     </button>
-    <button class="btn primary" type="submit" id="jsend">Send</button>
+    <button class="btn primary" type="submit" id="jsend" data-i18n="btn_send">Send</button>
   </form>
-  <div class="jfoot">Never saves without confirmation. Entries created here are marked with origin <span class="num">Joule</span> and go through the same validations.</div>
+  <div class="jfoot" data-i18n-html="jfoot_text">Never saves without confirmation. Entries created here are marked with origin <span class="num">Joule</span> and go through the same validations.</div>
 </section>
 
 
 <dialog id="dlgAllow"><form class="dlg" method="dialog">
-  <header><h3>Add allowance</h3><span class="chip grey">Wage type</span></header>
+  <header><h3 data-i18n="dlg_add_allowance_title">Add allowance</h3><span class="chip grey" data-i18n="chip_wage_type">Wage type</span></header>
   <div class="body">
-    <div class="field"><label for="alCode">Allowance</label><select id="alCode"></select></div>
+    <div class="field"><label for="alCode" data-i18n="label_allowance">Allowance</label><select id="alCode"></select></div>
     <div class="two">
-      <div class="field"><label for="alDay">Day</label><select id="alDay"></select></div>
-      <div class="field"><label for="alQty">Quantity</label>
+      <div class="field"><label for="alDay" data-i18n="label_day">Day</label><select id="alDay"></select></div>
+      <div class="field"><label for="alQty" data-i18n="label_quantity">Quantity</label>
         <div class="qtywrap"><input type="text" id="alQty" inputmode="decimal" value="1"><span id="alUnit">days</span></div>
       </div>
     </div>
-    <div class="field" id="alProjWrap"><label for="alProj">Project</label><select id="alProj"></select></div>
-    <div class="field" id="alNoteWrap"><label for="alNote"><span id="alNoteLbl">Note</span></label><input type="text" id="alNote" placeholder="Required for this allowance"></div>
+    <div class="field" id="alProjWrap"><label for="alProj" data-i18n="label_project">Project</label><select id="alProj"></select></div>
+    <div class="field" id="alNoteWrap"><label for="alNote"><span id="alNoteLbl" data-i18n="label_note">Note</span></label><input type="text" id="alNote" data-i18n-placeholder="placeholder_note_required" placeholder="Required for this allowance"></div>
     <p class="sub" id="alHint" style="font-size:12px; color:var(--ink-3); margin:0"></p>
   </div>
   <footer>
-    <button class="btn" id="alCancel" value="cancel">Cancel</button>
-    <button class="btn primary" id="alSave" value="save">Record allowance</button>
+    <button class="btn" id="alCancel" value="cancel" data-i18n="btn_cancel">Cancel</button>
+    <button class="btn primary" id="alSave" value="save" data-i18n="btn_record_allowance">Record allowance</button>
   </footer>
 </form></dialog>
 
@@ -467,45 +470,45 @@
 
 <!-- dialogs -->
 <dialog id="dlgQuick"><form class="dlg" method="dialog">
-  <header><h3>Quick add</h3><button class="btn sm" value="cancel" formnovalidate>Close</button></header>
+  <header><h3 data-i18n="dlg_quick_add_title">Quick add</h3><button class="btn sm" value="cancel" formnovalidate data-i18n="btn_close">Close</button></header>
   <div class="body">
     <div class="field">
-      <label for="nlq">Write in natural language</label>
-      <input type="text" id="nlq" class="nlqa" placeholder="3h BNK requirements analysis yesterday" autocomplete="off">
+      <label for="nlq" data-i18n="label_write_natural">Write in natural language</label>
+      <input type="text" id="nlq" class="nlqa" data-i18n-placeholder="placeholder_quick_nl" placeholder="3h BNK requirements analysis yesterday" autocomplete="off">
     </div>
-    <div class="chips" id="nlChips"><span class="pchip">waiting for text</span></div>
-    <p style="margin:0; font-size:12px; color:var(--ink-3)">Each resolved field can be corrected. If the text isn't recognized, it goes into the description and nothing is invented.</p>
+    <div class="chips" id="nlChips"><span class="pchip" data-i18n="chip_waiting_text">waiting for text</span></div>
+    <p style="margin:0; font-size:12px; color:var(--ink-3)" data-i18n="text_quick_hint">Each resolved field can be corrected. If the text isn't recognized, it goes into the description and nothing is invented.</p>
   </div>
   <footer>
-    <button class="btn" value="cancel" formnovalidate>Cancel</button>
-    <button class="btn primary" id="nlSave" value="save">Save entry</button>
+    <button class="btn" value="cancel" formnovalidate data-i18n="btn_cancel">Cancel</button>
+    <button class="btn primary" id="nlSave" value="save" data-i18n="btn_save_entry">Save entry</button>
   </footer>
 </form></dialog>
 
 <dialog id="dlgDetail"><div class="dlg">
   <header><h3 id="dtTitle">Entry detail</h3><span class="chip blue" id="dtState">Draft</span></header>
   <div class="body">
-    <div class="field"><label for="dtProj">Project and WBS</label><select id="dtProj"></select></div>
+    <div class="field"><label for="dtProj" data-i18n="label_project_wbs">Project and WBS</label><select id="dtProj"></select></div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
-      <div class="field" id="dtStartField" hidden><label for="dtStart">Start</label><input type="text" id="dtStart" readonly></div>
-      <div class="field" id="dtEndField" hidden><label for="dtEnd">End</label><input type="text" id="dtEnd" readonly></div>
-      <div class="field"><label for="dtDur">Duration</label><input type="text" id="dtDur"></div>
-      <div class="field"><label for="dtAct">Activity type</label><input type="text" id="dtAct" readonly></div>
+      <div class="field" id="dtStartField" hidden><label for="dtStart" data-i18n="label_start">Start</label><input type="text" id="dtStart" readonly></div>
+      <div class="field" id="dtEndField" hidden><label for="dtEnd" data-i18n="label_end">End</label><input type="text" id="dtEnd" readonly></div>
+      <div class="field"><label for="dtDur" data-i18n="label_duration">Duration</label><input type="text" id="dtDur"></div>
+      <div class="field"><label for="dtAct" data-i18n="label_activity_type">Activity type</label><input type="text" id="dtAct" readonly></div>
     </div>
-    <div class="field"><label for="dtDesc">Description</label><textarea id="dtDesc" maxlength="300" placeholder="Required for project entries. The first 40 characters go to LTXA1"></textarea></div>
+    <div class="field"><label for="dtDesc" data-i18n="label_description">Description</label><textarea id="dtDesc" maxlength="300" data-i18n-placeholder="placeholder_description" placeholder="Required for project entries. The first 40 characters go to LTXA1"></textarea></div>
     <div class="budget">
-      <div class="lbl"><span>Project effort, actual vs. planned</span><span class="num">412 / 520 h</span></div>
+      <div class="lbl"><span data-i18n="label_project_effort">Project effort, actual vs. planned</span><span class="num">412 / 520 h</span></div>
       <div class="bar"><i style="width:79%"></i></div>
     </div>
     <div class="meta">
-      <div><b>Origin</b><span id="dtOrigin">Manual</span></div>
-      <div><b>Created by</b><span>Tiago Leal, 15 Sep 2026 09:12</span></div>
-      <div><b>Last changed</b><span>Tiago Leal, 15 Sep 2026 09:12</span></div>
+      <div><b data-i18n="label_origin">Origin</b><span id="dtOrigin">Manual</span></div>
+      <div><b data-i18n="label_created_by">Created by</b><span>Tiago Leal, 15 Sep 2026 09:12</span></div>
+      <div><b data-i18n="label_last_changed">Last changed</b><span>Tiago Leal, 15 Sep 2026 09:12</span></div>
     </div>
   </div>
   <footer>
-    <button class="btn" id="dtCancel">Cancel</button>
-    <button class="btn primary" id="dtSave">Save</button>
+    <button class="btn" id="dtCancel" data-i18n="btn_cancel">Cancel</button>
+    <button class="btn primary" id="dtSave" data-i18n="btn_save">Save</button>
   </footer>
 </div></dialog>
 
@@ -513,41 +516,56 @@
   <header><h3 id="subTitle">Submit week 38</h3></header>
   <div class="body" id="subBody"></div>
   <footer>
-    <button class="btn" id="subCancel">Back</button>
-    <button class="btn primary" id="subOk">Submit</button>
+    <button class="btn" id="subCancel" data-i18n="btn_back">Back</button>
+    <button class="btn primary" id="subOk" data-i18n="btn_submit">Submit</button>
   </footer>
 </div></dialog>
 
 <dialog id="dlgData"><div class="dlg">
-  <header><h3>My data</h3></header>
+  <header><h3 data-i18n="dlg_my_data_title">My data</h3></header>
   <div class="body">
-    <p style="margin:0">To propose entries, the app only uses metadata, at project level:</p>
+    <p style="margin:0" data-i18n="text_data_intro">To propose entries, the app only uses metadata, at project level:</p>
     <div class="sum">
-      <div class="r"><span>Corporate calendar events</span><span class="n">18</span><span class="chip green">metadata only</span></div>
-      <div class="r"><span>Tickets handled</span><span class="n">11</span><span class="chip green">metadata only</span></div>
-      <div class="r"><span>Repositories with activity</span><span class="n">2</span><span class="chip green">project level</span></div>
-      <div class="r"><span>Content of emails, files or screenshots</span><span class="n">0</span><span class="chip grey">never collected</span></div>
-      <div class="r t"><span>Raw timeline retention</span><span class="n">14 days</span><span class="chip blue">or until confirmed</span></div>
+      <div class="r"><span data-i18n="row_calendar_events">Corporate calendar events</span><span class="n">18</span><span class="chip green" data-i18n="chip_metadata_only">metadata only</span></div>
+      <div class="r"><span data-i18n="row_tickets_handled">Tickets handled</span><span class="n">11</span><span class="chip green" data-i18n="chip_metadata_only">metadata only</span></div>
+      <div class="r"><span data-i18n="row_repos_activity">Repositories with activity</span><span class="n">2</span><span class="chip green" data-i18n="chip_project_level">project level</span></div>
+      <div class="r"><span data-i18n="row_content_emails">Content of emails, files or screenshots</span><span class="n">0</span><span class="chip grey" data-i18n="chip_never_collected">never collected</span></div>
+      <div class="r t"><span data-i18n="row_raw_timeline">Raw timeline retention</span><span class="n" data-i18n="val_14_days">14 days</span><span class="chip blue" data-i18n="chip_or_until_confirmed">or until confirmed</span></div>
     </div>
-    <p style="margin:0; color:var(--ink-2); font-size:13px">This timeline is visible only to you. The organization only sees the timesheet entries you submit. Legal basis and impact assessment to be validated with the DPO before the pilot.</p>
+    <p style="margin:0; color:var(--ink-2); font-size:13px" data-i18n="text_data_footer">This timeline is visible only to you. The organization only sees the timesheet entries you submit. Legal basis and impact assessment to be validated with the DPO before the pilot.</p>
   </div>
-  <footer><button class="btn" id="dataClose">Close</button><button class="btn primary" id="dataWipe">Delete timeline</button></footer>
+  <footer><button class="btn" id="dataClose" data-i18n="btn_close">Close</button><button class="btn primary" id="dataWipe" data-i18n="btn_delete_timeline">Delete timeline</button></footer>
 </div></dialog>
 
 <dialog id="dlgHelp"><div class="dlg">
-  <header><h3>Keyboard shortcuts</h3></header>
+  <header><h3 data-i18n="dlg_shortcuts_title">Keyboard shortcuts</h3></header>
   <div class="body">
     <div class="sum">
-      <div class="r"><span>Open and close the assistant</span><span></span><span><kbd>J</kbd></span></div>
-      <div class="r"><span>New quick add</span><span></span><span><kbd>N</kbd></span></div>
-      <div class="r"><span>Copy previous week</span><span></span><span><kbd>C</kbd></span></div>
-      <div class="r"><span>Previous and next week</span><span></span><span><kbd>&#8592;</kbd> <kbd>&#8594;</kbd></span></div>
-      <div class="r"><span>Submit week</span><span></span><span><kbd>Ctrl</kbd> <kbd>Enter</kbd></span></div>
-      <div class="r"><span>Confirm cell and move down</span><span></span><span><kbd>Enter</kbd></span></div>
-      <div class="r"><span>Show this list</span><span></span><span><kbd>?</kbd></span></div>
+      <div class="r"><span data-i18n="row_open_close_assistant">Open and close the assistant</span><span></span><span><kbd>J</kbd></span></div>
+      <div class="r"><span data-i18n="row_new_quick_add">New quick add</span><span></span><span><kbd>N</kbd></span></div>
+      <div class="r"><span data-i18n="row_copy_previous_week">Copy previous week</span><span></span><span><kbd>C</kbd></span></div>
+      <div class="r"><span data-i18n="row_prev_next_week">Previous and next week</span><span></span><span><kbd>&#8592;</kbd> <kbd>&#8594;</kbd></span></div>
+      <div class="r"><span data-i18n="btn_submit_week">Submit week</span><span></span><span><kbd>Ctrl</kbd> <kbd>Enter</kbd></span></div>
+      <div class="r"><span data-i18n="row_confirm_cell">Confirm cell and move down</span><span></span><span><kbd>Enter</kbd></span></div>
+      <div class="r"><span data-i18n="row_show_list">Show this list</span><span></span><span><kbd>?</kbd></span></div>
     </div>
   </div>
-  <footer><button class="btn primary" id="helpClose">Close</button></footer>
+  <footer><button class="btn primary" id="helpClose" data-i18n="btn_close">Close</button></footer>
+</div></dialog>
+
+<dialog id="dlgSettings"><div class="dlg">
+  <header><h3 data-i18n="btn_settings">Settings</h3></header>
+  <div class="body">
+    <div class="field">
+      <label data-i18n="aria_settings">Language settings</label>
+      <div class="seg" role="group" aria-label="Language" id="langSeg">
+        <button type="button" id="langPT" data-lang="pt">Português</button>
+        <button type="button" id="langEN" data-lang="en">English</button>
+        <button type="button" id="langFR" data-lang="fr">Français</button>
+      </div>
+    </div>
+  </div>
+  <footer><button class="btn primary" id="settingsClose" data-i18n="btn_close">Close</button></footer>
 </div></dialog>
 <script src="app.js"></script>
 </body>
