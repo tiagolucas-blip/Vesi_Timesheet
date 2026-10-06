@@ -1018,6 +1018,7 @@
       dlg_entry_detail_title:"Entry detail", label_project_wbs:"Project and WBS",
       label_start:"Start", label_end:"End", label_activity_type:"Activity type", label_description:"Description",
       placeholder_description:"Required for project entries. The first 40 characters go to LTXA1",
+      placeholder_description_optional:"Optional for internal entries. If filled in, the first 40 characters go to LTXA1",
       label_project_effort:"Project effort, actual vs. planned",
       label_origin:"Origin", val_manual:"Manual", label_created_by:"Created by", label_last_changed:"Last changed",
       btn_back:"Back", btn_submit:"Submit",
@@ -1294,6 +1295,7 @@
       dlg_entry_detail_title:"Detalhe do lançamento", label_project_wbs:"Projeto e WBS",
       label_start:"Início", label_end:"Fim", label_activity_type:"Tipo de atividade", label_description:"Descrição",
       placeholder_description:"Obrigatório para lançamentos de projeto. Os primeiros 40 caracteres vão para o LTXA1",
+      placeholder_description_optional:"Opcional para lançamentos internos. Se for preenchido, os primeiros 40 caracteres vão para o LTXA1",
       label_project_effort:"Esforço do projeto, real vs. planeado",
       label_origin:"Origem", val_manual:"Manual", label_created_by:"Criado por", label_last_changed:"Última alteração",
       btn_back:"Voltar", btn_submit:"Submeter",
@@ -1570,6 +1572,7 @@
       dlg_entry_detail_title:"Détail de la saisie", label_project_wbs:"Projet et WBS",
       label_start:"Début", label_end:"Fin", label_activity_type:"Type d'activité", label_description:"Description",
       placeholder_description:"Obligatoire pour les saisies de projet. Les 40 premiers caractères vont dans LTXA1",
+      placeholder_description_optional:"Facultatif pour les saisies internes. Si elle est remplie, les 40 premiers caractères vont dans LTXA1",
       label_project_effort:"Effort projet, réel vs. planifié",
       label_origin:"Origine", val_manual:"Manuel", label_created_by:"Créé par", label_last_changed:"Dernière modification",
       btn_back:"Retour", btn_submit:"Soumettre",
@@ -1656,6 +1659,7 @@
     });
     if($("captureTxt")) $("captureTxt").textContent = state.privateMode ? t("capture_off") : t("capture_on");
     if(typeof updateApproverChrome === "function") updateApproverChrome();
+    if($("dlgDetail") && $("dlgDetail").open && $("dtProj") && $("dtProj").value !== "") updateDescPlaceholder(+$("dtProj").value);
     document.documentElement.lang = state.lang;
   }
   function setLang(lang){
@@ -4158,6 +4162,15 @@
      in indices, "CODE · WBS". openDetail/openMonthDetail (every project) and
      openNewRowDetail/openNewMonthRowDetail (only the eligible ones) each
      built this same option list themselves. */
+  /* Only proj:true entries need a description (val_desc_required), so the
+     hint has to say so: a project-less activity like AXI-INT otherwise
+     reads as "required" when it's actually optional. Re-run on every
+     project change and, since the dialog can stay open across a language
+     switch, from applyI18n too. */
+  function updateDescPlaceholder(pIdx){
+    var desc = $("dtDesc");
+    if(desc) desc.placeholder = t(PROJECTS[pIdx].proj ? "placeholder_description" : "placeholder_description_optional");
+  }
   function fillProjectOptions(pj, indices){
     pj.innerHTML = "";
     indices.forEach(function(i){
@@ -4185,12 +4198,13 @@
        project is picked (each project has exactly one, in SAP terms its
        LSTAR), so it follows the project select instead of being a second,
        independent field that could disagree with it. */
-    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["row", r.id]); };
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["row", r.id]); updateDescPlaceholder(+pj.value); };
     $("dtDur").value = fmt(rowTotal(r));
     $("dtDesc").value = r.desc;
     $("dtAct").value = pr.act;
     $("dtOrigin").textContent = originLabel(r.origin);
     setDetailBudgetAndAudit(r.p, ["row", r.id]);
+    updateDescPlaceholder(r.p);
     var showClock = isClock() && typeof day === "number";
     $("dtStartField").hidden = !showClock;
     $("dtEndField").hidden = !showClock;
@@ -4223,7 +4237,8 @@
     fillProjectOptions(pj, PROJECTS.map(function(p,i){ return i; }));
     pj.value = String(monthRow.p);
     pj.disabled = allSubmitted;
-    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["month", monthRow.p, weeks[0] ? weeks[0].num : 0]); };
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["month", monthRow.p, weeks[0] ? weeks[0].num : 0]); updateDescPlaceholder(+pj.value); };
+    updateDescPlaceholder(monthRow.p);
     var total = weeks.reduce(function(a,w){
       var r = monthRowIn(w, monthRow.p);
       return a + (r ? rowTotal(r) : 0);
@@ -4258,12 +4273,13 @@
     fillProjectOptions(pj, eligible);
     pj.value = String(eligible[0]);
     pj.disabled = false;
-    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["newrow", +pj.value]); };
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["newrow", +pj.value]); updateDescPlaceholder(+pj.value); };
     $("dtDur").value = fmt(0);
     $("dtDesc").value = "";
     $("dtAct").value = PROJECTS[eligible[0]].act;
     $("dtOrigin").textContent = t("val_manual");
     setDetailBudgetAndAudit(eligible[0], ["newrow", eligible[0]]);
+    updateDescPlaceholder(eligible[0]);
     $("dtStartField").hidden = true;
     $("dtEndField").hidden = true;
     var st = $("dtState");
@@ -4283,12 +4299,13 @@
     fillProjectOptions(pj, eligible);
     pj.value = String(eligible[0]);
     pj.disabled = false;
-    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["newmonthrow", +pj.value, weeks[0] ? weeks[0].num : 0]); };
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["newmonthrow", +pj.value, weeks[0] ? weeks[0].num : 0]); updateDescPlaceholder(+pj.value); };
     $("dtDur").value = fmt(0);
     $("dtDesc").value = "";
     $("dtAct").value = PROJECTS[eligible[0]].act;
     $("dtOrigin").textContent = t("val_manual");
     setDetailBudgetAndAudit(eligible[0], ["newmonthrow", eligible[0], weeks[0] ? weeks[0].num : 0]);
+    updateDescPlaceholder(eligible[0]);
     $("dtStartField").hidden = true;
     $("dtEndField").hidden = true;
     var st = $("dtState");
