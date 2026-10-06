@@ -16,7 +16,7 @@ Everything below works, with no server and no real data.
 - Calendar view (7 days) with project blocks and external events to convert
 - Quick add with natural language interpretation and correctable chips
 - Copy previous week (pulls the real previous week's rows once one exists in the sample), apply template, favorites per project
-- Week navigation (arrows or `←`/`→`) across four sample weeks: a posted week, one submitted and in approval, the current draft, and an upcoming one with an empty grid
+- Week navigation (arrows or `←`/`→`) across a multi-week sample per company: PT01 (`Z_CONS`) spans weeks 32–44, PT02 (`Z_BSRV`) spans weeks 36–41, each range mixing posted weeks, one submitted and in approval, the current draft, and upcoming ones with an empty grid
 
 **Absences, read from the leave request**
 - An approved full-day absence closes that day to time entry, in both the grid and the calendar
@@ -110,7 +110,7 @@ There's no real data. Employee, projects, WBS, cost centers and absences are mad
 
 ## Known limits, by design
 
-- Week navigation covers four sample weeks (a posted one, one submitted, the current draft, and an upcoming empty one); going further back or forward than that is out of sample, not simulated
+- Week navigation covers a fixed sample range per company (PT01: weeks 32–44, PT02: weeks 36–41), mixing posted, submitted, current-draft and upcoming empty weeks; going further back or forward than that is out of sample, not simulated
 - Whether the standard `CAT6` transfer maps `CATSAMOUNT` to `IT2010 BETRG` automatically, or needs configuring, is flagged as an open question in the payload, not solved
 - Without `ANTHROPIC_API_KEY` configured, the natural-language interpreter is deterministic, based on regular expressions. It recognizes duration, day and project prefix, and nothing else. See the next section to connect Claude
 - Each request to the assistant is independent, with no memory of the previous turn

@@ -314,7 +314,7 @@
         <button class="btn" id="apSelClean" data-i18n="btn_select_no_warnings">Select the 4 without warnings</button>
         <button class="btn primary" id="apApprove" disabled data-i18n="btn_approve_selected">Approve selected</button>
       </div>
-      <p class="sub" style="margin:6px 0 0; font-size:13px; color:var(--ink-3)" data-i18n="text_approval_sub">A different person's queue, not your own week. It covers the people on Sofia's consulting projects (Banking, Retail, Airports) &mdash; nothing you submit under My Timesheet lands here.</p>
+      <p class="sub" id="apSubText" style="margin:6px 0 0; font-size:13px; color:var(--ink-3)">A different person's queue, not your own week. It covers the people on Sofia's consulting projects (Banking, Retail, Airports) &mdash; nothing you submit under My Timesheet lands here.</p>
       <div class="kpis">
         <div class="kpi"><span class="k" data-i18n="kpi_pending_approval">Pending approval</span><span class="v" id="apPend">6</span></div>
         <div class="kpi"><span class="k" data-i18n="kpi_hours_submitted">Hours submitted</span><span class="v" id="apHours">0.0<small> h</small></span></div>
@@ -482,14 +482,14 @@
       <div class="field"><label for="dtAct" data-i18n="label_activity_type">Activity type</label><input type="text" id="dtAct" readonly></div>
     </div>
     <div class="field"><label for="dtDesc" data-i18n="label_description">Description</label><textarea id="dtDesc" maxlength="300" data-i18n-placeholder="placeholder_description" placeholder="Required for project entries. The first 40 characters go to LTXA1"></textarea></div>
-    <div class="budget">
-      <div class="lbl"><span data-i18n="label_project_effort">Project effort, actual vs. planned</span><span class="num">412 / 520 h</span></div>
-      <div class="bar"><i style="width:79%"></i></div>
+    <div class="budget" id="dtBudgetBox">
+      <div class="lbl"><span data-i18n="label_project_effort">Project effort, actual vs. planned</span><span class="num" id="dtBudgetNum">412 / 520 h</span></div>
+      <div class="bar"><i id="dtBudgetBar" style="width:79%"></i></div>
     </div>
     <div class="meta">
       <div><b data-i18n="label_origin">Origin</b><span id="dtOrigin">Manual</span></div>
-      <div><b data-i18n="label_created_by">Created by</b><span>Tiago Leal, 15 Sep 2026 09:12</span></div>
-      <div><b data-i18n="label_last_changed">Last changed</b><span>Tiago Leal, 15 Sep 2026 09:12</span></div>
+      <div><b data-i18n="label_created_by">Created by</b><span id="dtCreatedBy">Tiago Leal, 15 Sep 2026 09:12</span></div>
+      <div><b data-i18n="label_last_changed">Last changed</b><span id="dtLastChanged">Tiago Leal, 15 Sep 2026 09:12</span></div>
     </div>
   </div>
   <footer>

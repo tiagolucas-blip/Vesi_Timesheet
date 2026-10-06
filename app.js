@@ -7,16 +7,18 @@
      work (PT01), a facilities engagement is building solutions (PT02).
      null means shared, open internal work, not tied to either theme. */
   var PROJECTS = [
-    {code:"BNK-2026", wbs:"BNK-2026.1.3", name:"Banking, Payroll and ECP", act:"Functional consulting", proj:true, bukrs:"PT01",
+    {code:"BNK-2026", wbs:"BNK-2026.1.3", name:"Banking, Payroll and ECP", act:"Functional consulting", proj:true, bukrs:"PT01", budget:480,
      sap:{rproj:"BNK-2026.1.3", lstar:"CONS01", skostl:"PT4010", rkostl:"", aufnr:""}},
-    {code:"RTL-TT", wbs:"RTL-TT.2.1", name:"Retail, Time Tracking", act:"Functional consulting", proj:true, bukrs:"PT01",
+    {code:"RTL-TT", wbs:"RTL-TT.2.1", name:"Retail, Time Tracking", act:"Functional consulting", proj:true, bukrs:"PT01", budget:360,
      sap:{rproj:"RTL-TT.2.1", lstar:"CONS01", skostl:"PT4010", rkostl:"", aufnr:""}},
-    {code:"AER-WFM", wbs:"AER-WFM.4.2", name:"Airports, WFM rollout", act:"Project management", proj:true, bukrs:"PT01",
+    {code:"AER-WFM", wbs:"AER-WFM.4.2", name:"Airports, WFM rollout", act:"Project management", proj:true, bukrs:"PT01", budget:600,
      sap:{rproj:"AER-WFM.4.2", lstar:"PMGT01", skostl:"PT4010", rkostl:"", aufnr:""}},
     {code:"AXI-INT", wbs:"", name:"Internal, pre-sales and training", act:"Administrative", proj:false, bukrs:null,
      sap:{rproj:"", lstar:"ADMIN1", skostl:"PT4010", rkostl:"PT4010", aufnr:""}},
-    {code:"HSP-FAC", wbs:"HSP-FAC.1.1", name:"Hospital campus, facilities maintenance", act:"Field service", proj:true, bukrs:"PT02",
-     sap:{rproj:"HSP-FAC.1.1", lstar:"MAINT01", skostl:"PT4010", rkostl:"", aufnr:""}}
+    {code:"HSP-FAC", wbs:"HSP-FAC.1.1", name:"Hospital campus, facilities maintenance", act:"Field service", proj:true, bukrs:"PT02", budget:300,
+     sap:{rproj:"HSP-FAC.1.1", lstar:"MAINT01", skostl:"PT4010", rkostl:"", aufnr:""}},
+    {code:"AER-FAC", wbs:"AER-FAC.2.1", name:"Airport terminal, facilities maintenance", act:"Field service", proj:true, bukrs:"PT02", budget:260,
+     sap:{rproj:"AER-FAC.2.1", lstar:"MAINT01", skostl:"PT4010", rkostl:"", aufnr:""}}
   ];
   var PERNR = "00104567";
   var WORKDATES = [];
@@ -127,7 +129,8 @@
     {id:"RN", name:"Ricardo Nunes", label:"RTL-TT + AXI-INT", projs:[1,3], bukrs:"PT01"},
     {id:"PA", name:"Pedro Alves",   label:"AER-WFM", projs:[2], bukrs:"PT01"},
     {id:"AF", name:"Ana Ferreira",  label:"BNK-2026", projs:[0], bukrs:"PT01"},
-    {id:"CP", name:"Carlos Pinto",  label:"HSP-FAC", projs:[4], bukrs:"PT02"}
+    {id:"CP", name:"Carlos Pinto",  label:"HSP-FAC", projs:[4], bukrs:"PT02"},
+    {id:"MS", name:"Marco Silva",   label:"AER-FAC", projs:[5], bukrs:"PT02"}
   ];
   var TEAM = [
     /* BNK-2026 */
@@ -158,7 +161,13 @@
     {pernr:"00104511", name:"Hélder Rocha",    role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, dailyHours:6, already:[0,0,6,6,6,0,0]},
     {pernr:"00104512", name:"Hugo Matos",      role:"Technician",        bukrs:"PT02", projs:[4],   abs:{1:"Vacation"}, already:[8,0,8,8,0,0,0]},
     {pernr:"00104528", name:"Luís Teixeira",   role:"Technician",        bukrs:"PT02", projs:[4],   abs:{}, already:[8,8,8,0,0,0,0]},
-    {pernr:"00104529", name:"Sandra Fonseca",  role:"Senior technician", bukrs:"PT02", projs:[4],   abs:{}, already:[0,8,8,8,0,0,0]}
+    {pernr:"00104529", name:"Sandra Fonseca",  role:"Senior technician", bukrs:"PT02", projs:[4],   abs:{}, already:[0,8,8,8,0,0,0]},
+    /* AER-FAC */
+    {pernr:"00104530", name:"Ana Pires",       role:"Technician",        bukrs:"PT02", projs:[5],   abs:{}, already:[8,8,0,0,0,0,0]},
+    {pernr:"00104531", name:"Bruno Alves",     role:"Technician",        bukrs:"PT02", projs:[5],   abs:{2:"Vacation"}, already:[8,0,8,0,0,0,0]},
+    {pernr:"00104532", name:"Carla Sousa",     role:"Senior technician", bukrs:"PT02", projs:[5],   abs:{}, already:[0,8,8,8,0,0,0]},
+    {pernr:"00104533", name:"Daniel Matos",    role:"Technician",        bukrs:"PT02", projs:[5],   abs:{}, dailyHours:6, already:[6,6,0,0,0,0,0]},
+    {pernr:"00104534", name:"Elsa Carvalho",   role:"Technician",        bukrs:"PT02", projs:[5],   abs:{0:"Medical appointment"}, already:[0,8,8,0,0,0,0]}
   ];
   function leaderById(id){ return LEADERS.filter(function(l){ return l.id === id; })[0] || LEADERS[0]; }
   function teamOf(leaderId){
@@ -310,6 +319,43 @@
     if(note === "Two empty working days") return t("note_two_empty_days");
     return note;
   }
+  /* ---------- Entry detail: project effort and audit trail ----------
+     The budget bar and audit fields used to be static markup, identical
+     for every row. Actual hours are summed live from this company's own
+     WEEKS; "created by"/"last changed" have no real history to read in
+     this mockup, so they're a stable (not random - same row always shows
+     the same values) pseudo date derived from a seed, not a live clock. */
+  var EMPLOYEE_NAME = "Tiago Leal";
+  function projectActualHours(pIdx){
+    return WEEKS.reduce(function(a, w){
+      return a + w.rows.filter(function(r){ return r.p === pIdx; }).reduce(function(x, r){ return x + rowTotal(r); }, 0);
+    }, 0);
+  }
+  function stableSeed(parts){
+    var s = parts.join("|"), h = 0;
+    for(var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  function auditTextFor(seed){
+    var day = 10 + (seed % 10);
+    var hour = 8 + (seed % 10);
+    var minute = (seed * 7) % 60;
+    var hh = (hour < 10 ? "0" : "") + hour, mm = (minute < 10 ? "0" : "") + minute;
+    return EMPLOYEE_NAME + ", " + day + " " + MONTHS[8] + " 2026 " + hh + ":" + mm;
+  }
+  function setDetailBudgetAndAudit(pIdx, seedParts){
+    var pr = PROJECTS[pIdx];
+    var box = $("dtBudgetBox");
+    if(box) box.hidden = !pr.budget;
+    if(pr.budget){
+      var actual = projectActualHours(pIdx);
+      $("dtBudgetNum").textContent = fmt(actual) + " / " + pr.budget + " h";
+      $("dtBudgetBar").style.width = Math.min(100, Math.round(actual / pr.budget * 100)) + "%";
+    }
+    var seed = stableSeed(seedParts);
+    $("dtCreatedBy").textContent = auditTextFor(seed);
+    $("dtLastChanged").textContent = auditTextFor(seed + 97);
+  }
   /* Sample weeks are per company, keyed by the same num/start so the
      week navigator stays aligned: switching IT0001 is opening the sheet
      as someone assigned to that company, projects and absences included,
@@ -389,7 +435,8 @@
       ],
       allow:[
         {id:"al1", day:0, p:0, code:"AJC_NAC", qty:1,  amount:0, note:"", by:"00104567", onBehalf:"00104567"},
-        {id:"al2", day:0, p:0, code:"KMS",     qty:86, amount:0, note:"Lisbon to Porto and back", by:"00104567", onBehalf:"00104567"}
+        {id:"al2", day:0, p:0, code:"KMS",     qty:86, amount:0, note:"Lisbon to Porto and back", by:"00104567", onBehalf:"00104567"},
+        {id:"al3", day:1, p:2, code:"AJC_INT", qty:1,  amount:0, note:"Spain", by:"00104567", onBehalf:"00104567"}
       ],
       sugs:[
         {id:"s1", hours:2.5, day:2, p:2, why:"3 client meetings on the calendar", conf:"hi", desc:"Rollout follow-up meetings"},
@@ -508,6 +555,32 @@
       allow:[],
       sugs:[
         {id:"ps5", hours:2, day:1, p:4, why:"2 work orders on the maintenance calendar", conf:"hi", desc:"Facilities steering follow-up"}
+      ]
+    },
+    { num:40, start:"20260928", submitted:false,
+      absences:[
+        {id:"pb40a", day:2, type:"Vacation", awart:"0100", hours:8, status:"approved", src:"Request 4500281"}
+      ],
+      rows:[
+        {id:514, p:4, desc:"Elevator preventive maintenance", h:[4,4,0,4,4,0,0], origin:"Manual"},
+        {id:515, p:5, desc:"Terminal HVAC inspection round", h:[4,4,4,4,0,0,0], origin:"Manual"}
+      ],
+      allow:[
+        {id:"pal3", day:0, p:5, code:"TURNO", qty:1, amount:0, note:"", by:"00104567", onBehalf:"00104567"}
+      ],
+      sugs:[
+        {id:"ps6", hours:2, day:1, p:5, why:"3 work orders closed in the maintenance log", conf:"hi", desc:"Follow-up repairs"}
+      ]
+    },
+    { num:41, start:"20261005", submitted:false,
+      absences:[],
+      rows:[
+        {id:516, p:4, desc:"Boiler room inspection", h:[3,0,3,0,0,0,0], origin:"Manual"},
+        {id:517, p:5, desc:"Baggage handling systems check", h:[0,4,4,0,0,0,0], origin:"Suggested"}
+      ],
+      allow:[],
+      sugs:[
+        {id:"ps7", hours:1.5, day:3, p:5, why:"12 changes in the maintenance ticket system", conf:"mid", desc:"Terminal configuration"}
       ]
     }
   ];
@@ -804,6 +877,29 @@
       tip_approved_type:"Approved {type}", aria_select_name:"Select {name}",
       hdr_no_warnings_group:"No warnings, bulk approval available", hdr_exceptions_group:"Exceptions, need individual review",
       aria_select_timesheet_for:"Select timesheet for {name}",
+      tip_clock_use_fields:"Z_BSRV records start and end. Use the Start/End fields above, for the people this applies to.",
+      tip_closed_period_short:"Closed period",
+      aria_start_time_for:"Start time, {name}, {day}", aria_end_time_for:"End time, {name}, {day}",
+      sev_error:"ERROR", sev_warning:"WARNING", sev_info:"INFO",
+      text_no_allowances_week:"No allowances recorded this week. Per diems, kilometres and shift allowances are recorded here, against a project and a date.",
+      text_wage_type_label:"wage type {code}",
+      text_recorded_by_behalf:"Recorded by {name}, on behalf of the employee",
+      hint_allow_wage_type:"Wage type {code}, quantity in ANZHL, unit {unit}. No value is calculated here, payroll values it.",
+      text_nothing_staged_yet:"Nothing staged yet.",
+      text_nothing_recorded_behalf_week:"Nothing recorded on behalf of the team yet, this week.",
+      text_no_bonus_recorded:"No bonus recorded on this project yet.",
+      label_month_total:"Month total", label_week_total:"Week total",
+      n_warnings_no_block_one:"{n} warning, they don't block submission", n_warnings_no_block_other:"{n} warnings, they don't block submission",
+      label_deviation_justification:"Justification for the deviation from the expected total",
+      placeholder_justification_month:"One line is enough. Stays in the month's history.",
+      text_h_in_project:"{h} h in project", chip_warning_lower:"warning",
+      msg_day_approved_type:"{day} has an approved {type}.", msg_day_capacity_simple:"{day}'s capacity is {cap} h.",
+      badge_half_day:"half day",
+      text_no_hours_week_yet:"No hours recorded this week yet.", text_no_hours_month_yet:"No hours recorded this month yet.",
+      text_shortest_path:"Start with the shortest path.",
+      conf_hi:"high confidence", conf_mid:"medium confidence", conf_low:"low confidence",
+      tip_save_to_finish:"This already applies here; Save still reflects it in the database.",
+      placeholder_justification_week:"One line is enough. Stays in the week's history.",
       chip_approved:"Approved",
       note_pending_leave_conflict:"Pending leave request overlaps recorded hours", note_two_empty_days:"Two empty working days",
       val_week_label_prefix:"Week {n}: {txt}",
@@ -885,6 +981,7 @@
       chip_up_to_date:"Up to date", chip_save_to_finish:"Save to finish",
       btn_select_no_warnings:"Select the 4 without warnings", chip_project_team:"Project team", btn_approve_selected:"Approve selected",
       text_approval_sub:"A different person's queue, not your own week. It covers the people on Sofia's consulting projects (Banking, Retail, Airports) — nothing you submit under My Timesheet lands here.",
+      text_approval_sub_pt02:"A different person's queue, not your own week. It covers the people on Patrícia's facilities projects (Hospital campus, Airport terminal) — nothing you submit under My Timesheet lands here.",
       kpi_pending_approval:"Pending approval", kpi_hours_submitted:"Hours submitted",
       kpi_with_warnings:"With warnings", kpi_deviation_from_plan:"Deviation from plan",
       hdr_team_allocated:"Team allocated to my projects", chip_integrates:"Integrates with My Inbox and SAP Task Center",
@@ -1056,6 +1153,29 @@
       tip_approved_type:"{type} aprovada", aria_select_name:"Selecionar {name}",
       hdr_no_warnings_group:"Sem avisos, aprovação em massa disponível", hdr_exceptions_group:"Exceções, precisam de revisão individual",
       aria_select_timesheet_for:"Selecionar folha de horas de {name}",
+      tip_clock_use_fields:"O Z_BSRV regista início e fim. Usa os campos Início/Fim acima, para as pessoas a quem se aplica.",
+      tip_closed_period_short:"Período fechado",
+      aria_start_time_for:"Hora de início, {name}, {day}", aria_end_time_for:"Hora de fim, {name}, {day}",
+      sev_error:"ERRO", sev_warning:"AVISO", sev_info:"INFO",
+      text_no_allowances_week:"Sem abonos registados esta semana. As ajudas de custo, quilómetros e abonos de turno são registados aqui, contra um projeto e uma data.",
+      text_wage_type_label:"tipo de rúbrica {code}",
+      text_recorded_by_behalf:"Registado por {name}, em nome do colaborador",
+      hint_allow_wage_type:"Tipo de rúbrica {code}, quantidade em ANZHL, unidade {unit}. Nenhum valor é calculado aqui, o payroll valoriza.",
+      text_nothing_staged_yet:"Nada em staging ainda.",
+      text_nothing_recorded_behalf_week:"Nada registado em nome da equipa ainda, esta semana.",
+      text_no_bonus_recorded:"Nenhum bónus registado neste projeto ainda.",
+      label_month_total:"Total do mês", label_week_total:"Total da semana",
+      n_warnings_no_block_one:"{n} aviso, não bloqueia a submissão", n_warnings_no_block_other:"{n} avisos, não bloqueiam a submissão",
+      label_deviation_justification:"Justificação para o desvio face ao total esperado",
+      placeholder_justification_month:"Uma linha chega. Fica no histórico do mês.",
+      text_h_in_project:"{h} h em projeto", chip_warning_lower:"aviso",
+      msg_day_approved_type:"{day} tem uma {type} aprovada.", msg_day_capacity_simple:"A capacidade de {day} é {cap} h.",
+      badge_half_day:"meio dia",
+      text_no_hours_week_yet:"Ainda sem horas registadas esta semana.", text_no_hours_month_yet:"Ainda sem horas registadas este mês.",
+      text_shortest_path:"Começa pelo caminho mais curto.",
+      conf_hi:"confiança alta", conf_mid:"confiança média", conf_low:"confiança baixa",
+      tip_save_to_finish:"Isto já está em vigor; o Save só reflete na base de dados.",
+      placeholder_justification_week:"Uma linha chega. Fica no histórico da semana.",
       chip_approved:"Aprovada",
       note_pending_leave_conflict:"Pedido de ausência pendente sobrepõe-se a horas registadas", note_two_empty_days:"Dois dias úteis vazios",
       val_week_label_prefix:"Semana {n}: {txt}",
@@ -1137,6 +1257,7 @@
       chip_up_to_date:"Atualizado", chip_save_to_finish:"Gravar para terminar",
       btn_select_no_warnings:"Selecionar os 4 sem avisos", chip_project_team:"Equipa do projeto", btn_approve_selected:"Aprovar selecionados",
       text_approval_sub:"A fila de outra pessoa, não a tua própria semana. Cobre as pessoas nos projetos de consultoria da Sofia (Banking, Retail, Airports) — nada do que submetes em A Minha Folha aparece aqui.",
+      text_approval_sub_pt02:"A fila de outra pessoa, não a tua própria semana. Cobre as pessoas nos projetos de facilities da Patrícia (Hospital campus, Airport terminal) — nada do que submetes em A Minha Folha aparece aqui.",
       kpi_pending_approval:"Pendente de aprovação", kpi_hours_submitted:"Horas submetidas",
       kpi_with_warnings:"Com avisos", kpi_deviation_from_plan:"Desvio face ao plano",
       hdr_team_allocated:"Equipa alocada aos meus projetos", chip_integrates:"Integra com My Inbox e SAP Task Center",
@@ -1308,6 +1429,29 @@
       tip_approved_type:"{type} approuvée", aria_select_name:"Sélectionner {name}",
       hdr_no_warnings_group:"Sans avertissement, approbation groupée possible", hdr_exceptions_group:"Exceptions, révision individuelle nécessaire",
       aria_select_timesheet_for:"Sélectionner le relevé de {name}",
+      tip_clock_use_fields:"Z_BSRV enregistre le début et la fin. Utilisez les champs Début/Fin ci-dessus, pour les personnes concernées.",
+      tip_closed_period_short:"Période clôturée",
+      aria_start_time_for:"Heure de début, {name}, {day}", aria_end_time_for:"Heure de fin, {name}, {day}",
+      sev_error:"ERREUR", sev_warning:"AVERTISSEMENT", sev_info:"INFO",
+      text_no_allowances_week:"Aucune indemnité enregistrée cette semaine. Les indemnités journalières, kilométriques et de poste sont enregistrées ici, contre un projet et une date.",
+      text_wage_type_label:"rubrique {code}",
+      text_recorded_by_behalf:"Enregistré par {name}, pour le compte de l'employé",
+      hint_allow_wage_type:"Rubrique {code}, quantité en ANZHL, unité {unit}. Aucune valeur n'est calculée ici, la paie la valorise.",
+      text_nothing_staged_yet:"Rien en attente pour l'instant.",
+      text_nothing_recorded_behalf_week:"Rien enregistré pour le compte de l'équipe pour l'instant, cette semaine.",
+      text_no_bonus_recorded:"Aucune prime enregistrée sur ce projet pour l'instant.",
+      label_month_total:"Total du mois", label_week_total:"Total de la semaine",
+      n_warnings_no_block_one:"{n} avertissement, ne bloque pas la soumission", n_warnings_no_block_other:"{n} avertissements, ne bloquent pas la soumission",
+      label_deviation_justification:"Justification de l'écart par rapport au total attendu",
+      placeholder_justification_month:"Une ligne suffit. Reste dans l'historique du mois.",
+      text_h_in_project:"{h} h sur projet", chip_warning_lower:"avertissement",
+      msg_day_approved_type:"{day} a une {type} approuvée.", msg_day_capacity_simple:"La capacité de {day} est de {cap} h.",
+      badge_half_day:"demi-journée",
+      text_no_hours_week_yet:"Aucune heure enregistrée cette semaine pour l'instant.", text_no_hours_month_yet:"Aucune heure enregistrée ce mois-ci pour l'instant.",
+      text_shortest_path:"Commencez par le chemin le plus court.",
+      conf_hi:"confiance élevée", conf_mid:"confiance moyenne", conf_low:"confiance faible",
+      tip_save_to_finish:"C'est déjà en vigueur ici ; Save ne fait que le refléter dans la base de données.",
+      placeholder_justification_week:"Une ligne suffit. Reste dans l'historique de la semaine.",
       chip_approved:"Approuvée",
       note_pending_leave_conflict:"Demande d'absence en attente chevauche des heures enregistrées", note_two_empty_days:"Deux jours ouvrés vides",
       val_week_label_prefix:"Semaine {n} : {txt}",
@@ -1389,6 +1533,7 @@
       chip_up_to_date:"À jour", chip_save_to_finish:"Enregistrer pour terminer",
       btn_select_no_warnings:"Sélectionner les 4 sans avertissement", chip_project_team:"Équipe du projet", btn_approve_selected:"Approuver la sélection",
       text_approval_sub:"La file d'une autre personne, pas votre propre semaine. Couvre les personnes sur les projets de conseil de Sofia (Banking, Retail, Airports) — rien de ce que vous soumettez dans Mon relevé n'apparaît ici.",
+      text_approval_sub_pt02:"La file d'une autre personne, pas votre propre semaine. Couvre les personnes sur les projets facilities de Patrícia (Hospital campus, Airport terminal) — rien de ce que vous soumettez dans Mon relevé n'apparaît ici.",
       kpi_pending_approval:"En attente d'approbation", kpi_hours_submitted:"Heures soumises",
       kpi_with_warnings:"Avec avertissements", kpi_deviation_from_plan:"Écart par rapport au plan",
       hdr_team_allocated:"Équipe allouée à mes projets", chip_integrates:"S'intègre avec My Inbox et SAP Task Center",
@@ -1510,6 +1655,7 @@
       elm.textContent = WEEKDAY_ABBR[+elm.getAttribute("data-wd")];
     });
     if($("captureTxt")) $("captureTxt").textContent = state.privateMode ? t("capture_off") : t("capture_on");
+    if(typeof updateApproverChrome === "function") updateApproverChrome();
     document.documentElement.lang = state.lang;
   }
   function setLang(lang){
@@ -1524,6 +1670,26 @@
     if($("screen-cats") && !$("screen-cats").hidden){ renderCats(); renderMap(); }
   }
 
+  /* Sofia's (PT01, Consulting) and Marco's (PT02, Building Solutions) own
+     approval queues - swapped into state.approvals on company switch, the
+     same way WEEKS is, so the Approval screen reflects whichever company
+     IT0001 currently reads instead of always showing Consulting. */
+  var APPROVALS_PT01 = [
+    {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false, days:[8,8,8,8,8]},
+    {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false, days:[8,8,8,8,6.5]},
+    {who:"Carla Nunes", role:"Consultant", proj:"AER-WFM", tot:40, inproj:40, dev:0, warn:0, sel:false, days:[8,8,8,8,8]},
+    {who:"Diogo Sousa", role:"Junior consultant", proj:"BNK-2026", tot:37, inproj:30, dev:-3, warn:0, sel:false, days:[8,8,8,8,5]},
+    {who:"Eva Lopes", role:"Architect", proj:"RTL-TT", tot:40, inproj:40, dev:0, warn:1, sel:false, note:"Pending leave request overlaps recorded hours", days:[8,8,8,8,8]},
+    {who:"Filipe Reis", role:"Consultant", proj:"AER-WFM", tot:24, inproj:18, dev:-16, warn:1, sel:false, note:"Two empty working days", days:[8,8,0,8,0]}
+  ];
+  var APPROVALS_PT02 = [
+    {who:"Nuno Dias", role:"Technician", proj:"HSP-FAC", tot:40, inproj:40, dev:0, warn:0, sel:false, days:[8,8,8,8,8]},
+    {who:"Hélder Rocha", role:"Technician", proj:"HSP-FAC", tot:18, inproj:18, dev:-12, warn:0, sel:false, days:[0,0,6,6,6]},
+    {who:"Luís Teixeira", role:"Technician", proj:"HSP-FAC", tot:24, inproj:24, dev:-8, warn:0, sel:false, days:[8,8,8,0,0]},
+    {who:"Ana Pires", role:"Technician", proj:"AER-FAC", tot:16, inproj:16, dev:-16, warn:0, sel:false, days:[8,8,0,0,0]},
+    {who:"Hugo Matos", role:"Technician", proj:"HSP-FAC", tot:24, inproj:24, dev:-8, warn:1, sel:false, note:"Pending leave request overlaps recorded hours", days:[8,0,8,8,0]},
+    {who:"Carla Sousa", role:"Senior technician", proj:"AER-FAC", tot:16, inproj:16, dev:-16, warn:1, sel:false, note:"Two empty working days", days:[0,8,8,0,0]}
+  ];
   var state = {
     lang: (function(){
       try{
@@ -1575,14 +1741,7 @@
        "team", "aprov" or "cats" - lets the assistant tell a personal
        request from a team one when the wording alone is ambiguous */
     screen: "semana",
-    approvals:[
-      {who:"Ana Ferreira", role:"Senior consultant", proj:"BNK-2026", tot:40, inproj:36, dev:0, warn:0, sel:false, days:[8,8,8,8,8]},
-      {who:"Bruno Matos", role:"Consultant", proj:"RTL-TT", tot:38.5, inproj:34, dev:-1.5, warn:0, sel:false, days:[8,8,8,8,6.5]},
-      {who:"Carla Nunes", role:"Consultant", proj:"AER-WFM", tot:40, inproj:40, dev:0, warn:0, sel:false, days:[8,8,8,8,8]},
-      {who:"Diogo Sousa", role:"Junior consultant", proj:"BNK-2026", tot:37, inproj:30, dev:-3, warn:0, sel:false, days:[8,8,8,8,5]},
-      {who:"Eva Lopes", role:"Architect", proj:"RTL-TT", tot:40, inproj:40, dev:0, warn:1, sel:false, note:"Pending leave request overlaps recorded hours", days:[8,8,8,8,8]},
-      {who:"Filipe Reis", role:"Consultant", proj:"AER-WFM", tot:24, inproj:18, dev:-16, warn:1, sel:false, note:"Two empty working days", days:[8,8,0,8,0]}
-    ]
+    approvals: APPROVALS_PT01
   };
 
   var $ = function(id){ return document.getElementById(id); };
@@ -1786,8 +1945,8 @@
         var abs = absOn(i, "approved")[0];
         var left = Math.max(0, cap - otherTotal);
         var msg = abs
-          ? DAYS[i]+" has an approved "+abs.type.toLowerCase()+"."
-          : DAYS[i]+"'s capacity is "+fmt(cap)+" h.";
+          ? t("msg_day_approved_type", {day: DAYS[i], type: abs.type.toLowerCase()})
+          : t("msg_day_capacity_simple", {day: DAYS[i], cap: fmt(cap)});
         toast(msg + (left > 0 ? t("toast_only_available", {left: fmt(left)}) : t("toast_no_hours_available")));
         inp.value = v ? fmt(v) : "";
         return;
@@ -1840,8 +1999,8 @@
           var abs = absOn(i, "approved")[0];
           var left = Math.max(0, cap - otherTotal);
           var msg = abs
-            ? DAYS[i]+" has an approved "+abs.type.toLowerCase()+"."
-            : DAYS[i]+"'s capacity is "+fmt(cap)+" h.";
+            ? t("msg_day_approved_type", {day: DAYS[i], type: abs.type.toLowerCase()})
+            : t("msg_day_capacity_simple", {day: DAYS[i], cap: fmt(cap)});
           toast(msg + (left > 0 ? t("toast_only_available", {left: fmt(left)}) : t("toast_no_hours_available")));
           cur[k] = prev;
           render();
@@ -1886,18 +2045,18 @@
       var c = el("div", i>4?"we":"", "");
       appendDayLabel(c, i);
       var ap = absOn(i,"approved")[0], pe = absOn(i,"pending")[0];
-      if(ap) c.appendChild(dayAbsBadge(ap, capacity(i) === 0 ? ap.type : "half day", capacity(i) === 0 ? " full" : ""));
+      if(ap) c.appendChild(dayAbsBadge(ap, capacity(i) === 0 ? ap.type : t("badge_half_day"), capacity(i) === 0 ? " full" : ""));
       else if(pe) c.appendChild(dayAbsBadge(pe, "pending", " pend"));
       head.appendChild(c);
     });
-    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",t("th_total")));
     head.appendChild(el("div","",""));
     g.appendChild(head);
 
     if(state.rows.length === 0){
       var e = document.createElement("div");
       e.className = "empty";
-      e.innerHTML = '<p><strong>No hours recorded this week yet.</strong> Start with the shortest path.</p>';
+      e.innerHTML = '<p><strong>'+t("text_no_hours_week_yet")+'</strong> '+t("text_shortest_path")+'</p>';
       var acts = el("div","acts","");
       acts.appendChild(btn(t("btn_copy_last_week"),"btn primary", copyWeek));
       acts.appendChild(btn("Review "+state.sugs.length+" suggestions","btn", function(){ $("sugPanel").scrollIntoView({block:"center"}); }));
@@ -2015,7 +2174,7 @@
         var abs = week.absences.filter(function(a){ return a.day === i && a.status === "approved"; })[0];
         var left = Math.max(0, cap - otherTotal);
         var dayLabel = monthDayLabel(week, i);
-        var msg = abs ? dayLabel+" has an approved "+abs.type.toLowerCase()+"." : dayLabel+"'s capacity is "+fmt(cap)+" h.";
+        var msg = abs ? t("msg_day_approved_type", {day: dayLabel, type: abs.type.toLowerCase()}) : t("msg_day_capacity_simple", {day: dayLabel, cap: fmt(cap)});
         toast(msg + (left > 0 ? t("toast_only_available", {left: fmt(left)}) : t("toast_no_hours_available")));
         inp.value = v ? fmt(v) : "";
         return;
@@ -2052,11 +2211,11 @@
       c.appendChild(el("span","dnum", "" + (+dateISO.slice(6,8))));
       var ap = wd.week.absences.filter(function(a){ return a.day===wd.day && a.status==="approved"; })[0];
       var pe = wd.week.absences.filter(function(a){ return a.day===wd.day && a.status==="pending"; })[0];
-      if(ap) c.appendChild(dayAbsBadgeOf(wd.week, ap, capacityOf(wd.week,wd.day)===0 ? ap.type : "half day", capacityOf(wd.week,wd.day)===0 ? " full" : ""));
+      if(ap) c.appendChild(dayAbsBadgeOf(wd.week, ap, capacityOf(wd.week,wd.day)===0 ? ap.type : t("badge_half_day"), capacityOf(wd.week,wd.day)===0 ? " full" : ""));
       else if(pe) c.appendChild(dayAbsBadgeOf(wd.week, pe, "pending", " pend"));
       head.appendChild(c);
     });
-    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",t("th_total")));
     head.appendChild(el("div","",""));
     g.appendChild(head);
 
@@ -2087,7 +2246,7 @@
     if(monthRows.length === 0){
       var e = document.createElement("div");
       e.className = "empty";
-      e.innerHTML = '<p><strong>No hours recorded this month yet.</strong> Start with the shortest path.</p>';
+      e.innerHTML = '<p><strong>'+t("text_no_hours_month_yet")+'</strong> '+t("text_shortest_path")+'</p>';
       var acts = el("div","acts","");
       acts.appendChild(btn(t("btn_add_first_project"),"btn", addMonthRow));
       e.appendChild(acts);
@@ -2351,7 +2510,7 @@
   }
 
   /* ---------- render: suggestions ---------- */
-  var CONF = {hi:"high confidence", mid:"medium confidence", low:"low confidence"};
+  function confLabel(level){ return t("conf_" + level); }
   function visibleSugs(){
     return state.sugs.filter(function(s){ return !isBlocked(s.day); });
   }
@@ -2391,7 +2550,7 @@
       card.appendChild(h);
       card.appendChild(el("div","", pr.name));
       card.appendChild(el("div","why", s.why));
-      card.appendChild(el("div","conf", CONF[s.conf]));
+      card.appendChild(el("div","conf", confLabel(s.conf)));
       var acts = el("div","acts","");
       acts.appendChild(btn("Accept","btn sm primary", function(){ acceptSug(s); }));
       acts.appendChild(btn("Edit","btn sm", function(){ openQuick(fmt(s.hours)+"h "+pr.code+" "+(s.desc||""), s.day); }));
@@ -2417,10 +2576,12 @@
   }
 
   /* ---------- render: messages, KPIs ---------- */
-  /* Month messages skip the one-click "resolve"/"go to day" actions the
-     weekly view offers - those assume state.rows is the row they'd act
-     on, which isn't reliably true once a message can belong to any of
-     several weeks. Each line names its week instead. */
+  /* Month messages keep the "resolve, move the hours" action (a pure data
+     fix, replayed through withWeek against the message's own week, so it
+     never touches the wrong week's rows) but skip "go to day": the month
+     grid shows project rows, not a per-day cell per row the way the
+     weekly grid does, so there's no single cell to focus. Each line
+     names its week either way. */
   function renderMsgsMonth(){
     var dates = activeMonthDates();
     var weeks = touchedWeeksFor(dates);
@@ -2429,7 +2590,7 @@
       withWeek(w, function(){
         validate().forEach(function(m){
           if(typeof m.day === "number" && dates.indexOf(datesFor(w.start)[m.day]) === -1) return;
-          list.push({sev:m.sev, txt:t("val_week_label_prefix", {n: w.num, txt: m.txt})});
+          list.push({sev:m.sev, txt:t("val_week_label_prefix", {n: w.num, txt: m.txt}), conflict:m.conflict, week:w, submitted:w.submitted});
         });
       });
     });
@@ -2437,11 +2598,18 @@
     box.innerHTML = "";
     $("msgPanel").hidden = list.length === 0;
     $("msgCount").textContent = plural(list.length, "n_messages");
-    var names = {e:"ERROR", w:"WARNING", i:"INFO"};
+    var names = {e:t("sev_error"), w:t("sev_warning"), i:t("sev_info")};
     list.forEach(function(m){
       var row = el("div","msg "+m.sev,"");
       row.appendChild(el("span","ic", names[m.sev]));
       row.appendChild(el("span","", m.txt));
+      if(typeof m.conflict === "number" && !m.submitted){
+        var fix = btn(t("link_resolve_move_hours"),"", (function(week, day){
+          return function(){ withWeek(week, function(){ resolveConflict(day); }); render(); };
+        })(m.week, m.conflict));
+        fix.style.marginLeft = "auto";
+        row.appendChild(fix);
+      }
       box.appendChild(row);
     });
   }
@@ -2452,12 +2620,12 @@
     box.innerHTML = "";
     $("msgPanel").hidden = list.length === 0;
     $("msgCount").textContent = plural(list.length, "n_messages");
-    var names = {e:"ERROR", w:"WARNING", i:"INFO"};
+    var names = {e:t("sev_error"), w:t("sev_warning"), i:t("sev_info")};
     list.forEach(function(m){
       var row = el("div","msg "+m.sev,"");
       row.appendChild(el("span","ic", names[m.sev]));
-      var t = el("span","", m.txt);
-      row.appendChild(t);
+      var msgSpan = el("span","", m.txt);
+      row.appendChild(msgSpan);
       if(typeof m.conflict === "number" && !state.submitted){
         var fix = btn(t("link_resolve_move_hours"),"", (function(day){ return function(){ resolveConflict(day); }; })(m.conflict));
         fix.style.marginLeft = "auto";
@@ -2533,6 +2701,7 @@
     var chip = $("stateChip");
     chip.textContent = state.needsSave ? t("chip_save_to_finish") : (allSubmitted ? t("chip_in_approval") : t("state_draft"));
     chip.className = state.needsSave ? "chip amber" : (allSubmitted ? "chip blue" : "chip grey");
+    chip.title = state.needsSave ? t("tip_save_to_finish") : "";
     var sc = $("sugChip"), nv = visibleSugs().length;
     sc.hidden = state.privateMode || nv === 0;
     sc.textContent = plural(nv, "n_suggestions_review");
@@ -2580,6 +2749,7 @@
     var chip = $("stateChip");
     chip.textContent = state.needsSave ? t("chip_save_to_finish") : (state.submitted ? t("chip_in_approval") : t("state_draft"));
     chip.className = state.needsSave ? "chip amber" : (state.submitted ? "chip blue" : "chip grey");
+    chip.title = state.needsSave ? t("tip_save_to_finish") : "";
     var sc = $("sugChip"), nv = visibleSugs().length;
     sc.hidden = state.privateMode || nv === 0;
     sc.textContent = plural(nv, "n_suggestions_review");
@@ -2694,7 +2864,7 @@
     var mine = myAllow();
     $("allowCount").textContent = plural(mine.length, "n_allowances");
     if(!mine.length){
-      box.appendChild(el("div","paused","No allowances recorded this week. Per diems, kilometres and shift allowances are recorded here, against a project and a date."));
+      box.appendChild(el("div","paused",t("text_no_allowances_week")));
       return;
     }
     mine.slice().sort(function(x,y){ return x.day - y.day; }).forEach(function(a){
@@ -2704,9 +2874,9 @@
       h.appendChild(el("b","", w.name));
       h.appendChild(el("span","chip " + (w.amount ? "green" : "grey"), allowLabel(a)));
       c.appendChild(h);
-      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · wage type " + w.lgart));
+      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · " + t("text_wage_type_label", {code: w.lgart})));
       if(a.note) c.appendChild(el("div","why", a.note));
-      if(a.by !== a.onBehalf) c.appendChild(el("div","why", "Recorded by " + a.byName + ", on behalf of the employee"));
+      if(a.by !== a.onBehalf) c.appendChild(el("div","why", t("text_recorded_by_behalf", {name: a.byName})));
       if(w.amount) c.appendChild(el("div","why", "Amount goes to CATSAMOUNT, native CATSDB field. ANZHL goes to CATS as 1."));
       var acts = el("div","acts","");
       var rm = btn(t("btn_remove"),"btn sm", function(){
@@ -2764,9 +2934,9 @@
     $("alQty").value = "1";
     $("alUnit").textContent = w.unit;
     $("alNoteWrap").hidden = !w.noteLabel;
-    $("alNoteLbl").textContent = w.noteLabel || "Note";
+    $("alNoteLbl").textContent = w.noteLabel || t("label_note");
     $("alProjWrap").hidden = !w.needProj;
-    $("alHint").textContent = "Wage type " + w.lgart + ", quantity in ANZHL, unit " + w.unit + ". No value is calculated here, payroll values it.";
+    $("alHint").textContent = t("hint_allow_wage_type", {code: w.lgart, unit: w.unit});
   }
   function saveAllow(){
     var w = wt($("alCode").value);
@@ -2982,9 +3152,9 @@
 
     var head = document.createElement("div");
     head.className = "row head";
-    head.appendChild(el("div","","Employee"));
+    head.appendChild(el("div","",t("th_employee")));
     DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
-    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",t("th_total")));
     head.appendChild(el("div","",""));
     wrap.appendChild(head);
 
@@ -3059,9 +3229,9 @@
 
     var head = document.createElement("div");
     head.className = "row head";
-    head.appendChild(el("div","","Employee"));
+    head.appendChild(el("div","",t("th_employee")));
     DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
-    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",t("th_total")));
     head.appendChild(el("div","",""));
     wrap.appendChild(head);
 
@@ -3139,9 +3309,9 @@
 
     var head = document.createElement("div");
     head.className = "row head";
-    head.appendChild(el("div","","Employee"));
+    head.appendChild(el("div","",t("th_employee")));
     DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
-    head.appendChild(el("div","","Total"));
+    head.appendChild(el("div","",t("th_total")));
     head.appendChild(el("div","",""));
     wrap.appendChild(head);
 
@@ -3200,12 +3370,12 @@
              the only place to fill it is Apply to selected. Once staged, the
              leader sees exactly what was recorded, project included, without
              waiting for the save log. */
-          var t = st.t[i];
-          if(!t){
+          var slotT = st.t[i];
+          if(!slotT){
             var ph = el("div","cell computed" + (i>4 ? " we" : ""), "–");
-            ph.title = "Z_BSRV records start and end. Use the Start/End fields above, for the people this applies to.";
+            ph.title = t("tip_clock_use_fields");
             if(memberBlocked(m,i)){ ph.classList.add("abs"); ph.title = t("tip_approved_type", {type: m.abs[i].toLowerCase()}); }
-            if(!periodOpen(WORKDATES[i], m.bukrs)){ ph.classList.add("closed"); ph.title = "Closed period"; }
+            if(!periodOpen(WORKDATES[i], m.bukrs)){ ph.classList.add("closed"); ph.title = t("tip_closed_period_short"); }
             row.appendChild(ph);
             return;
           }
@@ -3214,15 +3384,15 @@
             var tinp = document.createElement("input");
             tinp.type = "text";
             tinp.className = "tinp";
-            tinp.value = fmtClock(t[k]);
+            tinp.value = fmtClock(slotT[k]);
             tinp.disabled = true;
-            tinp.setAttribute("aria-label", (k === "b" ? "Start time, " : "End time, ") + m.name + ", " + DAYS[i]);
+            tinp.setAttribute("aria-label", t(k === "b" ? "aria_start_time_for" : "aria_end_time_for", {name: m.name, day: DAYS[i]}));
             box.appendChild(tinp);
           });
           box.appendChild(el("div","cdur", v ? fmt(v) + " h" : "–"));
-          box.title = PROJECTS[massProject()].code + " · " + fmtClock(t.b) + "–" + fmtClock(t.e);
-          if(memberBlocked(m,i)){ box.classList.add("abs"); box.title = "Approved "+m.abs[i].toLowerCase(); }
-          if(!periodOpen(WORKDATES[i], m.bukrs)){ box.classList.add("closed"); box.title = "Closed period"; }
+          box.title = PROJECTS[massProject()].code + " · " + fmtClock(slotT.b) + "–" + fmtClock(slotT.e);
+          if(memberBlocked(m,i)){ box.classList.add("abs"); box.title = t("tip_approved_type", {type: m.abs[i].toLowerCase()}); }
+          if(!periodOpen(WORKDATES[i], m.bukrs)){ box.classList.add("closed"); box.title = t("tip_closed_period_short"); }
           row.appendChild(box);
           return;
         }
@@ -3446,7 +3616,7 @@
     if(!w) return;
     $("mAllowUnit").textContent = w.unit;
     $("mAllowNoteWrap").hidden = !w.noteLabel;
-    $("mAllowNoteLbl").textContent = w.noteLabel || "Note";
+    $("mAllowNoteLbl").textContent = w.noteLabel || t("label_note");
   }
   function applyMassAllow(){
     var members = teamOf(state.leader).filter(function(m){ return stagedOf(m.pernr).sel && !m.locked; });
@@ -3554,7 +3724,7 @@
     $("mAllowSave").disabled = state.stagedAllow.length === 0;
     box.innerHTML = "";
     if(!state.stagedAllow.length){
-      box.appendChild(el("div","paused","Nothing staged yet."));
+      box.appendChild(el("div","paused",t("text_nothing_staged_yet")));
       return;
     }
     state.stagedAllow.forEach(function(a){
@@ -3564,7 +3734,7 @@
       h.appendChild(el("b","", a.name));
       h.appendChild(el("span","chip grey", fmt(a.qty) + " " + w.unit));
       c.appendChild(h);
-      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · wage type " + w.lgart));
+      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · " + t("text_wage_type_label", {code: w.lgart})));
       if(a.note) c.appendChild(el("div","why", a.note));
       box.appendChild(c);
     });
@@ -3586,7 +3756,7 @@
     var weekLog = massLogThisWeek();
     $("massLogCount").textContent = plural(weekLog.length, "n_entries");
     if(!weekLog.length){
-      box.appendChild(el("div","paused","Nothing recorded on behalf of the team yet, this week."));
+      box.appendChild(el("div","paused",t("text_nothing_recorded_behalf_week")));
       return;
     }
     weekLog.slice(-12).reverse().forEach(function(e){
@@ -3634,14 +3804,14 @@
     var box = $("bonusList");
     box.innerHTML = "";
     var mine = state.allow.filter(function(a){ return wt(a.code).amount; });
-    if(!mine.length){ box.appendChild(el("div","paused","No bonus recorded on this project yet.")); return; }
+    if(!mine.length){ box.appendChild(el("div","paused",t("text_no_bonus_recorded"))); return; }
     mine.forEach(function(a){
       var c = el("div","abscard bonus","");
       var h = el("div","h","");
-      h.appendChild(el("b","", a.forName || "Employee"));
+      h.appendChild(el("b","", a.forName || t("th_employee")));
       h.appendChild(el("span","chip green", fmt(a.amount) + " EUR"));
       c.appendChild(h);
-      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · wage type " + wt(a.code).lgart));
+      c.appendChild(el("div","why", DAYS[a.day] + " · " + PROJECTS[a.p].code + " · " + t("text_wage_type_label", {code: wt(a.code).lgart})));
       c.appendChild(el("div","why", a.note));
       c.appendChild(el("div","why", "Defined and approved by " + a.byName + ", in the same act"));
       box.appendChild(c);
@@ -3783,9 +3953,15 @@
      it was before the monthly work, regardless of what My week added. */
   function teamWeekRange(){
     var lo = 0, hi = WEEKS.length - 1;
+    /* The week-39 cap is PT01-only: PT01 always shows the monthly view, so
+       weeks 40+ exist purely as overflow for My week's month pager, never
+       meant to be reachable from a weekly navigator. PT02 has no monthly
+       view - its own later weeks are real, navigable weeks, so it keeps
+       the full range instead of being capped at 39 too. */
+    var cap = IT0001.bukrs === "PT02" ? null : 39;
     WEEKS.forEach(function(w, i){
       if(w.num === 36) lo = i;
-      if(w.num === 39) hi = i;
+      if(cap !== null && w.num === cap) hi = i;
     });
     return { lo: lo, hi: hi };
   }
@@ -3825,12 +4001,22 @@
       });
     }
   }
+  /* Approver identity and the sentence explaining whose queue this is -
+     both depend on company (a different approver per company, like the
+     approvals list itself) and on language, so this runs from both
+     switchCompany and applyI18n rather than being a one-shot data-i18n. */
+  function updateApproverChrome(){
+    if($("apActingAs")) $("apActingAs").textContent = IT0001.bukrs === "PT02" ? "Patrícia Gomes · Operations Manager, Building Solutions" : "Sofia Almeida · Delivery Manager, Consulting";
+    if($("apSubText")) $("apSubText").textContent = t(IT0001.bukrs === "PT02" ? "text_approval_sub_pt02" : "text_approval_sub");
+  }
   function switchCompany(bukrs){
     if(bukrs === IT0001.bukrs) return;
     saveCurrentWeek();
     var curNum = WEEKS[weekIdx].num;
     IT0001.bukrs = bukrs;
     WEEKS = bukrs === "PT02" ? WEEKS_PT02 : WEEKS_PT01;
+    state.approvals = bukrs === "PT02" ? APPROVALS_PT02 : APPROVALS_PT01;
+    updateApproverChrome();
     /* WEEKS_PT01 and WEEKS_PT02 no longer line up index for index - PT01
        alone has weeks either side for the monthly view - so land on the
        same week NUMBER in the new array, not the same array position;
@@ -3871,7 +4057,7 @@
     var box = $("nlChips");
     box.innerHTML = "";
     if(!txt.trim()){
-      box.appendChild(chip("waiting for text",""));
+      box.appendChild(chip(t("chip_waiting_text"),""));
       nlParsed = null;
       $("nlSave").disabled = true;
       return;
@@ -3999,11 +4185,12 @@
        project is picked (each project has exactly one, in SAP terms its
        LSTAR), so it follows the project select instead of being a second,
        independent field that could disagree with it. */
-    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["row", r.id]); };
     $("dtDur").value = fmt(rowTotal(r));
     $("dtDesc").value = r.desc;
     $("dtAct").value = pr.act;
     $("dtOrigin").textContent = originLabel(r.origin);
+    setDetailBudgetAndAudit(r.p, ["row", r.id]);
     var showClock = isClock() && typeof day === "number";
     $("dtStartField").hidden = !showClock;
     $("dtEndField").hidden = !showClock;
@@ -4036,7 +4223,7 @@
     fillProjectOptions(pj, PROJECTS.map(function(p,i){ return i; }));
     pj.value = String(monthRow.p);
     pj.disabled = allSubmitted;
-    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["month", monthRow.p, weeks[0] ? weeks[0].num : 0]); };
     var total = weeks.reduce(function(a,w){
       var r = monthRowIn(w, monthRow.p);
       return a + (r ? rowTotal(r) : 0);
@@ -4045,6 +4232,7 @@
     $("dtDesc").value = monthRow.desc || "";
     $("dtAct").value = pr.act;
     $("dtOrigin").textContent = t("val_manual");
+    setDetailBudgetAndAudit(monthRow.p, ["month", monthRow.p, weeks[0] ? weeks[0].num : 0]);
     $("dtStartField").hidden = true;
     $("dtEndField").hidden = true;
     var st = $("dtState");
@@ -4070,11 +4258,12 @@
     fillProjectOptions(pj, eligible);
     pj.value = String(eligible[0]);
     pj.disabled = false;
-    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["newrow", +pj.value]); };
     $("dtDur").value = fmt(0);
     $("dtDesc").value = "";
     $("dtAct").value = PROJECTS[eligible[0]].act;
     $("dtOrigin").textContent = t("val_manual");
+    setDetailBudgetAndAudit(eligible[0], ["newrow", eligible[0]]);
     $("dtStartField").hidden = true;
     $("dtEndField").hidden = true;
     var st = $("dtState");
@@ -4094,11 +4283,12 @@
     fillProjectOptions(pj, eligible);
     pj.value = String(eligible[0]);
     pj.disabled = false;
-    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; };
+    pj.onchange = function(){ $("dtAct").value = PROJECTS[+pj.value].act; setDetailBudgetAndAudit(+pj.value, ["newmonthrow", +pj.value, weeks[0] ? weeks[0].num : 0]); };
     $("dtDur").value = fmt(0);
     $("dtDesc").value = "";
     $("dtAct").value = PROJECTS[eligible[0]].act;
     $("dtOrigin").textContent = t("val_manual");
+    setDetailBudgetAndAudit(eligible[0], ["newmonthrow", eligible[0], weeks[0] ? weeks[0].num : 0]);
     $("dtStartField").hidden = true;
     $("dtEndField").hidden = true;
     var st = $("dtState");
@@ -4218,8 +4408,8 @@
     });
     var monthProj = weeks.reduce(function(a,w){ return a + w.rows.reduce(function(x,r){ return x + (PROJECTS[r.p].proj ? rowTotal(r) : 0); }, 0); }, 0);
     var tr = el("div","r t","");
-    tr.appendChild(el("span","","Month total"));
-    tr.appendChild(el("span","", fmt(monthProj)+" h in project"));
+    tr.appendChild(el("span","",t("label_month_total")));
+    tr.appendChild(el("span","", t("text_h_in_project", {h: fmt(monthProj)})));
     tr.appendChild(el("span","n", fmt(monthTotalHours(dates))+" h"));
     sum.appendChild(tr);
     body.appendChild(sum);
@@ -4230,19 +4420,19 @@
     });
     if(warns.length){
       var wDiv = el("div","","");
-      wDiv.innerHTML = "<div class='field'><label>"+warns.length+" warnings, they don't block submission</label></div>";
+      wDiv.innerHTML = "<div class='field'><label>"+plural(warns.length, "n_warnings_no_block")+"</label></div>";
       var ul = el("div","sum","");
       warns.forEach(function(m){
         var r = el("div","r","");
-        r.appendChild(el("span","", "Week "+m.week.num+": "+m.txt));
-        r.appendChild(el("span","chip amber","warning"));
+        r.appendChild(el("span","", t("val_week_label_prefix", {n: m.week.num, txt: m.txt})));
+        r.appendChild(el("span","chip amber",t("chip_warning_lower")));
         r.appendChild(el("span","",""));
         ul.appendChild(r);
       });
       wDiv.appendChild(ul);
       body.appendChild(wDiv);
       var f = el("div","field","");
-      f.innerHTML = "<label for='subWhy'>Justification for the deviation from the expected total</label><textarea id='subWhy' placeholder='One line is enough. Stays in the month's history.'></textarea>";
+      f.innerHTML = "<label for='subWhy'>"+t("label_deviation_justification")+"</label><textarea id='subWhy' placeholder=\""+t("placeholder_justification_month")+"\"></textarea>";
       body.appendChild(f);
       $("subWhy").value = first.deviationNote || "";
     }
@@ -4287,8 +4477,8 @@
       sum.appendChild(r);
     });
     var tr = el("div","r t","");
-    tr.appendChild(el("span","","Week total"));
-    tr.appendChild(el("span","", fmt(projTotal())+" h in project"));
+    tr.appendChild(el("span","",t("label_week_total")));
+    tr.appendChild(el("span","", t("text_h_in_project", {h: fmt(projTotal())})));
     tr.appendChild(el("span","n", fmt(weekTotal())+" h"));
     sum.appendChild(tr);
     body.appendChild(sum);
@@ -4296,19 +4486,19 @@
     var warns = validate().filter(function(m){ return m.sev === "w"; });
     if(warns.length){
       var w = el("div","","");
-      w.innerHTML = "<div class='field'><label>"+warns.length+" warnings, they don't block submission</label></div>";
+      w.innerHTML = "<div class='field'><label>"+plural(warns.length, "n_warnings_no_block")+"</label></div>";
       var ul = el("div","sum","");
       warns.forEach(function(m){
         var r = el("div","r","");
         r.appendChild(el("span","", m.txt));
-        r.appendChild(el("span","chip amber","warning"));
+        r.appendChild(el("span","chip amber",t("chip_warning_lower")));
         r.appendChild(el("span","",""));
         ul.appendChild(r);
       });
       w.appendChild(ul);
       body.appendChild(w);
       var f = el("div","field","");
-      f.innerHTML = "<label for='subWhy'>Justification for the deviation from the expected total</label><textarea id='subWhy' placeholder='One line is enough. Stays in the week's history.'></textarea>";
+      f.innerHTML = "<label for='subWhy'>"+t("label_deviation_justification")+"</label><textarea id='subWhy' placeholder=\""+t("placeholder_justification_week")+"\"></textarea>";
       body.appendChild(f);
       $("subWhy").value = state.deviationNote || "";
     }
@@ -5222,7 +5412,7 @@
     /* absences */
     if(/absen|vacation|holiday|leave|time off/.test(t)){ showAbsences(); return; }
     /* week status */
-    if(/how many hours|week status|status|summary|how('| i)?s (the week|it going)/.test(t)){ showWeekStatus(); return; }
+    if(/how many hours|week status|status|summary|how('| i)?s (the week|it going)|check (the|my) week/.test(t)){ showWeekStatus(); return; }
     /* suggestions */
     if(/suggest/.test(t) && !/high.confidence/.test(t)){ showSuggestionsPanel(); return; }
     if(/high.confidence/.test(t)){ offerApplyHighConfidence(); return; }
