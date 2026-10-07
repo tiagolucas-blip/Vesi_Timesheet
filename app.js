@@ -1031,6 +1031,95 @@
       placeholder_chat:"2h BNK payroll testing yesterday", btn_send:"Send",
       jfoot_text:"Never saves without confirmation. Entries created here are marked with origin <span class=\"num\">Joule</span> and go through the same validations.",
       aria_dictate:"Dictate by voice",
+      /* Assistant chat content: greeting, quick-reply chips and every bot_*
+         reply botSay/botCard send to #jlog. Kept apart from the rest of the
+         dictionary only because there's so much of it - these were the one
+         corner the original i18n pass (toasts, validation messages, static
+         chrome) never reached, so the assistant kept replying in English
+         (and, in a couple of spots, in hardcoded Portuguese) regardless of
+         the language picked in Settings. */
+      bot_greeting:"Hi {name}! I can log hours, for you or for the team, check the week, sort out absences, approve timesheets, or just take you to the right screen. What do you need?",
+      bot_greeting_1:"Hey! What do you need, logging hours, checking the week, or something else?",
+      bot_greeting_2:"Hi there. Tell me what you need and I'll sort it.",
+      bot_greeting_3:"Hello! Hours to log, or something to check?",
+      chip_confirmed:"confirmed", chip_cancelled:"cancelled",
+      bot_cancelled_no_save:"No problem, I didn't save anything.",
+      bot_week_summary:"You have {tot} h recorded of {exp} h expected, already with absences deducted. ",
+      bot_week_errors_block_one:"{n} error blocks submission.", bot_week_errors_block_other:"{n} errors block submission.",
+      bot_week_no_errors_submit:"No errors, you can submit.",
+      bot_absences_intro:"These are this week's absences, from the Leave Request. Days with an approved full-day absence don't accept time entries.",
+      bot_help_text:"A few things I can do: log your hours (<span class=\"num\">2h BNK payroll testing yesterday</span>), log for someone on your team (<span class=\"num\">4h for João today</span>), check the week or your absences, copy last week, apply high-confidence suggestions, submit the week, approve timesheets, or jump to Team, Approval or CATS mapping. Just say it in plain language.",
+      bot_switched_to:"Switched to {screen}.",
+      bot_suggestions_available:"You have {n} suggestions to review in the side panel. I can apply the high-confidence ones, if you'd like.",
+      bot_no_suggestions:"No suggestions to review.",
+      bot_no_high_conf:"I don't have any pending high-confidence suggestions.",
+      bot_confirm_apply_suggestions:"Confirm applying these suggestions?", btn_apply:"Apply",
+      bot_suggestions_applied:"{n} suggestions applied. ",
+      bot_copy_week_offer:"I can bring in last week's structure, without durations.",
+      label_action:"Action", bot_copy_rows_value:"copy last week's rows",
+      label_durations:"Durations", bot_stay_zero_value:"stay at zero", btn_copy:"Copy",
+      bot_copy_week_done:"Done. The rows are created, durations still need filling in.",
+      bot_week_already_submitted:"The week is already submitted and in approval.",
+      bot_cant_submit_yet:"I can't submit yet. {reason}",
+      bot_confirm_submit_week:"Confirm submitting week {num}?",
+      label_expected:"Expected", label_status_after_submit:"Status after submitting",
+      bot_week_submitted_msg:"Week submitted. It's now in approval with the project manager.",
+      bot_week_locked:"The week is already submitted, I can't change it. Want to see something else?",
+      bot_day_absence_no_alt:"{day} has an approved {type} and there's no other day with free capacity. I didn't record anything.",
+      bot_day_absence_suggest:"{day} has an approved {type}, so it doesn't accept hours. I suggest {alt}.",
+      bot_day_closed:"{day} falls in a closed period, it can't take new hours. I didn't record anything.",
+      bot_day_abs_cap:"{day} has an approved {type}.", bot_day_capacity:"{day}'s capacity is {cap} h.",
+      bot_hours_left_suffix:" Only {left} h available, I didn't record anything.",
+      bot_no_hours_suffix:" No hours available on this day, I didn't record anything.",
+      bot_confirm_entry:"Confirm this entry?", label_receiver_object:"Receiver object",
+      bot_receiver_pep:"PEP {code}", bot_receiver_cost_center:"Cost center {code}",
+      bot_desc_tbd:"(to be filled in)", bot_entry_saved:"{dur} h saved on {day}, {code}. ",
+      bot_every_day_blocked:"Every day in that range has an approved absence, falls in a closed period, or doesn't have room for that much. I didn't record anything.",
+      bot_skip_absence_closed:"{days} (approved absence or closed period)", bot_skip_over_capacity:"{days} (over capacity)",
+      bot_days_skipped_suffix:" ({parts} skipped)", label_duration_per_day:"Duration per day",
+      bot_entry_saved_days_one:"{dur} h saved on {n} day ({total} h total), {code}. ",
+      bot_entry_saved_days_other:"{dur} h saved on {n} days ({total} h total), {code}. ",
+      bot_week_capacity_full:"Every working day this week is already at capacity.",
+      bot_month_capacity_full:"Every working day this month is already at capacity.",
+      bot_filled_saved_one:"{total} h saved across {n} day, {code}. ", bot_filled_saved_other:"{total} h saved across {n} days, {code}. ",
+      bot_filled_saved_month_one:"{total} h saved across {n} day, {code}, this month. ",
+      bot_filled_saved_month_other:"{total} h saved across {n} days, {code}, this month. ",
+      bot_cant_stage:"Can't stage that: {list}.", bot_week_already_approved:"{name} (week already approved)",
+      label_people:"People", label_time:"Time", label_duration_each:"Duration each", label_skipped:"Skipped",
+      bot_confirm_register_staging:"Register this on staging area?", btn_register:"Register",
+      bot_staged_saved:"Registered on staging area for {names}, {days}, {code}. Click {save} to finish.",
+      bot_staged_nothing:"Nothing was actually recorded.",
+      bot_staged_not_saved_suffix:" {names} couldn't take it this way (not allocated to {code}, wrong profile for that field, absence, or closed period), the reason is on the Team screen.",
+      bot_note_required:"{noteLabel} is required for {name}. What should it say?",
+      label_quantity_each:"Quantity each",
+      bot_staged_saved_allow:"Registered on staging area for {names}, {days}, {name}. Click {save} to finish.",
+      bot_staged_not_saved_allow_suffix:" {names} couldn't take it (not allocated to {code}, wrong company for that allowance, or closed period).",
+      bot_team_nobody_missing:"Nobody on {code}'s team has missing working days this week.",
+      bot_team_already_full:"{names} already at full capacity this week, on {code}'s team.",
+      bot_team_person_not_found:"I couldn't find anyone called \"{name}\" on {code}'s team.",
+      bot_confirm_fill_team:"Fill in these missing days up to each person's capacity?",
+      btn_fill_and_register:"Fill in and register",
+      bot_team_filled_saved:"Filled in and registered on staging area for {names}. Click {save} to finish.",
+      bot_team_filled_nothing:"Nothing was recorded.",
+      bot_team_filled_not_saved_suffix:" {names} couldn't take it, the reason is on the Team grid.",
+      bot_approval_ask_who:"Tell me who to approve, a name, or “approve everyone” for every timesheet without exceptions.",
+      bot_approval_nothing:"Nothing to approve there, either everything's already approved or what's left has an exception that needs individual review.",
+      bot_confirm_approve_all:"Approve these {n} timesheets, no exceptions?", btn_approve_all:"Approve all",
+      bot_approved_all_msg:"{n} timesheets approved. Exceptions remain for individual review.",
+      bot_already_approved:"{name}'s timesheet is already approved.",
+      bot_has_exception:"{name}'s timesheet has an exception ({note}) and needs individual review on the Approval screen, that one can't be bulk-approved.",
+      bot_confirm_approve_one:"Approve {name}'s timesheet?", label_in_project:"In project", btn_approve:"Approve",
+      bot_approved_one_msg:"{name}'s timesheet approved.",
+      bot_parse_failed:"I couldn't understand what to record. Write the duration and the project, for example <span class=\"num\">2h BNK payroll testing yesterday</span>. I can also show the week's status or your absences.",
+      bot_parse_failed_generic:"I didn't catch all the details of that entry. Could you write it another way?",
+      bot_which_project:"Which project are those hours for?",
+      bot_team_not_found:"couldn't find \"{name}\" on {code}'s team ({leader}). If they're on another project or with another leader, change the \"Acting as\" or \"Project\" selector at the top of the Team screen first",
+      bot_team_who_unclear:"couldn't tell who this is about", bot_team_day_unclear:"couldn't tell the day",
+      bot_team_amount_unclear:"couldn't tell {amount}", label_the_hours:"the hours", label_the_quantity:"the quantity",
+      bot_also_unrecognized_wage_type:"I also didn't recognize the wage type.",
+      chip_hours_i_have:"How many hours do I have?", chip_my_absences:"My absences", chip_bnk_example:"2h BNK testing yesterday",
+      chip_submit_week:"Submit the week", chip_submit_month:"Submit the month", chip_copy_last_week:"Copy last week",
+      chip_apply_high_conf:"Apply the high-confidence ones", chip_help:"Help",
       dlg_add_allowance_title:"Add allowance", chip_wage_type:"Wage type", label_allowance:"Allowance", label_day:"Day",
       btn_cancel:"Cancel", btn_record_allowance:"Record allowance",
       dlg_quick_add_title:"Quick add", label_write_natural:"Write in natural language",
@@ -1313,6 +1402,88 @@
       placeholder_chat:"2h BNK teste de payroll ontem", btn_send:"Enviar",
       jfoot_text:"Nunca grava sem confirmação. Os lançamentos criados aqui ficam marcados com origem <span class=\"num\">Joule</span> e passam pelas mesmas validações.",
       aria_dictate:"Ditar por voz",
+      bot_greeting:"Olá, {name}! Posso registar horas, para ti ou para a equipa, consultar a semana, tratar de ausências, aprovar folhas de horas, ou levar-te diretamente ao ecrã certo. Em que posso ajudar?",
+      bot_greeting_1:"Olá! Em que posso ajudar: registar horas, consultar a semana, ou outra coisa?",
+      bot_greeting_2:"Olá. Diz-me o que precisas e eu trato disso.",
+      bot_greeting_3:"Olá! Horas para registar, ou algo para consultar?",
+      chip_confirmed:"confirmado", chip_cancelled:"cancelado",
+      bot_cancelled_no_save:"Sem problema, não gravei nada.",
+      bot_week_summary:"Tens {tot} h registadas de {exp} h esperadas, já com as ausências deduzidas. ",
+      bot_week_errors_block_one:"{n} erro bloqueia a submissão.", bot_week_errors_block_other:"{n} erros bloqueiam a submissão.",
+      bot_week_no_errors_submit:"Sem erros, já podes submeter.",
+      bot_absences_intro:"Estas são as ausências desta semana, vindas do pedido de férias/ausência. Dias com uma ausência de dia inteiro aprovada não aceitam lançamentos.",
+      bot_help_text:"Algumas coisas que posso fazer: registar as tuas horas (<span class=\"num\">2h BNK payroll testing yesterday</span>), registar para alguém da equipa (<span class=\"num\">4h for João today</span>), consultar a semana ou as ausências, copiar a semana anterior, aplicar as sugestões de maior confiança, submeter a semana, aprovar folhas de horas, ou ir para Equipa, Aprovação ou Mapeamento CATS. Escreve em linguagem normal.",
+      bot_switched_to:"Mudei para {screen}.",
+      bot_suggestions_available:"Tens {n} sugestões para rever no painel lateral. Posso aplicar as de maior confiança, se quiseres.",
+      bot_no_suggestions:"Sem sugestões para rever.",
+      bot_no_high_conf:"Não tenho nenhuma sugestão de alta confiança pendente.",
+      bot_confirm_apply_suggestions:"Confirmas aplicar estas sugestões?", btn_apply:"Aplicar",
+      bot_suggestions_applied:"{n} sugestões aplicadas. ",
+      bot_copy_week_offer:"Posso trazer a estrutura da semana anterior, sem durações.",
+      label_action:"Ação", bot_copy_rows_value:"copiar as linhas da semana anterior",
+      label_durations:"Durações", bot_stay_zero_value:"ficam a zero", btn_copy:"Copiar",
+      bot_copy_week_done:"Feito. As linhas estão criadas, as durações ainda precisam de ser preenchidas.",
+      bot_week_already_submitted:"A semana já está submetida e em aprovação.",
+      bot_cant_submit_yet:"Ainda não posso submeter. {reason}",
+      bot_confirm_submit_week:"Confirmas submeter a semana {num}?",
+      label_expected:"Esperado", label_status_after_submit:"Estado após submeter",
+      bot_week_submitted_msg:"Semana submetida. Está agora em aprovação com o gestor do projeto.",
+      bot_week_locked:"A semana já está submetida, não a posso alterar. Queres ver outra coisa?",
+      bot_day_absence_no_alt:"{day} tem uma {type} aprovada e não há outro dia com capacidade livre. Não registei nada.",
+      bot_day_absence_suggest:"{day} tem uma {type} aprovada, por isso não aceita horas. Sugiro {alt}.",
+      bot_day_closed:"{day} está num período fechado, não pode receber novas horas. Não registei nada.",
+      bot_day_abs_cap:"{day} tem uma {type} aprovada.", bot_day_capacity:"A capacidade de {day} é {cap} h.",
+      bot_hours_left_suffix:" Só há {left} h disponíveis, não registei nada.",
+      bot_no_hours_suffix:" Não há horas disponíveis nesse dia, não registei nada.",
+      bot_confirm_entry:"Confirmas este lançamento?", label_receiver_object:"Objeto recetor",
+      bot_receiver_pep:"PEP {code}", bot_receiver_cost_center:"Centro de custo {code}",
+      bot_desc_tbd:"(por preencher)", bot_entry_saved:"{dur} h gravadas em {day}, {code}. ",
+      bot_every_day_blocked:"Todos os dias desse intervalo têm uma ausência aprovada, caem num período fechado, ou não têm espaço para essa quantidade. Não registei nada.",
+      bot_skip_absence_closed:"{days} (ausência aprovada ou período fechado)", bot_skip_over_capacity:"{days} (acima da capacidade)",
+      bot_days_skipped_suffix:" ({parts} ignorados)", label_duration_per_day:"Duração por dia",
+      bot_entry_saved_days_one:"{dur} h gravadas em {n} dia ({total} h no total), {code}. ",
+      bot_entry_saved_days_other:"{dur} h gravadas em {n} dias ({total} h no total), {code}. ",
+      bot_week_capacity_full:"Todos os dias úteis desta semana já estão à capacidade.",
+      bot_month_capacity_full:"Todos os dias úteis deste mês já estão à capacidade.",
+      bot_filled_saved_one:"{total} h gravadas em {n} dia, {code}. ", bot_filled_saved_other:"{total} h gravadas em {n} dias, {code}. ",
+      bot_filled_saved_month_one:"{total} h gravadas em {n} dia, {code}, este mês. ",
+      bot_filled_saved_month_other:"{total} h gravadas em {n} dias, {code}, este mês. ",
+      bot_cant_stage:"Não consigo colocar isso em preparação: {list}.", bot_week_already_approved:"{name} (semana já aprovada)",
+      label_people:"Pessoas", label_time:"Horário", label_duration_each:"Duração de cada", label_skipped:"Ignorados",
+      bot_confirm_register_staging:"Colocar isto na área de preparação?", btn_register:"Registar",
+      bot_staged_saved:"Colocado em preparação para {names}, {days}, {code}. Clica em {save} para terminar.",
+      bot_staged_nothing:"Não foi registado nada.",
+      bot_staged_not_saved_suffix:" {names} não conseguiu(ram) desta forma (não alocado a {code}, perfil errado para esse campo, ausência, ou período fechado), o motivo está no ecrã Equipa.",
+      bot_note_required:"{noteLabel} é obrigatório para {name}. O que deve dizer?",
+      label_quantity_each:"Quantidade de cada",
+      bot_staged_saved_allow:"Colocado em preparação para {names}, {days}, {name}. Clica em {save} para terminar.",
+      bot_staged_not_saved_allow_suffix:" {names} não conseguiu(ram) (não alocado a {code}, empresa errada para esse abono, ou período fechado).",
+      bot_team_nobody_missing:"Ninguém na equipa de {code} tem dias úteis por preencher esta semana.",
+      bot_team_already_full:"{names} já está(ão) com a capacidade completa esta semana, na equipa de {code}.",
+      bot_team_person_not_found:"Não encontrei ninguém chamado \"{name}\" na equipa de {code}.",
+      bot_confirm_fill_team:"Preencher estes dias em falta até à capacidade de cada pessoa?",
+      btn_fill_and_register:"Preencher e registar",
+      bot_team_filled_saved:"Preenchido e colocado em preparação para {names}. Clica em {save} para terminar.",
+      bot_team_filled_nothing:"Não foi registado nada.",
+      bot_team_filled_not_saved_suffix:" {names} não conseguiu(ram), o motivo está na grelha da Equipa.",
+      bot_approval_ask_who:"Diz-me quem aprovar, um nome, ou “aprovar todos” para todas as folhas de horas sem exceções.",
+      bot_approval_nothing:"Não há nada para aprovar aí, ou já está tudo aprovado, ou o que resta tem uma exceção que precisa de revisão individual.",
+      bot_confirm_approve_all:"Aprovar estas {n} folhas de horas, sem exceções?", btn_approve_all:"Aprovar todas",
+      bot_approved_all_msg:"{n} folhas de horas aprovadas. As exceções ficam para revisão individual.",
+      bot_already_approved:"A folha de horas de {name} já está aprovada.",
+      bot_has_exception:"A folha de horas de {name} tem uma exceção ({note}) e precisa de revisão individual no ecrã de Aprovação, essa não pode ser aprovada em bloco.",
+      bot_confirm_approve_one:"Aprovar a folha de horas de {name}?", label_in_project:"No projeto", btn_approve:"Aprovar",
+      bot_approved_one_msg:"Folha de horas de {name} aprovada.",
+      bot_parse_failed:"Não consegui perceber o que registar. Escreve a duração e o projeto, por exemplo <span class=\"num\">2h BNK payroll testing yesterday</span>. Também posso mostrar o estado da semana ou as tuas ausências.",
+      bot_parse_failed_generic:"Não consegui confirmar todos os detalhes desse registo. Podes escrever de outra forma?",
+      bot_which_project:"A que projeto se destinam essas horas?",
+      bot_team_not_found:"não encontrei \"{name}\" na equipa de {code} ({leader}). Se está noutro projeto ou com outro líder, muda o seletor \"Acting as\" ou \"Project\" no topo do ecrã Team primeiro",
+      bot_team_who_unclear:"não percebi de quem se trata", bot_team_day_unclear:"não percebi o dia",
+      bot_team_amount_unclear:"não percebi {amount}", label_the_hours:"as horas", label_the_quantity:"a quantidade",
+      bot_also_unrecognized_wage_type:"Também não reconheci o tipo de rúbrica.",
+      chip_hours_i_have:"Quantas horas tenho?", chip_my_absences:"As minhas ausências", chip_bnk_example:"2h BNK teste de payroll ontem",
+      chip_submit_week:"Submeter a semana", chip_submit_month:"Submeter o mês", chip_copy_last_week:"Copiar a semana anterior",
+      chip_apply_high_conf:"Aplicar as de maior confiança", chip_help:"Ajuda",
       dlg_add_allowance_title:"Adicionar abono", chip_wage_type:"Tipo de rúbrica", label_allowance:"Abono", label_day:"Dia",
       btn_cancel:"Cancelar", btn_record_allowance:"Registar abono",
       dlg_quick_add_title:"Adicionar rápido", label_write_natural:"Escreve em linguagem natural",
@@ -1595,6 +1766,88 @@
       placeholder_chat:"2h BNK test de paie hier", btn_send:"Envoyer",
       jfoot_text:"N'enregistre jamais sans confirmation. Les saisies créées ici sont marquées avec l'origine <span class=\"num\">Joule</span> et passent par les mêmes validations.",
       aria_dictate:"Dicter à la voix",
+      bot_greeting:"Bonjour {name} ! Je peux saisir des heures, pour vous ou pour l'équipe, vérifier la semaine, gérer les absences, approuver des relevés, ou simplement vous emmener au bon écran. De quoi avez-vous besoin ?",
+      bot_greeting_1:"Bonjour ! De quoi avez-vous besoin : saisir des heures, vérifier la semaine, ou autre chose ?",
+      bot_greeting_2:"Bonjour. Dites-moi ce qu'il vous faut et je m'en occupe.",
+      bot_greeting_3:"Bonjour ! Des heures à saisir, ou quelque chose à vérifier ?",
+      chip_confirmed:"confirmé", chip_cancelled:"annulé",
+      bot_cancelled_no_save:"Pas de problème, je n'ai rien enregistré.",
+      bot_week_summary:"Vous avez {tot} h enregistrées sur {exp} h attendues, absences déjà déduites. ",
+      bot_week_errors_block_one:"{n} erreur bloque la soumission.", bot_week_errors_block_other:"{n} erreurs bloquent la soumission.",
+      bot_week_no_errors_submit:"Aucune erreur, vous pouvez soumettre.",
+      bot_absences_intro:"Voici les absences de cette semaine, issues de la demande de congé. Les jours avec une absence de journée entière approuvée n'acceptent pas de saisie d'heures.",
+      bot_help_text:"Voici ce que je peux faire : saisir vos heures (<span class=\"num\">2h BNK payroll testing yesterday</span>), saisir pour quelqu'un de l'équipe (<span class=\"num\">4h for João today</span>), vérifier la semaine ou les absences, copier la semaine précédente, appliquer les suggestions à forte confiance, soumettre la semaine, approuver des relevés, ou aller vers Équipe, Approbation ou Mappage CATS. Écrivez simplement en langage naturel.",
+      bot_switched_to:"Passé à {screen}.",
+      bot_suggestions_available:"Vous avez {n} suggestions à revoir dans le panneau latéral. Je peux appliquer celles à forte confiance, si vous le souhaitez.",
+      bot_no_suggestions:"Aucune suggestion à revoir.",
+      bot_no_high_conf:"Je n'ai aucune suggestion à forte confiance en attente.",
+      bot_confirm_apply_suggestions:"Confirmez l'application de ces suggestions ?", btn_apply:"Appliquer",
+      bot_suggestions_applied:"{n} suggestions appliquées. ",
+      bot_copy_week_offer:"Je peux reprendre la structure de la semaine précédente, sans les durées.",
+      label_action:"Action", bot_copy_rows_value:"copier les lignes de la semaine précédente",
+      label_durations:"Durées", bot_stay_zero_value:"restent à zéro", btn_copy:"Copier",
+      bot_copy_week_done:"C'est fait. Les lignes sont créées, les durées restent à remplir.",
+      bot_week_already_submitted:"La semaine est déjà soumise et en approbation.",
+      bot_cant_submit_yet:"Je ne peux pas encore soumettre. {reason}",
+      bot_confirm_submit_week:"Confirmez la soumission de la semaine {num} ?",
+      label_expected:"Attendu", label_status_after_submit:"Statut après soumission",
+      bot_week_submitted_msg:"Semaine soumise. Elle est maintenant en approbation auprès du chef de projet.",
+      bot_week_locked:"La semaine est déjà soumise, je ne peux pas la modifier. Voulez-vous voir autre chose ?",
+      bot_day_absence_no_alt:"{day} a une {type} approuvée et aucun autre jour n'a de capacité libre. Je n'ai rien enregistré.",
+      bot_day_absence_suggest:"{day} a une {type} approuvée, donc n'accepte pas d'heures. Je suggère {alt}.",
+      bot_day_closed:"{day} tombe dans une période clôturée, elle ne peut pas recevoir de nouvelles heures. Je n'ai rien enregistré.",
+      bot_day_abs_cap:"{day} a une {type} approuvée.", bot_day_capacity:"La capacité de {day} est de {cap} h.",
+      bot_hours_left_suffix:" Seulement {left} h disponibles, je n'ai rien enregistré.",
+      bot_no_hours_suffix:" Aucune heure disponible ce jour-là, je n'ai rien enregistré.",
+      bot_confirm_entry:"Confirmez cette saisie ?", label_receiver_object:"Objet récepteur",
+      bot_receiver_pep:"PEP {code}", bot_receiver_cost_center:"Centre de coûts {code}",
+      bot_desc_tbd:"(à compléter)", bot_entry_saved:"{dur} h enregistrées le {day}, {code}. ",
+      bot_every_day_blocked:"Chaque jour de cette période a une absence approuvée, tombe dans une période clôturée, ou n'a pas la place pour cette quantité. Je n'ai rien enregistré.",
+      bot_skip_absence_closed:"{days} (absence approuvée ou période clôturée)", bot_skip_over_capacity:"{days} (au-delà de la capacité)",
+      bot_days_skipped_suffix:" ({parts} ignorés)", label_duration_per_day:"Durée par jour",
+      bot_entry_saved_days_one:"{dur} h enregistrées sur {n} jour ({total} h au total), {code}. ",
+      bot_entry_saved_days_other:"{dur} h enregistrées sur {n} jours ({total} h au total), {code}. ",
+      bot_week_capacity_full:"Tous les jours ouvrés de cette semaine sont déjà à pleine capacité.",
+      bot_month_capacity_full:"Tous les jours ouvrés de ce mois sont déjà à pleine capacité.",
+      bot_filled_saved_one:"{total} h enregistrées sur {n} jour, {code}. ", bot_filled_saved_other:"{total} h enregistrées sur {n} jours, {code}. ",
+      bot_filled_saved_month_one:"{total} h enregistrées sur {n} jour, {code}, ce mois-ci. ",
+      bot_filled_saved_month_other:"{total} h enregistrées sur {n} jours, {code}, ce mois-ci. ",
+      bot_cant_stage:"Impossible de mettre ça en préparation : {list}.", bot_week_already_approved:"{name} (semaine déjà approuvée)",
+      label_people:"Personnes", label_time:"Horaire", label_duration_each:"Durée de chacun", label_skipped:"Ignorés",
+      bot_confirm_register_staging:"Mettre ceci en zone de préparation ?", btn_register:"Enregistrer",
+      bot_staged_saved:"Mis en préparation pour {names}, {days}, {code}. Cliquez sur {save} pour terminer.",
+      bot_staged_nothing:"Rien n'a été réellement enregistré.",
+      bot_staged_not_saved_suffix:" {names} n'a/ont pas pu de cette façon (non alloué à {code}, mauvais profil pour ce champ, absence, ou période clôturée), la raison est sur l'écran Équipe.",
+      bot_note_required:"{noteLabel} est obligatoire pour {name}. Que doit-elle indiquer ?",
+      label_quantity_each:"Quantité de chacun",
+      bot_staged_saved_allow:"Mis en préparation pour {names}, {days}, {name}. Cliquez sur {save} pour terminer.",
+      bot_staged_not_saved_allow_suffix:" {names} n'a/ont pas pu (non alloué à {code}, mauvaise entreprise pour cette indemnité, ou période clôturée).",
+      bot_team_nobody_missing:"Personne dans l'équipe de {code} n'a de jours ouvrés manquants cette semaine.",
+      bot_team_already_full:"{names} est/sont déjà à pleine capacité cette semaine, dans l'équipe de {code}.",
+      bot_team_person_not_found:"Je n'ai trouvé personne nommé \"{name}\" dans l'équipe de {code}.",
+      bot_confirm_fill_team:"Compléter ces jours manquants jusqu'à la capacité de chacun ?",
+      btn_fill_and_register:"Compléter et enregistrer",
+      bot_team_filled_saved:"Complété et mis en préparation pour {names}. Cliquez sur {save} pour terminer.",
+      bot_team_filled_nothing:"Rien n'a été enregistré.",
+      bot_team_filled_not_saved_suffix:" {names} n'a/ont pas pu, la raison est sur la grille Équipe.",
+      bot_approval_ask_who:"Dites-moi qui approuver, un nom, ou «approuver tout le monde» pour tous les relevés sans exception.",
+      bot_approval_nothing:"Rien à approuver ici, soit tout est déjà approuvé, soit ce qui reste a une exception qui nécessite une revue individuelle.",
+      bot_confirm_approve_all:"Approuver ces {n} relevés, sans exception ?", btn_approve_all:"Tout approuver",
+      bot_approved_all_msg:"{n} relevés approuvés. Les exceptions restent à revoir individuellement.",
+      bot_already_approved:"Le relevé de {name} est déjà approuvé.",
+      bot_has_exception:"Le relevé de {name} a une exception ({note}) et nécessite une revue individuelle sur l'écran Approbation, celui-là ne peut pas être approuvé en bloc.",
+      bot_confirm_approve_one:"Approuver le relevé de {name} ?", label_in_project:"Sur le projet", btn_approve:"Approuver",
+      bot_approved_one_msg:"Relevé de {name} approuvé.",
+      bot_parse_failed:"Je n'ai pas compris ce qu'il fallait enregistrer. Écrivez la durée et le projet, par exemple <span class=\"num\">2h BNK payroll testing yesterday</span>. Je peux aussi afficher le statut de la semaine ou vos absences.",
+      bot_parse_failed_generic:"Je n'ai pas saisi tous les détails de cette saisie. Pouvez-vous l'écrire autrement ?",
+      bot_which_project:"Pour quel projet sont ces heures ?",
+      bot_team_not_found:"je n'ai pas trouvé \"{name}\" dans l'équipe de {code} ({leader}). S'il/elle est sur un autre projet ou avec un autre responsable, changez d'abord le sélecteur \"Acting as\" ou \"Project\" en haut de l'écran Équipe",
+      bot_team_who_unclear:"je n'ai pas compris de qui il s'agit", bot_team_day_unclear:"je n'ai pas compris le jour",
+      bot_team_amount_unclear:"je n'ai pas compris {amount}", label_the_hours:"les heures", label_the_quantity:"la quantité",
+      bot_also_unrecognized_wage_type:"Je n'ai pas non plus reconnu la rubrique.",
+      chip_hours_i_have:"Combien d'heures ai-je ?", chip_my_absences:"Mes absences", chip_bnk_example:"2h BNK test de paie hier",
+      chip_submit_week:"Soumettre la semaine", chip_submit_month:"Soumettre le mois", chip_copy_last_week:"Copier la semaine précédente",
+      chip_apply_high_conf:"Appliquer celles à forte confiance", chip_help:"Aide",
       dlg_add_allowance_title:"Ajouter une indemnité", chip_wage_type:"Rubrique", label_allowance:"Indemnité", label_day:"Jour",
       btn_cancel:"Annuler", btn_record_allowance:"Enregistrer l'indemnité",
       dlg_quick_add_title:"Ajout rapide", label_write_natural:"Écrivez en langage naturel",
@@ -4844,8 +5097,8 @@
     if(open){
       if(!chat.greeted){
         chat.greeted = true;
-        botSay("bot", "Hi Tiago! I can log hours, for you or for the team, check the week, sort out absences, approve timesheets, or just take you to the right screen. What do you need?");
-        botChips(["How many hours do I have?","My absences","2h BNK testing yesterday","Submit the week"]);
+        botSay("bot", t("bot_greeting", {name: EMPLOYEE_NAME.split(" ")[0]}));
+        botChips([t("chip_hours_i_have"),t("chip_my_absences"),t("chip_bnk_example"),t("chip_submit_week")]);
       }
       setTimeout(function(){ $("jinput").focus(); }, 60);
     }
@@ -4913,16 +5166,16 @@
       chat.draft = null;
       chat.draftWeek = null;
       acts.innerHTML = "";
-      acts.appendChild(el("span","chip green","confirmed"));
+      acts.appendChild(el("span","chip green",t("chip_confirmed")));
       onConfirm();
     }));
-    acts.appendChild(btn("Cancel","btn sm", function(){
+    acts.appendChild(btn(t("btn_cancel"),"btn sm", function(){
       chat.pending = null;
       chat.draft = null;
       chat.draftWeek = null;
       acts.innerHTML = "";
-      acts.appendChild(el("span","chip grey","cancelled"));
-      botSay("bot","No problem, I didn't save anything.");
+      acts.appendChild(el("span","chip grey",t("chip_cancelled")));
+      botSay("bot",t("bot_cancelled_no_save"));
     }));
     c.appendChild(acts);
     return c;
@@ -4933,9 +5186,15 @@
   }
   function weekSummaryText(){
     var errs = errors().length;
-    return "You have " + fmt(weekTotal()) + " h recorded of " + fmt(weekCapacity()) +
-      " h expected, already with absences deducted. " +
-      (errs ? errs + (errs === 1 ? " error blocks submission." : " errors block submission.") : "No errors, you can submit.");
+    return t("bot_week_summary", {tot: fmt(weekTotal()), exp: fmt(weekCapacity())}) +
+      (errs ? plural(errs, "bot_week_errors_block") : t("bot_week_no_errors_submit"));
+  }
+  /* The "Receiver object" line a confirmation card shows: PEP if the
+     project carries one, the cost center otherwise - same either/or every
+     card in this file (offerEntry, offerEntryWeek, offerFillMissing,
+     offerFillMissingMonth) used to spell out on its own. */
+  function receiverObjectLabel(pr){
+    return pr.sap.rproj ? t("bot_receiver_pep", {code: pr.sap.rproj}) : t("bot_receiver_cost_center", {code: pr.sap.rkostl});
   }
 
   /* assistant actions, shared between Claude (via /api/chat) and the local interpreter */
@@ -4944,80 +5203,80 @@
     ABSENCES.forEach(function(a){
       node.appendChild(el("div","jrow2", DAYS[a.day] + " · " + a.type + " · " + fmt(a.hours) + " h · " + absStatusLabel(a.status)));
     });
-    botSay("bot","These are this week's absences, from the Leave Request. Days with an approved full-day absence don't accept time entries.", node);
-    botChips(["How many hours do I have?","Copy last week"]);
+    botSay("bot",t("bot_absences_intro"), node);
+    botChips([t("chip_hours_i_have"),t("chip_copy_last_week")]);
   }
   function showWeekStatus(){
     botSay("bot", weekSummaryText());
-    botChips(["My absences","Submit the week"]);
+    botChips([t("chip_my_absences"),t("chip_submit_week")]);
   }
   function showHelp(){
-    botSay("bot","A few things I can do: log your hours (<span class=\"num\">2h BNK payroll testing yesterday</span>), log for someone on your team (<span class=\"num\">4h for João today</span>), check the week or your absences, copy last week, apply high-confidence suggestions, submit the week, approve timesheets, or jump to Team, Approval or CATS mapping. Just say it in plain language.", null, true);
-    botChips(["How many hours do I have?","My absences","Copy last week","Submit the week"]);
+    botSay("bot",t("bot_help_text"), null, true);
+    botChips([t("chip_hours_i_have"),t("chip_my_absences"),t("chip_copy_last_week"),t("chip_submit_week")]);
   }
   function goToScreen(key, label){
     var b = document.querySelector('.nav button[data-screen="'+key+'"]');
     if(b) b.click();
-    botSay("bot","Switched to "+label+".");
+    botSay("bot",t("bot_switched_to", {screen: label}));
   }
-  function goToTeamScreen(){ goToScreen("team","Team (mass entry)"); }
-  function goToApprovalScreen(){ goToScreen("aprov","Approval (manager)"); }
-  function goToCatsScreen(){ goToScreen("cats","CATS mapping"); }
+  function goToTeamScreen(){ goToScreen("team",t("nav_team")); }
+  function goToApprovalScreen(){ goToScreen("aprov",t("nav_approval")); }
+  function goToCatsScreen(){ goToScreen("cats",t("nav_cats")); }
   function showSuggestionsPanel(){
     var vis = visibleSugs();
     botSay("bot", vis.length
-      ? "You have " + vis.length + " suggestions to review in the side panel. I can apply the high-confidence ones, if you'd like."
-      : "No suggestions to review.");
-    if(vis.length) botChips(["Apply the high-confidence ones"]);
+      ? t("bot_suggestions_available", {n: vis.length})
+      : t("bot_no_suggestions"));
+    if(vis.length) botChips([t("chip_apply_high_conf")]);
   }
   function offerApplyHighConfidence(){
     var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
-    if(!hi.length){ botSay("bot","I don't have any pending high-confidence suggestions."); return; }
+    if(!hi.length){ botSay("bot",t("bot_no_high_conf")); return; }
     chat.pending = "sugs";
-    botSay("bot","Confirm applying these suggestions?", botCard(
+    botSay("bot",t("bot_confirm_apply_suggestions"), botCard(
       hi.map(function(s){ return [DAYS[s.day] + ", " + PROJECTS[s.p].code, fmt(s.hours) + " h"]; }),
-      "Apply", function(){
+      t("btn_apply"), function(){
         hi.forEach(acceptSug);
-        botSay("bot", hi.length + " suggestions applied. " + weekSummaryText());
+        botSay("bot", t("bot_suggestions_applied", {n: hi.length}) + weekSummaryText());
       }));
   }
   function offerCopyWeek(){
     chat.pending = "copy";
-    botSay("bot","I can bring in last week's structure, without durations.", botCard(
-      [["Action","copy last week's rows"],["Durations","stay at zero"]],
-      "Copy", function(){ copyWeek(); botSay("bot","Done. The rows are created, durations still need filling in."); }));
+    botSay("bot",t("bot_copy_week_offer"), botCard(
+      [[t("label_action"),t("bot_copy_rows_value")],[t("label_durations"),t("bot_stay_zero_value")]],
+      t("btn_copy"), function(){ copyWeek(); botSay("bot",t("bot_copy_week_done")); }));
   }
   function offerSubmit(){
-    if(state.submitted){ botSay("bot","The week is already submitted and in approval."); return; }
+    if(state.submitted){ botSay("bot",t("bot_week_already_submitted")); return; }
     var errs = errors();
     if(errs.length){
-      botSay("bot","I can't submit yet. " + errs[0].txt);
-      botChips(["How many hours do I have?"]);
+      botSay("bot",t("bot_cant_submit_yet", {reason: errs[0].txt}));
+      botChips([t("chip_hours_i_have")]);
       return;
     }
     chat.pending = "submit";
-    botSay("bot","Confirm submitting week " + WEEKS[weekIdx].num + "?", botCard(
-      [["Total","" + fmt(weekTotal()) + " h"],["Expected","" + fmt(weekCapacity()) + " h"],["Status after submitting","In approval"]],
-      "Submit", function(){ doSubmit(); botSay("bot","Week submitted. It's now in approval with the project manager."); }));
+    botSay("bot",t("bot_confirm_submit_week", {num: WEEKS[weekIdx].num}), botCard(
+      [[t("th_total"),fmt(weekTotal()) + " h"],[t("label_expected"),fmt(weekCapacity()) + " h"],[t("label_status_after_submit"),t("state_in_approval")]],
+      t("btn_submit"), function(){ doSubmit(); botSay("bot",t("bot_week_submitted_msg")); }));
   }
   function offerEntry(day, dur, pIdx, desc){
     var pr = PROJECTS[pIdx];
     if(state.submitted){
-      botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
+      botSay("bot", t("bot_week_locked"));
       return;
     }
     var alt = null;
     if(isBlocked(day)){
       alt = nextFreeDay();
       if(alt === -1){
-        botSay("bot", DAYS[day] + " has an approved " + absOn(day,"approved")[0].type.toLowerCase() + " and there's no other day with free capacity. I didn't record anything.");
+        botSay("bot", t("bot_day_absence_no_alt", {day: DAYS[day], type: absOn(day,"approved")[0].type.toLowerCase()}));
         return;
       }
-      botSay("bot", DAYS[day] + " has an approved " + absOn(day,"approved")[0].type.toLowerCase() + ", so it doesn't accept hours. I suggest " + DAYS[alt] + ".");
+      botSay("bot", t("bot_day_absence_suggest", {day: DAYS[day], type: absOn(day,"approved")[0].type.toLowerCase(), alt: DAYS[alt]}));
       day = alt;
     }
     if(!periodOpen(WORKDATES[day])){
-      botSay("bot", DAYS[day] + " falls in a closed period, it can't take new hours. I didn't record anything.");
+      botSay("bot", t("bot_day_closed", {day: DAYS[day]}));
       return;
     }
     var livre = capacity(day) - dayTotal(day);
@@ -5026,22 +5285,22 @@
          over capacity, not even with a warning, refuse it here instead. */
       var abs = absOn(day, "approved")[0];
       var capMsg = abs
-        ? DAYS[day] + " has an approved " + abs.type.toLowerCase() + "."
-        : DAYS[day] + "'s capacity is " + fmt(capacity(day)) + " h.";
-      botSay("bot", capMsg + (livre > 0 ? " Only " + fmt(livre) + " h available, I didn't record anything." : " No hours available on this day, I didn't record anything."));
+        ? t("bot_day_abs_cap", {day: DAYS[day], type: abs.type.toLowerCase()})
+        : t("bot_day_capacity", {day: DAYS[day], cap: fmt(capacity(day))});
+      botSay("bot", capMsg + (livre > 0 ? t("bot_hours_left_suffix", {left: fmt(livre)}) : t("bot_no_hours_suffix")));
       return;
     }
     chat.pending = "entry";
     chat.draft = {day:day, dur:dur, p:pIdx, desc:desc};
-    botSay("bot","Confirm this entry?", botCard([
-      ["Day", DAYS[day]],
-      ["Duration", fmt(dur) + " h"],
-      ["Project", pr.name],
-      ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
-      ["Activity type", pr.sap.lstar + ", " + pr.act],
-      ["Description", desc || "(to be filled in)"],
-      ["Origin", "Joule"]
-    ], "Save", function(){
+    botSay("bot",t("bot_confirm_entry"), botCard([
+      [t("label_day"), DAYS[day]],
+      [t("label_duration"), fmt(dur) + " h"],
+      [t("label_project"), pr.name],
+      [t("label_receiver_object"), receiverObjectLabel(pr)],
+      [t("label_activity_type"), pr.sap.lstar + ", " + pr.act],
+      [t("label_description"), desc || t("bot_desc_tbd")],
+      [t("label_origin"), "Joule"]
+    ], t("btn_save"), function(){
       var row = state.rows.filter(function(r){ return r.p === pIdx; })[0];
       if(!row){ row = {id:nextId++, p:pIdx, desc:desc, h:[0,0,0,0,0,0,0], origin:"Joule"}; state.rows.push(row); }
       if(desc) row.desc = desc;
@@ -5050,8 +5309,8 @@
       state.needsSave = true;
       render();
       flashCell(row.id, day);
-      botSay("bot", fmt(dur) + " h saved on " + DAYS[day] + ", " + pr.code + ". " + weekSummaryText());
-      botChips(["Submit the week","My absences"]);
+      botSay("bot", t("bot_entry_saved", {dur: fmt(dur), day: DAYS[day], code: pr.code}) + weekSummaryText());
+      botChips([t("chip_submit_week"),t("chip_my_absences")]);
     }));
   }
   /* Same idea as offerEntry, but for "8h RTL-TT all days this week": one
@@ -5061,7 +5320,7 @@
   function offerEntryWeek(days, dur, pIdx, desc){
     var pr = PROJECTS[pIdx];
     if(state.submitted){
-      botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
+      botSay("bot", t("bot_week_locked"));
       return;
     }
     var free = days.filter(function(d){ return !isBlocked(d) && periodOpen(WORKDATES[d]); });
@@ -5072,29 +5331,29 @@
     var over = free.filter(function(d){ return dur > capacity(d) - dayTotal(d); });
     var applicable = free.filter(function(d){ return dur <= capacity(d) - dayTotal(d); });
     if(!applicable.length){
-      botSay("bot","Every day in that range has an approved absence, falls in a closed period, or doesn't have room for that much. I didn't record anything.");
+      botSay("bot",t("bot_every_day_blocked"));
       return;
     }
     var skipParts = [];
     if(blocked.length || closed.length){
-      skipParts.push(blocked.concat(closed).map(function(d){ return DAYS[d]; }).join(", ") + " (approved absence or closed period)");
+      skipParts.push(t("bot_skip_absence_closed", {days: blocked.concat(closed).map(function(d){ return DAYS[d]; }).join(", ")}));
     }
-    if(over.length) skipParts.push(over.map(function(d){ return DAYS[d]; }).join(", ") + " (over capacity)");
+    if(over.length) skipParts.push(t("bot_skip_over_capacity", {days: over.map(function(d){ return DAYS[d]; }).join(", ")}));
     var daysLabel = applicable.map(function(d){ return DAYS[d]; }).join(", ")
-      + (skipParts.length ? " (" + skipParts.join("; ") + " skipped)" : "");
+      + (skipParts.length ? t("bot_days_skipped_suffix", {parts: skipParts.join("; ")}) : "");
 
     chat.pending = "entryWeek";
     chat.draftWeek = {days:applicable, dur:dur, p:pIdx, desc:desc};
-    botSay("bot","Confirm this entry?", botCard([
-      ["Days", daysLabel],
-      ["Duration per day", fmt(dur) + " h"],
-      ["Total", fmt(dur * applicable.length) + " h"],
-      ["Project", pr.name],
-      ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
-      ["Activity type", pr.sap.lstar + ", " + pr.act],
-      ["Description", desc || "(to be filled in)"],
-      ["Origin", "Joule"]
-    ], "Save", function(){
+    botSay("bot",t("bot_confirm_entry"), botCard([
+      [t("label_days"), daysLabel],
+      [t("label_duration_per_day"), fmt(dur) + " h"],
+      [t("th_total"), fmt(dur * applicable.length) + " h"],
+      [t("label_project"), pr.name],
+      [t("label_receiver_object"), receiverObjectLabel(pr)],
+      [t("label_activity_type"), pr.sap.lstar + ", " + pr.act],
+      [t("label_description"), desc || t("bot_desc_tbd")],
+      [t("label_origin"), "Joule"]
+    ], t("btn_save"), function(){
       var row = state.rows.filter(function(r){ return r.p === pIdx; })[0];
       if(!row){ row = {id:nextId++, p:pIdx, desc:desc, h:[0,0,0,0,0,0,0], origin:"Joule"}; state.rows.push(row); }
       if(desc) row.desc = desc;
@@ -5103,9 +5362,8 @@
       state.needsSave = true;
       render();
       applicable.forEach(function(d){ flashCell(row.id, d); });
-      botSay("bot", fmt(dur) + " h saved on " + applicable.length + (applicable.length === 1 ? " day" : " days")
-        + " (" + fmt(dur * applicable.length) + " h total), " + pr.code + ". " + weekSummaryText());
-      botChips(["Submit the week","My absences"]);
+      botSay("bot", plural(applicable.length, "bot_entry_saved_days", {dur: fmt(dur), total: fmt(dur * applicable.length), code: pr.code}) + weekSummaryText());
+      botChips([t("chip_submit_week"),t("chip_my_absences")]);
     }));
   }
 
@@ -5125,7 +5383,7 @@
   function offerFillMissing(pIdx, dur){
     if(isMonthly()) return offerFillMissingMonth(pIdx, dur);
     if(state.submitted){
-      botSay("bot", "The week is already submitted, I can't change it. Want to see something else?");
+      botSay("bot", t("bot_week_locked"));
       return;
     }
     var pr = PROJECTS[pIdx];
@@ -5134,21 +5392,21 @@
       return {day:d, add: dur ? Math.min(dur, gap) : gap};
     }).filter(function(x){ return x.add > 0; });
     if(!plan.length){
-      botSay("bot", "Every working day this week is already at capacity.");
-      botChips(["How many hours do I have?"]);
+      botSay("bot", t("bot_week_capacity_full"));
+      botChips([t("chip_hours_i_have")]);
       return;
     }
     var total = plan.reduce(function(a,x){ return a + x.add; }, 0);
     var daysLabel = plan.map(function(x){ return DAYS[x.day] + " +" + fmt(x.add) + "h"; }).join(", ");
     chat.pending = "entryWeek";
-    botSay("bot","Confirm this entry?", botCard([
-      ["Days", daysLabel],
-      ["Total", fmt(total) + " h"],
-      ["Project", pr.name],
-      ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
-      ["Activity type", pr.sap.lstar + ", " + pr.act],
-      ["Origin", "Joule"]
-    ], "Save", function(){
+    botSay("bot",t("bot_confirm_entry"), botCard([
+      [t("label_days"), daysLabel],
+      [t("th_total"), fmt(total) + " h"],
+      [t("label_project"), pr.name],
+      [t("label_receiver_object"), receiverObjectLabel(pr)],
+      [t("label_activity_type"), pr.sap.lstar + ", " + pr.act],
+      [t("label_origin"), "Joule"]
+    ], t("btn_save"), function(){
       var row = state.rows.filter(function(r){ return r.p === pIdx; })[0];
       if(!row){ row = {id:nextId++, p:pIdx, desc:"", h:[0,0,0,0,0,0,0], origin:"Joule"}; state.rows.push(row); }
       row.origin = "Joule";
@@ -5156,9 +5414,8 @@
       state.needsSave = true;
       render();
       plan.forEach(function(x){ flashCell(row.id, x.day); });
-      botSay("bot", fmt(total) + " h saved across " + plan.length + (plan.length === 1 ? " day" : " days")
-        + ", " + pr.code + ". " + weekSummaryText());
-      botChips(["Submit the week","My absences"]);
+      botSay("bot", plural(plan.length, "bot_filled_saved", {total: fmt(total), code: pr.code}) + weekSummaryText());
+      botChips([t("chip_submit_week"),t("chip_my_absences")]);
     }));
   }
   function offerFillMissingMonth(pIdx, dur){
@@ -5170,22 +5427,22 @@
       return gap > 0 ? {dateISO:dateISO, week:wd.week, day:wd.day, add: dur ? Math.min(dur, gap) : gap} : null;
     }).filter(function(x){ return x; });
     if(!plan.length){
-      botSay("bot", "Every working day this month is already at capacity.");
-      botChips(["How many hours do I have?"]);
+      botSay("bot", t("bot_month_capacity_full"));
+      botChips([t("chip_hours_i_have")]);
       return;
     }
     var total = plan.reduce(function(a,x){ return a + x.add; }, 0);
     var daysLabel = plan.map(function(x){ return monthDayLabel(x.week, x.day) + " +" + fmt(x.add) + "h"; }).join(", ");
 
     chat.pending = "entryWeek";
-    botSay("bot","Confirm this entry?", botCard([
-      ["Days", daysLabel],
-      ["Total", fmt(total) + " h"],
-      ["Project", pr.name],
-      ["Receiver object", pr.sap.rproj ? "PEP " + pr.sap.rproj : "Cost center " + pr.sap.rkostl],
-      ["Activity type", pr.sap.lstar + ", " + pr.act],
-      ["Origin", "Joule"]
-    ], "Save", function(){
+    botSay("bot",t("bot_confirm_entry"), botCard([
+      [t("label_days"), daysLabel],
+      [t("th_total"), fmt(total) + " h"],
+      [t("label_project"), pr.name],
+      [t("label_receiver_object"), receiverObjectLabel(pr)],
+      [t("label_activity_type"), pr.sap.lstar + ", " + pr.act],
+      [t("label_origin"), "Joule"]
+    ], t("btn_save"), function(){
       plan.forEach(function(x){
         var row = monthRowIn(x.week, pIdx);
         if(!row){ row = {id:nextId++, p:pIdx, desc:"", h:[0,0,0,0,0,0,0], origin:"Joule"}; x.week.rows.push(row); }
@@ -5195,10 +5452,9 @@
       state.needsSave = true;
       render();
       var errs = monthErrors(activeMonthDates()).length;
-      botSay("bot", fmt(total) + " h saved across " + plan.length + (plan.length === 1 ? " day" : " days")
-        + ", " + pr.code + ", this month. "
-        + (errs ? errs + (errs === 1 ? " error blocks submission." : " errors block submission.") : "No errors, you can submit."));
-      botChips(["Submit the month","My absences"]);
+      botSay("bot", plural(plan.length, "bot_filled_saved_month", {total: fmt(total), code: pr.code})
+        + (errs ? plural(errs, "bot_week_errors_block") : t("bot_week_no_errors_submit")));
+      botChips([t("chip_submit_month"),t("chip_my_absences")]);
     }));
   }
 
@@ -5288,11 +5544,11 @@
     if(!hasTarget){
       var name = String(pessoaArg || "").trim();
       missing.push(name
-        ? "não encontrei \"" + name + "\" na equipa de " + PROJECTS[massProject()].code + " (" + leaderById(state.leader).name + "). Se está noutro projeto ou com outro líder, muda o seletor \"Acting as\" ou \"Project\" no topo do ecrã Team primeiro"
-        : "não percebi de quem se trata");
+        ? t("bot_team_not_found", {name: name, code: PROJECTS[massProject()].code, leader: leaderById(state.leader).name})
+        : t("bot_team_who_unclear"));
     }
-    if(!hasDays) missing.push("não percebi o dia");
-    if(!hasAmount) missing.push("não percebi " + amountLabel);
+    if(!hasDays) missing.push(t("bot_team_day_unclear"));
+    if(!hasAmount) missing.push(t("bot_team_amount_unclear", {amount: amountLabel}));
     return missing.join("; ") + ".";
   }
   /* Claude sends back a project code, possibly abbreviated or lowercased
@@ -5344,8 +5600,8 @@
         var durE = clockE ? null : round15(Number(ae.duracao_horas));
         var hasAmountE = !!(clockE || (durE && durE > 0));
         if(!targetsE.length || !daysE.length || !hasAmountE){
-          botSay("bot", intent.texto || teamActionProblem(ae.pessoa, targetsE.length > 0, daysE.length > 0, hasAmountE, "as horas"));
-          botChips(["Help"]);
+          botSay("bot", intent.texto || teamActionProblem(ae.pessoa, targetsE.length > 0, daysE.length > 0, hasAmountE, t("label_the_hours")));
+          botChips([t("chip_help")]);
           return true;
         }
         offerTeamEntry(targetsE, daysE, durE, clockE);
@@ -5372,10 +5628,10 @@
         var qtyAl = round15(Number(al.quantidade));
         var hasAmountAl = !!(qtyAl && qtyAl > 0);
         if(!targetsAl.length || !wAl || !daysAl.length || !hasAmountAl){
-          var msgAl = intent.texto || teamActionProblem(al.pessoa, targetsAl.length > 0, daysAl.length > 0, hasAmountAl, "a quantidade");
-          if(!intent.texto && !wAl) msgAl += " Também não reconheci a rubrica.";
+          var msgAl = intent.texto || teamActionProblem(al.pessoa, targetsAl.length > 0, daysAl.length > 0, hasAmountAl, t("label_the_quantity"));
+          if(!intent.texto && !wAl) msgAl += " " + t("bot_also_unrecognized_wage_type");
           botSay("bot", msgAl);
-          botChips(["Help"]);
+          botChips([t("chip_help")]);
           return true;
         }
         offerTeamAllowance(targetsAl, daysAl, al.rubrica, qtyAl, String(al.nota || "").trim());
@@ -5392,8 +5648,8 @@
         var rawDays = Array.isArray(a.dias) && a.dias.length ? a.dias : (a.dia ? [a.dia] : []);
         var days = rawDays.map(function(d){ return resolveDayArg(d); }).filter(function(i){ return i !== -1 && i <= 4; });
         if(!days.length || pIdx === -1 || !dur || dur <= 0){
-          botSay("bot", intent.texto || "Não consegui confirmar todos os detalhes desse registo. Pode escrever de outra forma?");
-          botChips(["How many hours do I have?","My absences"]);
+          botSay("bot", intent.texto || t("bot_parse_failed_generic"));
+          botChips([t("chip_hours_i_have"),t("chip_my_absences")]);
           return true;
         }
         if(days.length === 1) offerEntry(days[0], dur, pIdx, a.descricao || "");
@@ -5404,8 +5660,8 @@
         var pIdxW = matchProjectCodePrefix(aw.projeto);
         var durW = round15(Number(aw.duracao_horas));
         if(pIdxW === -1 || !durW || durW <= 0){
-          botSay("bot", intent.texto || "Não consegui confirmar todos os detalhes desse registo. Pode escrever de outra forma?");
-          botChips(["How many hours do I have?","My absences"]);
+          botSay("bot", intent.texto || t("bot_parse_failed_generic"));
+          botChips([t("chip_hours_i_have"),t("chip_my_absences")]);
           return true;
         }
         offerEntryWeek([0,1,2,3,4], durW, pIdxW, aw.descricao || "");
@@ -5414,8 +5670,8 @@
         var af = intent.argumentos || {};
         var pIdxF = matchProjectCodePrefix(af.projeto);
         if(pIdxF === -1){
-          botSay("bot", intent.texto || "A que projeto se destinam essas horas?");
-          botChips(["How many hours do I have?","My absences"]);
+          botSay("bot", intent.texto || t("bot_which_project"));
+          botChips([t("chip_hours_i_have"),t("chip_my_absences")]);
           return true;
         }
         var durF = round15(Number(af.duracao_horas));
@@ -5424,7 +5680,7 @@
       default:
         if(intent.texto){
           botSay("bot", intent.texto);
-          botChips(["How many hours do I have?","My absences","Help"]);
+          botChips([t("chip_hours_i_have"),t("chip_my_absences"),t("chip_help")]);
           return true;
         }
         return false;
@@ -5468,43 +5724,39 @@
      The pending-entry correction is checked earlier, in botHandle, ahead of
      Claude, so it isn't repeated here. */
   function botHandleLocal(txt){
-    var t = txt.toLowerCase();
+    var low = txt.toLowerCase();
 
     /* greeting, no task in it: a short human reply, not the parsing-failure
        message. Checked as a whole-message match so "hi, log 2h BNK today"
        still falls through to the real parsers below. */
     if(/^\s*(hi|hello|hey|hiya|good (morning|afternoon|evening)|ol[aá]|oi|bom dia|boa tarde|boa noite)[!.,\s]*$/i.test(txt)){
-      var greetings = [
-        "Hey! What do you need, logging hours, checking the week, or something else?",
-        "Hi there. Tell me what you need and I'll sort it.",
-        "Hello! Hours to log, or something to check?"
-      ];
+      var greetings = [t("bot_greeting_1"), t("bot_greeting_2"), t("bot_greeting_3")];
       botSay("bot", greetings[Math.floor(Math.random()*greetings.length)]);
-      botChips(["How many hours do I have?","My absences","Help"]);
+      botChips([t("chip_hours_i_have"),t("chip_my_absences"),t("chip_help")]);
       return;
     }
     /* help */
-    if(/\bhelp\b|what can you do|what do you do|how does this work/.test(t)){ showHelp(); return; }
+    if(/\bhelp\b|what can you do|what do you do|how does this work/.test(low)){ showHelp(); return; }
     /* absences */
-    if(/absen|vacation|holiday|leave|time off/.test(t)){ showAbsences(); return; }
+    if(/absen|vacation|holiday|leave|time off/.test(low)){ showAbsences(); return; }
     /* week status */
-    if(/how many hours|week status|status|summary|how('| i)?s (the week|it going)|check (the|my) week/.test(t)){ showWeekStatus(); return; }
+    if(/how many hours|week status|status|summary|how('| i)?s (the week|it going)|check (the|my) week/.test(low)){ showWeekStatus(); return; }
     /* suggestions */
-    if(/suggest/.test(t) && !/high.confidence/.test(t)){ showSuggestionsPanel(); return; }
-    if(/high.confidence/.test(t)){ offerApplyHighConfidence(); return; }
+    if(/suggest/.test(low) && !/high.confidence/.test(low)){ showSuggestionsPanel(); return; }
+    if(/high.confidence/.test(low)){ offerApplyHighConfidence(); return; }
     /* copy week */
-    if(/copy|last week|previous week/.test(t)){ offerCopyWeek(); return; }
+    if(/copy|last week|previous week/.test(low)){ offerCopyWeek(); return; }
     /* submit */
-    if(/submit|send the week|close the week/.test(t)){ offerSubmit(); return; }
+    if(/submit|send the week|close the week/.test(low)){ offerSubmit(); return; }
     /* screen navigation */
-    if(/mass entry|team entry|team screen|go to team|switch to team|open team/.test(t)){ goToTeamScreen(); return; }
-    if(/approval screen|go to approval|switch to approval|open approval/.test(t)){ goToApprovalScreen(); return; }
-    if(/cats mapping|cats screen|go to cats|switch to cats|open cats/.test(t)){ goToCatsScreen(); return; }
+    if(/mass entry|team entry|team screen|go to team|switch to team|open team/.test(low)){ goToTeamScreen(); return; }
+    if(/approval screen|go to approval|switch to approval|open approval/.test(low)){ goToApprovalScreen(); return; }
+    if(/cats mapping|cats screen|go to cats|switch to cats|open cats/.test(low)){ goToCatsScreen(); return; }
 
     /* approve a timesheet, or the whole clean batch, from the Approval
        screen's data, checked ahead of the self-entry parser since "approve"
        never means a time entry */
-    if(/\bapprove\b/.test(t)){ handleApprovalRequest(txt); return; }
+    if(/\bapprove\b/.test(low)){ handleApprovalRequest(txt); return; }
 
     /* log hours or an allowance for someone else's team, checked ahead of
        the self-entry and whole-week parsers since a named target should
@@ -5522,7 +5774,7 @@
     /* a request for every working day ("8h RTL-TT all days this week"),
        checked ahead of the single-day parser since it matches a duration
        and a project too and would otherwise just default to "today" */
-    if(ALL_WEEK_RE.test(t)){
+    if(ALL_WEEK_RE.test(low)){
       var pw = botParseWeek(txt);
       if(pw){
         offerEntryWeek(pw.days, pw.dur, pw.p, pw.desc);
@@ -5534,8 +5786,8 @@
     /* time entry, reuses the same parser as quick add */
     var p = botParse(txt);
     if(!p){
-      botSay("bot","I couldn't understand what to record. Write the duration and the project, for example <span class=\"num\">2h BNK payroll testing yesterday</span>. I can also show the week's status or your absences.", null, true);
-      botChips(["How many hours do I have?","My absences","Help"]);
+      botSay("bot",t("bot_parse_failed"), null, true);
+      botChips([t("chip_hours_i_have"),t("chip_my_absences"),t("chip_help")]);
       chat.history.push({role:"assistant", content:"Couldn't parse a duration and project from that message."});
       return;
     }
@@ -5742,20 +5994,20 @@
     var locked = members.filter(function(m){ return m.locked; });
     var selected = members.filter(function(m){ return !m.locked; });
     if(!selected.length){
-      botSay("bot","Can't stage that: " + locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ") + ".");
-      botChips(["How many hours do I have?","Help"]);
+      botSay("bot",t("bot_cant_stage", {list: locked.map(function(m){ return t("bot_week_already_approved", {name: m.name.split(" ")[0]}); }).join(", ")}));
+      botChips([t("chip_hours_i_have"),t("chip_help")]);
       return;
     }
     var dayLabel = days.map(function(d){ return DAYS[d]; }).join(", ");
     var amountLabel = clock ? (fmtClock(clock.b) + "–" + fmtClock(clock.e)) : (fmt(dur) + " h");
     var lines = [
-      ["People", selected.map(function(m){ return m.name; }).join(", ")],
-      ["Days", dayLabel],
-      [clock ? "Time" : "Duration each", amountLabel],
-      ["Project", pr.name]
+      [t("label_people"), selected.map(function(m){ return m.name; }).join(", ")],
+      [t("label_days"), dayLabel],
+      [clock ? t("label_time") : t("label_duration_each"), amountLabel],
+      [t("label_project"), pr.name]
     ];
-    if(locked.length) lines.push(["Skipped", locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ")]);
-    botSay("bot","Register this on staging area?", botCard(lines, "Register", function(){
+    if(locked.length) lines.push([t("label_skipped"), locked.map(function(m){ return t("bot_week_already_approved", {name: m.name.split(" ")[0]}); }).join(", ")]);
+    botSay("bot",t("bot_confirm_register_staging"), botCard(lines, t("btn_register"), function(){
       teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
       selected.forEach(function(m){ stagedOf(m.pernr).sel = true; });
       if($("mDur")) $("mDur").value = clock ? "" : String(dur);
@@ -5772,11 +6024,11 @@
       var saved = selected.filter(function(m){ return savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
       var notSaved = selected.filter(function(m){ return !savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
       var msg = saved.length
-        ? "Registered on staging area for " + saved.join(", ") + ", " + dayLabel + ", " + pr.code + ". Click Save to finish."
-        : "Nothing was actually recorded.";
-      if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it this way (not allocated to " + pr.code + ", wrong profile for that field, absence, or closed period), the reason is on the Team screen.";
+        ? t("bot_staged_saved", {names: saved.join(", "), days: dayLabel, code: pr.code, save: t("btn_save")})
+        : t("bot_staged_nothing");
+      if(notSaved.length) msg += t("bot_staged_not_saved_suffix", {names: notSaved.join(", "), code: pr.code});
       botSay("bot", msg);
-      botChips(["How many hours do I have?","Help"]);
+      botChips([t("chip_hours_i_have"),t("chip_help")]);
     }));
     chat.history.push({role:"assistant", content:"Proposed " + amountLabel + " on " + dayLabel + " for " + selected.map(function(m){return m.name;}).join(", ") + ". Waiting for confirmation."});
   }
@@ -5849,25 +6101,25 @@
     var locked = members.filter(function(m){ return m.locked; });
     var selected = members.filter(function(m){ return !m.locked; });
     if(!selected.length){
-      botSay("bot","Can't stage that: " + locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ") + ".");
-      botChips(["Help"]);
+      botSay("bot",t("bot_cant_stage", {list: locked.map(function(m){ return t("bot_week_already_approved", {name: m.name.split(" ")[0]}); }).join(", ")}));
+      botChips([t("chip_help")]);
       return;
     }
     if(w.noteLabel && !note){
-      botSay("bot", w.noteLabel + " is required for " + w.name + ". What should it say?");
-      botChips(["Help"]);
+      botSay("bot", t("bot_note_required", {noteLabel: w.noteLabel, name: w.name}));
+      botChips([t("chip_help")]);
       return;
     }
     var dayLabel = days.map(function(d){ return DAYS[d]; }).join(", ");
     var lines = [
-      ["People", selected.map(function(m){ return m.name; }).join(", ")],
-      ["Days", dayLabel],
-      ["Wage type", w.name],
-      ["Quantity each", fmt(qty) + " " + w.unit]
+      [t("label_people"), selected.map(function(m){ return m.name; }).join(", ")],
+      [t("label_days"), dayLabel],
+      [t("label_wage_type"), w.name],
+      [t("label_quantity_each"), fmt(qty) + " " + w.unit]
     ];
-    if(note) lines.push([w.noteLabel || "Note", note]);
-    if(locked.length) lines.push(["Skipped", locked.map(function(m){ return m.name.split(" ")[0] + " (week already approved)"; }).join(", ")]);
-    botSay("bot","Register this on staging area?", botCard(lines, "Register", function(){
+    if(note) lines.push([w.noteLabel || t("label_note"), note]);
+    if(locked.length) lines.push([t("label_skipped"), locked.map(function(m){ return t("bot_week_already_approved", {name: m.name.split(" ")[0]}); }).join(", ")]);
+    botSay("bot",t("bot_confirm_register_staging"), botCard(lines, t("btn_register"), function(){
       teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
       selected.forEach(function(m){ stagedOf(m.pernr).sel = true; });
       if($("mAllowCode")){ $("mAllowCode").value = code; syncMassAllowForm(); }
@@ -5884,11 +6136,11 @@
       var saved = selected.filter(function(m){ return savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
       var notSaved = selected.filter(function(m){ return !savedPernrs[m.pernr]; }).map(function(m){ return m.name.split(" ")[0]; });
       var msg = saved.length
-        ? "Registered on staging area for " + saved.join(", ") + ", " + dayLabel + ", " + w.name + ". Click Save to finish."
-        : "Nothing was actually recorded.";
-      if(notSaved.length) msg += " " + notSaved.join(", ") + " couldn't take it (not allocated to " + PROJECTS[massProject()].code + ", wrong company for that allowance, or closed period).";
+        ? t("bot_staged_saved_allow", {names: saved.join(", "), days: dayLabel, name: w.name, save: t("btn_save")})
+        : t("bot_staged_nothing");
+      if(notSaved.length) msg += t("bot_staged_not_saved_allow_suffix", {names: notSaved.join(", "), code: PROJECTS[massProject()].code});
       botSay("bot", msg);
-      botChips(["How many hours do I have?","Help"]);
+      botChips([t("chip_hours_i_have"),t("chip_help")]);
     }));
     chat.history.push({role:"assistant", content:"Proposed " + fmt(qty) + " " + w.unit + " " + w.name + " on " + dayLabel + " for " + selected.map(function(m){return m.name;}).join(", ") + ". Waiting for confirmation."});
   }
@@ -5916,20 +6168,20 @@
     }).filter(function(p){ return p.days.length; });
     if(!plan.length){
       var msg;
-      if(!name) msg = "Ninguém na equipa de " + PROJECTS[massProject()].code + " tem dias úteis por preencher esta semana.";
-      else if(matched.length) msg = matched.map(function(m){ return m.name; }).join(", ") + " já está com a capacidade completa esta semana, na equipa de " + PROJECTS[massProject()].code + ".";
-      else msg = "Não encontrei ninguém chamada \"" + pessoaArg + "\" na equipa de " + PROJECTS[massProject()].code + ".";
+      if(!name) msg = t("bot_team_nobody_missing", {code: PROJECTS[massProject()].code});
+      else if(matched.length) msg = t("bot_team_already_full", {names: matched.map(function(m){ return m.name; }).join(", "), code: PROJECTS[massProject()].code});
+      else msg = t("bot_team_person_not_found", {name: pessoaArg, code: PROJECTS[massProject()].code});
       botSay("bot", msg);
-      botChips(["Help"]);
+      botChips([t("chip_help")]);
       return;
     }
     var lines = plan.map(function(p){
       return [p.member.name, p.days.map(function(x){ return DAYS[x.day] + " +" + fmt(x.add) + "h"; }).join(", ")];
     });
-    lines.push(["Projeto", PROJECTS[massProject()].code]);
+    lines.push([t("label_project"), PROJECTS[massProject()].code]);
     var total = plan.reduce(function(a,p){ return a + p.days.reduce(function(b,x){ return b+x.add; }, 0); }, 0);
-    lines.push(["Total", fmt(total) + " h"]);
-    botSay("bot", "Preencher estes dias em falta até à capacidade de cada pessoa?", botCard(lines, "Preencher e registar", function(){
+    lines.push([t("th_total"), fmt(total) + " h"]);
+    botSay("bot", t("bot_confirm_fill_team"), botCard(lines, t("btn_fill_and_register"), function(){
       teamOf(state.leader).forEach(function(m){ stagedOf(m.pernr).sel = false; });
       plan.forEach(function(p){
         var st = stagedOf(p.member.pernr);
@@ -5953,11 +6205,11 @@
       var saved = plan.filter(function(p){ return savedPernrs[p.member.pernr]; }).map(function(p){ return p.member.name.split(" ")[0]; });
       var notSaved = plan.filter(function(p){ return !savedPernrs[p.member.pernr]; }).map(function(p){ return p.member.name.split(" ")[0]; });
       var msg = saved.length
-        ? "Preenchido e registado na área de staging para " + saved.join(", ") + ". Clica em Save para terminar."
-        : "Nada foi registado.";
-      if(notSaved.length) msg += " " + notSaved.join(", ") + " não foi possível, o motivo fica na grelha da equipa.";
+        ? t("bot_team_filled_saved", {names: saved.join(", "), save: t("btn_save")})
+        : t("bot_team_filled_nothing");
+      if(notSaved.length) msg += t("bot_team_filled_not_saved_suffix", {names: notSaved.join(", ")});
       botSay("bot", msg);
-      botChips(["Help"]);
+      botChips([t("chip_help")]);
     }));
     chat.history.push({role:"assistant", content:"Proposto preencher " + fmt(total) + "h em dias em falta para " + plan.map(function(p){return p.member.name;}).join(", ") + ". Aguardando confirmação."});
   }
@@ -5977,40 +6229,40 @@
   function handleApprovalRequest(txt){
     var tgt = matchApprovalTargets(txt);
     if(!tgt){
-      botSay("bot","Tell me who to approve, a name, or “approve everyone” for every timesheet without exceptions.");
-      botChips(["Help"]);
+      botSay("bot",t("bot_approval_ask_who"));
+      botChips([t("chip_help")]);
       return;
     }
     if(tgt.all){
       var clean = state.approvals.filter(function(a){ return !a.warn && !a.approved; });
       if(!clean.length){
-        botSay("bot","Nothing to approve there, either everything's already approved or what's left has an exception that needs individual review.");
+        botSay("bot",t("bot_approval_nothing"));
         return;
       }
-      botSay("bot","Approve these " + clean.length + " timesheets, no exceptions?", botCard(
+      botSay("bot",t("bot_confirm_approve_all", {n: clean.length}), botCard(
         clean.map(function(a){ return [a.who, fmt(a.tot) + " h"]; }),
-        "Approve all", function(){
+        t("btn_approve_all"), function(){
           clean.forEach(function(a){ a.approved = true; a.sel = false; });
           renderApprovals();
-          botSay("bot", clean.length + " timesheets approved. Exceptions remain for individual review.");
-          botChips(["Help"]);
+          botSay("bot", t("bot_approved_all_msg", {n: clean.length}));
+          botChips([t("chip_help")]);
         }
       ));
       return;
     }
     var a = tgt.one;
-    if(a.approved){ botSay("bot", a.who + "'s timesheet is already approved."); return; }
+    if(a.approved){ botSay("bot", t("bot_already_approved", {name: a.who})); return; }
     if(a.warn){
-      botSay("bot", a.who + "'s timesheet has an exception (" + a.note + ") and needs individual review on the Approval screen, that one can't be bulk-approved.");
+      botSay("bot", t("bot_has_exception", {name: a.who, note: a.note}));
       return;
     }
-    botSay("bot","Approve " + a.who + "'s timesheet?", botCard([
-      ["Project", a.proj], ["Total", fmt(a.tot) + " h"], ["In project", fmt(a.inproj) + " h"]
-    ], "Approve", function(){
+    botSay("bot",t("bot_confirm_approve_one", {name: a.who}), botCard([
+      [t("label_project"), a.proj], [t("th_total"), fmt(a.tot) + " h"], [t("label_in_project"), fmt(a.inproj) + " h"]
+    ], t("btn_approve"), function(){
       a.approved = true; a.sel = false;
       renderApprovals();
-      botSay("bot", a.who + "'s timesheet approved.");
-      botChips(["Help"]);
+      botSay("bot", t("bot_approved_one_msg", {name: a.who}));
+      botChips([t("chip_help")]);
     }));
   }
 
