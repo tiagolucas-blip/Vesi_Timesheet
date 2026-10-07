@@ -1945,6 +1945,7 @@
     if($("captureTxt")) $("captureTxt").textContent = state.privateMode ? t("capture_off") : t("capture_on");
     if(typeof updateApproverChrome === "function") updateApproverChrome();
     if($("dlgDetail") && $("dlgDetail").open && $("dtProj") && $("dtProj").value !== "") updateDescPlaceholder(+$("dtProj").value);
+    if(typeof refreshAssistantForLang === "function") refreshAssistantForLang();
     document.documentElement.lang = state.lang;
   }
   function setLang(lang){
@@ -5101,6 +5102,28 @@
         botChips([t("chip_hours_i_have"),t("chip_my_absences"),t("chip_bnk_example"),t("chip_submit_week")]);
       }
       setTimeout(function(){ $("jinput").focus(); }, 60);
+    }
+  }
+  /* applyI18n's hook for the one corner a static data-i18n sweep can't
+     reach: the chat log is a transcript, built once from whichever
+     language was active line by line, not re-rendered from scratch like
+     the rest of the page. Nothing real said yet (still just the
+     auto-greeting, chat.history empty) isn't really "history" though, so
+     it's safe to reset and re-greet fresh in the new language instead of
+     leaving it stuck in whichever language the panel first opened in. A
+     real exchange is left exactly as it was said - only the quick-reply
+     chips get cleared, since those are live actions, not a transcript,
+     and worded in the wrong language they'd be actively misleading. */
+  function refreshAssistantForLang(){
+    if(typeof chat === "undefined") return;
+    if(chat.greeted && !chat.history.length){
+      chat.greeted = false;
+      var log = $("jlog");
+      if(log) log.innerHTML = "";
+      botChips([]);
+      if($("joulePanel") && !$("joulePanel").hidden) botToggle(true);
+    } else if(chat.history.length){
+      botChips([]);
     }
   }
   /* allowHtml is opt-in and only for our own static strings (the two help
