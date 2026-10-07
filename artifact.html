@@ -55,7 +55,7 @@
         </div>
         <div class="kpi">
           <span class="k" data-i18n="kpi_validation">Validation</span>
-          <span class="v" style="font-size:15px" id="kVal">No errors</span>
+          <span class="v" style="font-size:var(--fs-head)" id="kVal">No errors</span>
         </div>
       </div>
       <p class="kpinote" id="kExtra">0.0 h absences deducted &middot; 0 empty working days</p>
@@ -334,7 +334,7 @@
         <button class="btn" id="apSelClean" data-i18n="btn_select_no_warnings">Select the 4 without warnings</button>
         <button class="btn primary" id="apApprove" disabled data-i18n="btn_approve_selected">Approve selected</button>
       </div>
-      <p class="sub" id="apSubText" style="margin:6px 0 0; font-size:13px; color:var(--ink-3)">A different person's queue, not your own week. It covers the people on Sofia's consulting projects (Banking, Retail, Airports) &mdash; nothing you submit under My Timesheet lands here.</p>
+      <p class="sub" id="apSubText" style="margin:6px 0 0; font-size:var(--fs-sm); color:var(--ink-3)">A different person's queue, not your own week. It covers the people on Sofia's consulting projects (Banking, Retail, Airports) &mdash; nothing you submit under My Timesheet lands here.</p>
       <div class="kpis">
         <div class="kpi"><span class="k" data-i18n="kpi_pending_approval">Pending approval</span><span class="v" id="apPend">6</span></div>
         <div class="kpi"><span class="k" data-i18n="kpi_hours_submitted">Hours submitted</span><span class="v" id="apHours">0.0<small> h</small></span></div>
@@ -371,10 +371,10 @@
         <span class="chip blue" id="catsCount">0 records generated</span>
       </div>
       <div class="kpis">
-        <div class="kpi"><span class="k" data-i18n="kpi_recording_target">Recording target</span><span class="v" style="font-size:15px">CATSDB</span></div>
-        <div class="kpi"><span class="k" data-i18n="kpi_assistance_layer">Assistance layer</span><span class="v" style="font-size:15px">CAP on BTP</span></div>
-        <div class="kpi"><span class="k" data-i18n="kpi_direct_table_write">Direct table write</span><span class="v" style="font-size:15px; color:var(--crit)" data-i18n="val_never">Never</span></div>
-        <div class="kpi"><span class="k" data-i18n="kpi_customer_fields">Customer fields</span><span class="v" style="font-size:15px">CI_CATSDB</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_recording_target">Recording target</span><span class="v" style="font-size:var(--fs-head)">CATSDB</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_assistance_layer">Assistance layer</span><span class="v" style="font-size:var(--fs-head)">CAP on BTP</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_direct_table_write">Direct table write</span><span class="v" style="font-size:var(--fs-head); color:var(--crit)" data-i18n="val_never">Never</span></div>
+        <div class="kpi"><span class="k" data-i18n="kpi_customer_fields">Customer fields</span><span class="v" style="font-size:var(--fs-head)">CI_CATSDB</span></div>
       </div>
     </div>
 
@@ -463,7 +463,7 @@
     </div>
     <div class="field" id="alProjWrap"><label for="alProj" data-i18n="label_project">Project</label><select id="alProj"></select></div>
     <div class="field" id="alNoteWrap"><label for="alNote"><span id="alNoteLbl" data-i18n="label_note">Note</span></label><input type="text" id="alNote" data-i18n-placeholder="placeholder_note_required" placeholder="Required for this allowance"></div>
-    <p class="sub" id="alHint" style="font-size:12px; color:var(--ink-3); margin:0"></p>
+    <p class="sub" id="alHint" style="font-size:var(--fs-sm); color:var(--ink-3); margin:0"></p>
   </div>
   <footer>
     <button class="btn" id="alCancel" value="cancel" data-i18n="btn_cancel">Cancel</button>
@@ -483,7 +483,7 @@
       <input type="text" id="nlq" class="nlqa" data-i18n-placeholder="placeholder_quick_nl" placeholder="3h BNK requirements analysis yesterday" autocomplete="off">
     </div>
     <div class="chips" id="nlChips"><span class="pchip" data-i18n="chip_waiting_text">waiting for text</span></div>
-    <p style="margin:0; font-size:12px; color:var(--ink-3)" data-i18n="text_quick_hint">Each resolved field can be corrected. If the text isn't recognized, it goes into the description and nothing is invented.</p>
+    <p style="margin:0; font-size:var(--fs-sm); color:var(--ink-3)" data-i18n="text_quick_hint">Each resolved field can be corrected. If the text isn't recognized, it goes into the description and nothing is invented.</p>
   </div>
   <footer>
     <button class="btn" value="cancel" formnovalidate data-i18n="btn_cancel">Cancel</button>
@@ -538,7 +538,7 @@
       <div class="r"><span data-i18n="row_content_emails">Content of emails, files or screenshots</span><span class="n">0</span><span class="chip grey" data-i18n="chip_never_collected">never collected</span></div>
       <div class="r t"><span data-i18n="row_raw_timeline">Raw timeline retention</span><span class="n" data-i18n="val_14_days">14 days</span><span class="chip blue" data-i18n="chip_or_until_confirmed">or until confirmed</span></div>
     </div>
-    <p style="margin:0; color:var(--ink-2); font-size:13px" data-i18n="text_data_footer">This timeline is visible only to you. The organization only sees the timesheet entries you submit. Legal basis and impact assessment to be validated with the DPO before the pilot.</p>
+    <p style="margin:0; color:var(--ink-2); font-size:var(--fs-sm)" data-i18n="text_data_footer">This timeline is visible only to you. The organization only sees the timesheet entries you submit. Legal basis and impact assessment to be validated with the DPO before the pilot.</p>
   </div>
   <footer><button class="btn" id="dataClose" data-i18n="btn_close">Close</button><button class="btn primary" id="dataWipe" data-i18n="btn_delete_timeline">Delete timeline</button></footer>
 </div></dialog>

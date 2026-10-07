@@ -3048,7 +3048,7 @@
       var tr = document.createElement("tr");
       tr.appendChild(td2(m[0]));
       var c2 = document.createElement("td");
-      c2.innerHTML = m[1] + (m[4] ? "<div class='sub' style='color:var(--ink-3); font-size:12px'>"+m[4]+"</div>" : "");
+      c2.innerHTML = m[1] + (m[4] ? "<div class='sub' style='color:var(--ink-3); font-size:var(--fs-sm)'>"+m[4]+"</div>" : "");
       tr.appendChild(c2);
       var c3 = document.createElement("td");
       c3.className = "f" + (m[2] === "none" ? " none" : "");
