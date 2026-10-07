@@ -39,8 +39,8 @@
         <span class="chip blue" id="sugChip" role="button" tabindex="0">4 suggestions to review</span>
         <span style="margin-left:auto"></span>
         <button class="btn" id="quickBtn"><span data-i18n="btn_quick_add">Quick add</span> <kbd>N</kbd></button>
-        <button class="btn primary" id="submitBtn">Submit week</button>
-        <button class="btn primary warn" id="saveBtn" data-i18n="btn_save">Save</button>
+        <button class="btn" id="saveBtn" data-i18n="btn_save">Save</button>
+        <button class="btn primary warn" id="submitBtn">Submit week</button>
       </div>
       <div class="kpis">
         <div class="kpi">
@@ -61,6 +61,19 @@
       <p class="kpinote" id="kExtra">0.0 h absences deducted &middot; 0 empty working days</p>
     </div>
 
+    <div class="panel howpanel" style="margin-top:16px" id="howPanel">
+      <header id="howHead" class="togHead">
+        <button type="button" class="pTog" id="howTog" aria-expanded="true" data-i18n-aria="aria_collapse_how" aria-label="Collapse how it works">&#9662;</button>
+        <h2 data-i18n="hdr_how_it_works">How it works?</h2>
+      </header>
+      <ol class="howsteps">
+        <li><span class="hownum">1</span><span data-i18n="how_step1">Create or select the project</span></li>
+        <li><span class="hownum">2</span><span data-i18n="how_step2">Enter the hours</span></li>
+        <li><span class="hownum">3</span><span data-i18n="how_step3">Validate</span></li>
+        <li><span class="hownum">4</span><span data-i18n="how_step4">Save or submit</span></li>
+      </ol>
+    </div>
+
     <div class="cols">
       <div style="display:grid; gap:16px; min-width:0">
         <div class="panel">
@@ -70,6 +83,7 @@
               <button id="vGrid" aria-pressed="true" data-i18n="btn_grid">Grid</button>
               <button id="vCal" aria-pressed="false" data-i18n="btn_calendar">Calendar</button>
             </div>
+            <button class="btn primary sm" id="addRow" data-i18n="btn_add_row">Add row</button>
           </header>
 
           <div id="viewGrid">
@@ -83,10 +97,15 @@
               <span><i class="sw submitted"></i><span data-i18n="legend_submitted">Week already submitted</span></span>
             </div>
             <div class="gridfoot">
-              <button class="btn" id="addRow" data-i18n="btn_add_row">Add row</button>
               <button class="btn" id="copyWeek"><span data-i18n="btn_copy_week">Copy previous week</span> <kbd>C</kbd></button>
               <button class="btn" id="tplBtn" data-i18n="btn_apply_template">Apply template</button>
               <button type="button" class="hinttip" data-i18n-title="hint_grid_entry" title="Accepts 1.5 · 1:30 · 90m. Enter moves down, Tab moves across.">?</button>
+            </div>
+            <!-- Same actions as the top bar, repeated here so a long week or
+                 month doesn't need a scroll back to the top to save or submit. -->
+            <div class="gridfoot end">
+              <button class="btn" id="saveBtnBottom" data-i18n="btn_save">Save</button>
+              <button class="btn primary warn" id="submitBtnBottom">Submit week</button>
             </div>
           </div>
 
@@ -104,7 +123,8 @@
 
       <div style="display:grid; gap:16px; min-width:0">
       <aside class="panel" id="allowPanel">
-        <header>
+        <header id="allowHead" class="togHead">
+          <button type="button" class="pTog" id="allowTog" aria-expanded="true" data-i18n-aria="aria_collapse_allowances" aria-label="Collapse allowances">&#9662;</button>
           <h2 data-i18n="hdr_allowances">Allowances</h2>
           <span class="chip grey" id="allowCount" style="margin-left:auto">0 allowances</span>
         </header>

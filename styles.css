@@ -111,8 +111,19 @@
   .row.head{background:var(--surface-2); border-bottom:1px solid var(--line)}
   .row.head div{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); padding:8px 8px; text-align:center; font-weight:600}
   .row.head div:first-child{text-align:left}
-  .row.head div.we{color:var(--ink-3); opacity:.7}
-  .rowmeta{padding:8px 10px; display:grid; gap:2px; min-width:0}
+  .row.head div.we{background:var(--surface-3)}
+  .row.head div.today{background:var(--accent-soft); box-shadow:inset 0 -3px 0 0 var(--accent)}
+  .row.head div.today .dname, .row.head div.today .dnum{color:var(--accent-ink)}
+  /* sticky project/person column: the day cells scroll underneath it, so
+     whichever project or team member a row belongs to stays visible at
+     any horizontal scroll offset - the month grid in particular can run
+     to 30-odd day columns. */
+  .rowmeta, .row.head div:first-child, .row.monthsub div:first-child{
+    position:sticky; left:0; z-index:2; box-shadow:2px 0 4px -2px rgba(0,0,0,.12);
+  }
+  .rowmeta{padding:8px 10px; display:grid; gap:2px; min-width:0; background:var(--surface)}
+  .row.head div:first-child{z-index:3; background:var(--surface-2)}
+  .row.monthsub div:first-child{background:var(--surface-2)}
   .rowmeta .p{font-weight:600; display:flex; align-items:center; gap:7px; flex-wrap:wrap}
   .rowmeta .p code{font-family:var(--f-mono); font-size:11px; color:var(--ink-2); background:var(--surface-3); padding:1px 5px; border-radius:3px}
   .rowmeta .s{font-size:12px; color:var(--ink-3); overflow-wrap:anywhere}
@@ -132,15 +143,20 @@
   .cell:focus{background:var(--accent-soft); outline:2px solid var(--accent); outline-offset:-2px}
   .cell.just-saved{animation:justSaved 1.8s ease-out}
   @keyframes justSaved{0%{background:var(--accent-soft); box-shadow:inset 0 0 0 2px var(--accent)} 100%{background:transparent; box-shadow:inset 0 0 0 2px transparent}}
-  .cell.we{background:var(--surface-2)}
+  .cell.we{background:var(--surface-3)}
+  .cell.today{background:var(--accent-soft)}
+  .cell.we.today{background:var(--accent-soft)}
   .cell::placeholder{color:transparent}
   .rowtot{border-left:1px solid var(--line-soft); display:grid; place-items:center; text-align:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-weight:500}
   .rowact{display:grid; place-items:center}
   .rowact button{background:none; border:none; color:var(--ink-3); font-size:16px; line-height:1; padding:4px; border-radius:50%}
   .rowact button:hover{color:var(--crit); background:var(--crit-soft)}
   .row.totals{background:var(--surface-2); border-bottom:none; border-top:1px solid var(--line); font-weight:600}
-  .row.totals .rowmeta{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); align-content:center}
+  .row.totals .rowmeta{font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-3); align-content:center; background:var(--surface-2)}
   .row.totals .t{display:grid; place-items:center; border-left:1px solid var(--line-soft); font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+  .row.totals .t.we{background:var(--surface-3)}
+  .row.totals .t.today{background:var(--accent-soft)}
+  .row.totals .t.we.today{background:var(--accent-soft)}
   .row.totals .t.zero{color:var(--warn); background:var(--warn-soft)}
   .row.totals .t.over{color:var(--crit); background:var(--crit-soft)}
   .row.locked .cell{background:var(--surface-3); color:var(--ink-3)}
@@ -151,6 +167,7 @@
   .totlegend .sw.off{background:var(--ink-3)}
   .totlegend .sw.submitted{background:var(--accent-soft); border:1px solid var(--accent)}
   .gridfoot{display:flex; gap:8px; padding:10px 14px; flex-wrap:wrap; border-top:1px solid var(--line-soft)}
+  .gridfoot.end{justify-content:flex-end}
   kbd{font-family:var(--f-mono); font-size:11px; border:1px solid var(--line); border-bottom-width:2px; border-radius:4px; padding:1px 5px; background:var(--surface-2); color:var(--ink-2)}
 
   /* empty state */
@@ -286,6 +303,13 @@
   .togHead{cursor:pointer}
   .togHead:hover .pTog{background:var(--surface-2); color:var(--ink-2)}
 
+  /* "How it works?" - a short, numbered, dismissible flow for a new user,
+     collapsed state remembered across visits (see vesiHowOpen) */
+  .howsteps{display:flex; flex-wrap:wrap; align-items:center; gap:4px; list-style:none; margin:0; padding:12px 14px}
+  .howsteps li{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-2)}
+  .howsteps li:not(:last-child)::after{content:"\2192"; margin:0 14px; color:var(--ink-3); font-size:14px}
+  .hownum{display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; background:var(--accent-soft); color:var(--accent-ink); font-weight:700; font-size:11px; flex:none}
+
   .teamtabs{margin:0}
   .teamtabs button{font-size:14px; padding:8px 16px}
   .maplist{display:grid; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:var(--radius); overflow:hidden}
@@ -394,7 +418,9 @@
   .tsgrid.clock .row{grid-template-columns:minmax(210px,260px) repeat(7,92px) 70px 34px}
   .tsgrid.clock{min-width:940px}
   .clockcell{border-left:1px solid var(--line-soft); display:grid; gap:2px; padding:5px 5px; align-content:start}
-  .clockcell.we{background:var(--surface-2)}
+  .clockcell.we{background:var(--surface-3)}
+  .clockcell.today{background:var(--accent-soft)}
+  .clockcell.we.today{background:var(--accent-soft)}
   .clockcell .tinp{width:100%; border:1px solid var(--line-soft); border-radius:4px; background:var(--surface); color:var(--ink);
     font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:12px; text-align:center; padding:2px 0}
   .clockcell .tinp:focus{background:var(--accent-soft); outline:2px solid var(--accent); outline-offset:-2px}
@@ -430,7 +456,9 @@
   .tsgrid.readonly .row{grid-template-columns:minmax(230px,1fr) repeat(7,58px) 70px 34px}
   .tsgrid.readonly .rowmeta{padding:8px 10px; font-size:13px; font-weight:500}
   .already-cell{display:flex; align-items:center; justify-content:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-2); border-left:1px solid var(--line-soft); position:relative}
-  .already-cell.we{background:var(--surface-2)}
+  .already-cell.we{background:var(--surface-3)}
+  .already-cell.today{background:var(--accent-soft)}
+  .already-cell.we.today{background:var(--accent-soft)}
   .already-cell.full{background:var(--warn-soft); color:var(--warn); font-weight:600}
   .already-cell.over{background:var(--crit-soft); color:var(--crit); font-weight:600}
   .already-cell.abs{background:repeating-linear-gradient(135deg,var(--surface-3),var(--surface-3) 4px,var(--surface-2) 4px,var(--surface-2) 8px); color:var(--ink-3)}
@@ -438,7 +466,9 @@
      so it reads at a glance instead of only on hover (see the tooltip). */
   .already-cell.staged::after{content:""; position:absolute; top:3px; right:3px; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 1.5px var(--surface)}
   .allowcell{display:flex; align-items:center; justify-content:center; text-align:center; font-family:var(--f-mono); font-variant-numeric:tabular-nums; font-size:13px; color:var(--ink-3); border-left:1px solid var(--line-soft)}
-  .allowcell.we{background:var(--surface-2)}
+  .allowcell.we{background:var(--surface-3)}
+  .allowcell.today{background:var(--accent-soft)}
+  .allowcell.we.today{background:var(--accent-soft)}
   .allowcell.pending{background:var(--accent-soft); color:var(--accent-ink); font-weight:600}
   .errdot{display:grid; place-items:center; width:20px; height:20px; border-radius:50%; background:var(--crit-soft); color:var(--crit); font-weight:700; font-size:12px; cursor:help}
   .spacer{flex:1 1 auto}

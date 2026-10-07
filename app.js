@@ -284,6 +284,23 @@
   function daysFor(dates){
     return dates.map(function(wd,i){ return WEEKDAY_ABBR[i] + " " + (+wd.slice(6,8)); });
   }
+  /* "YYYYMMDD", local time, to compare directly against WORKDATES/datesFor
+     entries without any timezone conversion in between. */
+  function todayISO(){
+    var d = new Date();
+    return "" + d.getFullYear() + ((d.getMonth()+1)<10?"0":"")+(d.getMonth()+1) + (d.getDate()<10?"0":"")+d.getDate();
+  }
+  /* "we"/"today" for whichever of the 7 columns of the currently loaded
+     week (WORKDATES) index i falls on - shared by every grid keyed off
+     that one week (My Timesheet, Already-recorded, Team mass entry).
+     The month grid spans many weeks at once, so it compares full dates
+     instead - see monthDayExtraClass. */
+  function dayExtraClass(i){
+    return (i>4 ? " we" : "") + (WORKDATES[i] === todayISO() ? " today" : "");
+  }
+  function monthDayExtraClass(dayOfWeek, dateISO){
+    return (dayOfWeek>4 ? " we" : "") + (dateISO === todayISO() ? " today" : "");
+  }
   /* Builds the weekday name and date number as two separate lines, always,
      so every column header wraps the same way regardless of how wide each
      abbreviation happens to render (natural text wrap broke that: some
@@ -928,6 +945,10 @@
       n_selected_one:"{n} selected", n_selected_other:"{n} selected",
       lines_staged_suffix_one:"line staged", lines_staged_suffix_other:"lines staged", h_staged_suffix:"h staged",
       hdr_week_entries:"Week entries", aria_view:"View", btn_grid:"Grid", btn_calendar:"Calendar",
+      hdr_how_it_works:"How it works?",
+      how_step1:"Create or select the project", how_step2:"Enter the hours",
+      how_step3:"Validate", how_step4:"Save or submit",
+      aria_collapse_how:"Collapse how it works", aria_expand_how:"Expand how it works",
       legend_over:"Total per day: over capacity", legend_empty:"Empty working day",
       legend_unavailable:"Not available (absence or non-working day)", legend_submitted:"Week already submitted",
       btn_add_row:"Add row", btn_copy_week:"Copy previous week", btn_apply_template:"Apply template",
@@ -937,6 +958,7 @@
       btn_add_allowance:"Add allowance",
       privacy_allowances:"Per diems, kilometres and shift allowances are recorded against a project and a date, as quantity and unit. No value is calculated here. The project bonus is the exception: it carries an amount and only the project owner records it.",
       aria_collapse_suggestions:"Collapse suggestions", aria_expand_suggestions:"Expand suggestions",
+      aria_collapse_allowances:"Collapse allowances", aria_expand_allowances:"Expand allowances",
       hdr_suggestions:"Suggestions this week", btn_accept_high_confidence:"Accept high-confidence ones",
       privacy_suggestions_intro:"Nothing enters the timesheet without confirmation.",
       btn_data_collected:"What's collected and where it's stored",
@@ -1205,6 +1227,10 @@
       n_selected_one:"{n} selecionado", n_selected_other:"{n} selecionados",
       lines_staged_suffix_one:"linha em staging", lines_staged_suffix_other:"linhas em staging", h_staged_suffix:"h em staging",
       hdr_week_entries:"Lançamentos da semana", aria_view:"Vista", btn_grid:"Grelha", btn_calendar:"Calendário",
+      hdr_how_it_works:"Como funciona?",
+      how_step1:"Criar ou selecionar o projeto", how_step2:"Inserir as horas",
+      how_step3:"Validar", how_step4:"Guardar ou submeter",
+      aria_collapse_how:"Colapsar Como funciona", aria_expand_how:"Expandir Como funciona",
       legend_over:"Total por dia: acima da capacidade", legend_empty:"Dia útil vazio",
       legend_unavailable:"Indisponível (ausência ou dia não útil)", legend_submitted:"Semana já submetida",
       btn_add_row:"Adicionar linha", btn_copy_week:"Copiar semana anterior", btn_apply_template:"Aplicar modelo",
@@ -1214,6 +1240,7 @@
       btn_add_allowance:"Adicionar abono",
       privacy_allowances:"Ajudas de custo, quilómetros e abonos de turno são registados contra um projeto e uma data, como quantidade e unidade. Não é calculado nenhum valor aqui. O bónus de projeto é a exceção: tem um montante e só o dono do projeto o regista.",
       aria_collapse_suggestions:"Colapsar sugestões", aria_expand_suggestions:"Expandir sugestões",
+      aria_collapse_allowances:"Colapsar abonos", aria_expand_allowances:"Expandir abonos",
       hdr_suggestions:"Sugestões desta semana", btn_accept_high_confidence:"Aceitar as de alta confiança",
       privacy_suggestions_intro:"Nada entra na folha de horas sem confirmação.",
       btn_data_collected:"O que é recolhido e onde é guardado",
@@ -1482,6 +1509,10 @@
       n_selected_one:"{n} sélectionné", n_selected_other:"{n} sélectionnés",
       lines_staged_suffix_one:"ligne en attente", lines_staged_suffix_other:"lignes en attente", h_staged_suffix:"h en attente",
       hdr_week_entries:"Saisies de la semaine", aria_view:"Vue", btn_grid:"Grille", btn_calendar:"Calendrier",
+      hdr_how_it_works:"Comment ça marche ?",
+      how_step1:"Créer ou sélectionner le projet", how_step2:"Saisir les heures",
+      how_step3:"Valider", how_step4:"Enregistrer ou soumettre",
+      aria_collapse_how:"Réduire Comment ça marche", aria_expand_how:"Développer Comment ça marche",
       legend_over:"Total par jour : au-delà de la capacité", legend_empty:"Jour ouvré vide",
       legend_unavailable:"Indisponible (absence ou jour non ouvré)", legend_submitted:"Semaine déjà soumise",
       btn_add_row:"Ajouter une ligne", btn_copy_week:"Copier la semaine précédente", btn_apply_template:"Appliquer un modèle",
@@ -1491,6 +1522,7 @@
       btn_add_allowance:"Ajouter une indemnité",
       privacy_allowances:"Les indemnités journalières, kilométriques et de poste sont enregistrées contre un projet et une date, en quantité et en unité. Aucune valeur n'est calculée ici. La prime de projet est l'exception : elle porte un montant et seul le responsable du projet l'enregistre.",
       aria_collapse_suggestions:"Réduire les suggestions", aria_expand_suggestions:"Développer les suggestions",
+      aria_collapse_allowances:"Réduire les indemnités", aria_expand_allowances:"Développer les indemnités",
       hdr_suggestions:"Suggestions cette semaine", btn_accept_high_confidence:"Accepter celles à forte confiance",
       privacy_suggestions_intro:"Rien n'entre dans le relevé sans confirmation.",
       btn_data_collected:"Ce qui est collecté et où c'est stocké",
@@ -1741,6 +1773,7 @@
        guess) */
     teamTab: "hours",
     sugManualOpen: null,
+    allowManualOpen: null,
     /* which top-level screen is showing right now: "semana" (My week),
        "team", "aprov" or "cats" - lets the assistant tell a personal
        request from a team one when the wording alone is ambiguous */
@@ -1928,7 +1961,7 @@
   function durCell(r, i, v, pr){
     var inp = document.createElement("input");
     inp.type = "text";
-    inp.className = "cell" + (i>4 ? " we" : "");
+    inp.className = "cell" + dayExtraClass(i);
     inp.id = "c-"+r.id+"-"+i;
     inp.value = v ? fmt(v) : "";
     inp.inputMode = "decimal";
@@ -1974,7 +2007,7 @@
   }
 
   function clockCell(r, i, v, pr){
-    var box = el("div","clockcell" + (i>4 ? " we" : ""), "");
+    var box = el("div","clockcell" + dayExtraClass(i), "");
     var s = slot(r,i);
     var locked = cellLocked(i, v);
     ["b","e"].forEach(function(k){
@@ -2046,7 +2079,7 @@
     head.className = "row head";
     head.appendChild(el("div","",t("th_project_wbs_activity")));
     DAYS.forEach(function(d,i){
-      var c = el("div", i>4?"we":"", "");
+      var c = el("div", dayExtraClass(i).trim(), "");
       appendDayLabel(c, i);
       var ap = absOn(i,"approved")[0], pe = absOn(i,"pending")[0];
       if(ap) c.appendChild(dayAbsBadge(ap, capacity(i) === 0 ? ap.type : t("badge_half_day"), capacity(i) === 0 ? " full" : ""));
@@ -2115,6 +2148,7 @@
         if(v > 24 || (d < 5 && v > cap)) cls += " over";
         else if(v === 0 && d < 5 && cap > 0) cls += " zero";
         else if(d < 5 && cap === 0) cls += " off";
+        cls += dayExtraClass(d);
         tr.appendChild(el("div", cls, d < 5 && cap === 0 && !v ? "–" : (v ? fmt(v) : "0.0")));
       }
       tr.appendChild(el("div","t", fmt(weekTotal())));
@@ -2142,6 +2176,8 @@
   }
   function monthDecorateCell(node, week, i){
     var dates = datesFor(week.start);
+    var extra = monthDayExtraClass(i, dates[i]).trim();
+    if(extra) node.classList.add.apply(node.classList, extra.split(" "));
     if(week.submitted){
       node.classList.add("submitted");
       node.title = "Week " + week.num + " was already submitted, not editable.";
@@ -2210,7 +2246,7 @@
     head.appendChild(el("div","",t("th_project_wbs_activity")));
     dates.forEach(function(dateISO){
       var wd = weekDayFor(dateISO);
-      var c = el("div", wd.day > 4 ? "we" : "", "");
+      var c = el("div", monthDayExtraClass(wd.day, dateISO).trim(), "");
       c.appendChild(el("span","dname", WEEKDAY_ABBR[wd.day]));
       c.appendChild(el("span","dnum", "" + (+dateISO.slice(6,8))));
       var ap = wd.week.absences.filter(function(a){ return a.day===wd.day && a.status==="approved"; })[0];
@@ -2333,6 +2369,7 @@
         if(v > 24 || v > cap) cls += " over";
         else if(v === 0 && cap > 0) cls += " zero";
         else if(cap === 0) cls += " off";
+        cls += monthDayExtraClass(wd.day, dateISO);
         tr.appendChild(el("div", cls, cap === 0 && !v ? "–" : (v ? fmt(v) : "0.0")));
       });
       tr.appendChild(el("div","t", fmt(monthTotalHours(dates))));
@@ -2702,6 +2739,7 @@
        unsaved - the person can reach for it any time as reassurance,
        not only when the app is telling them they have to. */
     if($("saveBtn")) $("saveBtn").hidden = false;
+    syncBottomSaveSubmit();
     var chip = $("stateChip");
     chip.textContent = state.needsSave ? t("chip_save_to_finish") : (allSubmitted ? t("chip_in_approval") : t("state_draft"));
     chip.className = state.needsSave ? "chip amber" : (allSubmitted ? "chip blue" : "chip grey");
@@ -2750,6 +2788,7 @@
     /* Always visible on My Timesheet, not just while there's something
        unsaved - see renderKpisMonth. */
     if($("saveBtn")) $("saveBtn").hidden = false;
+    syncBottomSaveSubmit();
     var chip = $("stateChip");
     chip.textContent = state.needsSave ? t("chip_save_to_finish") : (state.submitted ? t("chip_in_approval") : t("state_draft"));
     chip.className = state.needsSave ? "chip amber" : (state.submitted ? "chip blue" : "chip grey");
@@ -2867,6 +2906,10 @@
     box.innerHTML = "";
     var mine = myAllow();
     $("allowCount").textContent = plural(mine.length, "n_allowances");
+    /* Collapsed when there's nothing recorded, open when there is - unless
+       the person has already toggled it themselves this session, which
+       always wins over the automatic guess (see renderSugs). */
+    setPanelOpen("allowPanel", "allowTog", state.allowManualOpen === null ? mine.length > 0 : state.allowManualOpen);
     if(!mine.length){
       box.appendChild(el("div","paused",t("text_no_allowances_week")));
       return;
@@ -3157,7 +3200,7 @@
     var head = document.createElement("div");
     head.className = "row head";
     head.appendChild(el("div","",t("th_employee")));
-    DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
+    DAYS.forEach(function(d,i){ var c = el("div", dayExtraClass(i).trim(), ""); appendDayLabel(c, i); head.appendChild(c); });
     head.appendChild(el("div","",t("th_total")));
     head.appendChild(el("div","",""));
     wrap.appendChild(head);
@@ -3182,7 +3225,7 @@
       already.forEach(function(v,i){
         var total = v + (st.h[i] || 0);
         rowTotal += total;
-        var cls = "already-cell" + (i>4 ? " we" : "");
+        var cls = "already-cell" + dayExtraClass(i);
         if(total > 8) cls += " over";
         else if(total >= 8) cls += " full";
         if(memberBlocked(m,i)) cls += " abs";
@@ -3234,7 +3277,7 @@
     var head = document.createElement("div");
     head.className = "row head";
     head.appendChild(el("div","",t("th_employee")));
-    DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
+    DAYS.forEach(function(d,i){ var c = el("div", dayExtraClass(i).trim(), ""); appendDayLabel(c, i); head.appendChild(c); });
     head.appendChild(el("div","",t("th_total")));
     head.appendChild(el("div","",""));
     wrap.appendChild(head);
@@ -3250,7 +3293,7 @@
       DAYS.forEach(function(d,i){
         var lines = entries.filter(function(e){ return e.day === i; });
         var info = fmtAllowCell(lines);
-        var cls = "already-cell" + (i>4 ? " we" : "") + (memberBlocked(m,i) ? " abs" : "");
+        var cls = "already-cell" + dayExtraClass(i) + (memberBlocked(m,i) ? " abs" : "");
         var cell = el("div", cls, info.text);
         if(memberBlocked(m,i)) cell.title = t("tip_approved_type", {type: m.abs[i].toLowerCase()});
         else if(lines.length) cell.title = info.title;
@@ -3314,7 +3357,7 @@
     var head = document.createElement("div");
     head.className = "row head";
     head.appendChild(el("div","",t("th_employee")));
-    DAYS.forEach(function(d,i){ var c = el("div", i>4?"we":"", ""); appendDayLabel(c, i); head.appendChild(c); });
+    DAYS.forEach(function(d,i){ var c = el("div", dayExtraClass(i).trim(), ""); appendDayLabel(c, i); head.appendChild(c); });
     head.appendChild(el("div","",t("th_total")));
     head.appendChild(el("div","",""));
     wrap.appendChild(head);
@@ -3359,7 +3402,7 @@
              sees it land here, not only in the list below. */
           var lines = state.stagedAllow.filter(function(a){ return a.pernr === m.pernr && a.day === i; });
           var info = fmtAllowCell(lines);
-          var cell = el("div","allowcell" + (i>4 ? " we" : ""), info.text);
+          var cell = el("div","allowcell" + dayExtraClass(i), info.text);
           if(lines.length){
             cell.title = info.title + " · staged, not saved";
             cell.classList.add("pending");
@@ -3376,14 +3419,14 @@
              waiting for the save log. */
           var slotT = st.t[i];
           if(!slotT){
-            var ph = el("div","cell computed" + (i>4 ? " we" : ""), "–");
+            var ph = el("div","cell computed" + dayExtraClass(i), "–");
             ph.title = t("tip_clock_use_fields");
             if(memberBlocked(m,i)){ ph.classList.add("abs"); ph.title = t("tip_approved_type", {type: m.abs[i].toLowerCase()}); }
             if(!periodOpen(WORKDATES[i], m.bukrs)){ ph.classList.add("closed"); ph.title = t("tip_closed_period_short"); }
             row.appendChild(ph);
             return;
           }
-          var box = el("div","clockcell" + (i>4 ? " we" : ""), "");
+          var box = el("div","clockcell" + dayExtraClass(i), "");
           ["b","e"].forEach(function(k){
             var tinp = document.createElement("input");
             tinp.type = "text";
@@ -3402,7 +3445,7 @@
         }
         var inp = document.createElement("input");
         inp.type = "text";
-        inp.className = "cell" + (i>4 ? " we" : "");
+        inp.className = "cell" + dayExtraClass(i);
         inp.value = v ? fmt(v) : "";
         inp.inputMode = "decimal";
         inp.disabled = m.locked || memberBlocked(m,i) || !periodOpen(WORKDATES[i], m.bukrs);
@@ -4677,11 +4720,9 @@
   $("tplBtn").onclick = applyTemplate;
   $("quickBtn").onclick = function(){ openQuick("", 2); };
   $("submitBtn").onclick = openSubmit;
-  if($("saveBtn")) $("saveBtn").onclick = function(){
-    state.needsSave = false;
-    render();
-    toast(t("toast_changes_saved"));
-  };
+  if($("saveBtn")) $("saveBtn").onclick = saveChanges;
+  if($("submitBtnBottom")) $("submitBtnBottom").onclick = openSubmit;
+  if($("saveBtnBottom")) $("saveBtnBottom").onclick = saveChanges;
   $("sugChip").onclick = function(){ $("sugPanel").scrollIntoView({block:"center"}); };
   $("acceptHi").onclick = function(){
     var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
@@ -4695,6 +4736,20 @@
     $("viewGrid").hidden = !grid; $("viewCal").hidden = grid;
     $("vGrid").setAttribute("aria-pressed", grid ? "true" : "false");
     $("vCal").setAttribute("aria-pressed", grid ? "false" : "true");
+    if($("addRow")) $("addRow").hidden = !grid;
+  }
+  function saveChanges(){
+    state.needsSave = false;
+    render();
+    toast(t("toast_changes_saved"));
+  }
+  /* A second Save/Submit pair at the foot of the grid, so a long week or
+     month doesn't force a scroll back to the top just to save or submit
+     after filling it in. The top pair stays too, as a shortcut for
+     someone who hasn't scrolled down at all. */
+  function syncBottomSaveSubmit(){
+    var top = $("submitBtn"), bottom = $("submitBtnBottom");
+    if(bottom){ bottom.disabled = top.disabled; bottom.textContent = top.textContent; }
   }
   $("nlq").addEventListener("input", parseNL);
   $("nlSave").onclick = function(ev){ if(!saveNL()) ev.preventDefault(); };
@@ -6175,6 +6230,23 @@
      visual affordance but isn't the only way in. */
   if($("alreadyHead")) $("alreadyHead").onclick = function(){
     setPanelOpen("alreadyPanel", "alreadyTog", $("alreadyPanel").classList.contains("collapsed"));
+  };
+  if($("allowHead")) $("allowHead").onclick = function(){
+    state.allowManualOpen = $("allowPanel").classList.contains("collapsed");
+    setPanelOpen("allowPanel", "allowTog", state.allowManualOpen);
+  };
+  /* Open by default for whoever hasn't seen it yet; remembered across
+     visits (not just this session) once collapsed, since its content
+     never changes and showing it again would just be in the way. */
+  (function(){
+    var open = true;
+    try{ var v = localStorage.getItem("vesiHowOpen"); if(v !== null) open = v === "1"; }catch(e){}
+    setPanelOpen("howPanel", "howTog", open);
+  })();
+  if($("howHead")) $("howHead").onclick = function(){
+    var open = $("howPanel").classList.contains("collapsed");
+    setPanelOpen("howPanel", "howTog", open);
+    try{ localStorage.setItem("vesiHowOpen", open ? "1" : "0"); }catch(e){}
   };
 
   if($("ttHours")) $("ttHours").onclick = function(){ state.teamTab = "hours"; renderTeam(); };
