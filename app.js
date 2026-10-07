@@ -4202,9 +4202,13 @@
      grid (target is the week the new row is pushed into). */
   var dtNewRow = null;
   /* Fills the detail dialog's project <select> with one <option> per index
-     in indices, "CODE · WBS". openDetail/openMonthDetail (every project) and
-     openNewRowDetail/openNewMonthRowDetail (only the eligible ones) each
-     built this same option list themselves. */
+     in indices, "CODE · Name" - the name, not the WBS, since a non-project
+     activity like AXI-INT has no WBS to show and the code alone isn't
+     enough to tell apart two similarly-named projects while the list is
+     still open (the WBS itself is still visible once something is picked,
+     on the row above it, and in the dialog's own title). openDetail/
+     openMonthDetail (every project) and openNewRowDetail/openNewMonthRowDetail
+     (only the eligible ones) each built this same option list themselves. */
   /* Only proj:true entries need a description (val_desc_required), so the
      hint has to say so: a project-less activity like AXI-INT otherwise
      reads as "required" when it's actually optional. Re-run on every
@@ -4219,7 +4223,7 @@
     indices.forEach(function(i){
       var p = PROJECTS[i];
       var o = document.createElement("option");
-      o.value = String(i); o.textContent = p.code + " · " + p.wbs;
+      o.value = String(i); o.textContent = p.code + " · " + p.name;
       pj.appendChild(o);
     });
   }
