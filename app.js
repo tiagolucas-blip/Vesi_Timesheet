@@ -1952,6 +1952,8 @@
     if(!I18N[lang]) return;
     state.lang = lang;
     try{ localStorage.setItem("vesiLang", lang); }catch(e){}
+    voice.lang = lang.toUpperCase();
+    syncVoiceLangBtn();
     applyLocaleArrays();
     applyI18n();
     render();
@@ -5067,7 +5069,18 @@
   var VOICE_LANGS = {PT:"pt-PT", EN:"en-US", FR:"fr-FR"};
   var VOICE_LANG_NAMES = {PT:"Portuguese", EN:"English", FR:"French"};
   var VOICE_LANG_ORDER = ["PT","EN","FR"];
-  var voice = {lang:"PT", usedVoice:false, speakReply:false};
+  /* Starts aligned with the app's own language (state.lang) instead of a
+     hardcoded default - setLang() keeps it in sync when that changes, via
+     syncVoiceLangBtn below. The person can still override it by clicking
+     the mic's language button, independently of the app language. */
+  var voice = {lang: state.lang.toUpperCase(), usedVoice:false, speakReply:false};
+  function syncVoiceLangBtn(){
+    var langBtn = $("jMicLang");
+    if(!langBtn) return;
+    langBtn.textContent = voice.lang;
+    var next = VOICE_LANG_ORDER[(VOICE_LANG_ORDER.indexOf(voice.lang) + 1) % VOICE_LANG_ORDER.length];
+    langBtn.title = "Voice input language: " + VOICE_LANG_NAMES[voice.lang] + " (click to switch to " + VOICE_LANG_NAMES[next] + ")";
+  }
   function speakText(txt){
     if(!voice.speakReply || !window.speechSynthesis) return;
     try{
@@ -6373,14 +6386,10 @@
       return;
     }
     function nextLang(l){ return VOICE_LANG_ORDER[(VOICE_LANG_ORDER.indexOf(l) + 1) % VOICE_LANG_ORDER.length]; }
-    function updateLangBtn(){
-      langBtn.textContent = voice.lang;
-      langBtn.title = "Voice input language: " + VOICE_LANG_NAMES[voice.lang] + " (click to switch to " + VOICE_LANG_NAMES[nextLang(voice.lang)] + ")";
-    }
-    updateLangBtn();
+    syncVoiceLangBtn();
     langBtn.onclick = function(){
       voice.lang = nextLang(voice.lang);
-      updateLangBtn();
+      syncVoiceLangBtn();
     };
 
     var recog = new SR();
