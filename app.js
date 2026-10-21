@@ -5482,6 +5482,11 @@
           historico: chat.history.slice(0, -1).slice(-12),
           contexto: {
             ecra_atual: {semana:"My Timesheet", team:"Team", aprov:"Approval", cats:"CATS mapping"}[state.screen] || "My Timesheet",
+            /* Which CATS data entry profile the person writing this message is on
+               right now (IT0001.bukrs), the fact buildSystemPrompt's business-rule
+               instruction asks it to ground any explanation of the fill-in logic
+               in, instead of hedging ("se não tens esse perfil..."). */
+            meu_registo: isClock() ? "relogio" : "duracao",
             projetos: PROJECTS.map(function(p,i){ return {codigo: p.code.split("-")[0], nome: p.name, indice: i}; }),
             ausencias: ABSENCES.map(function(a){ return {dia: DAYS[a.day], indice: a.day, tipo: a.type, horas: a.hours, estado: a.status}; }),
             capacidades: [0,1,2,3,4].map(function(d){ return {dia: DAYS[d], indice: d, capacidade: capacity(d), registado: dayTotal(d)}; }),
@@ -5524,7 +5529,10 @@
               return {
                 nome: m.name, aprovado_bloqueado: !!m.locked,
                 projetos: m.projs.map(function(i){ return PROJECTS[i].code.split("-")[0]; }),
-                dias_uteis_sem_horas: missingWeekdaysFor(m).map(function(d){ return DAYS[d]; })
+                dias_uteis_sem_horas: missingWeekdaysFor(m).map(function(d){ return DAYS[d]; }),
+                /* A leader can manage people on both profiles at once (e.g. Carlos
+                   Pinto's team), so this is per member, not a single team-wide flag. */
+                regista: profileFor(WORKDATES[0], m.bukrs).clock ? "relogio" : "duracao"
               };
             }),
             aprovacoes: state.approvals.map(function(a){ return {nome: a.who, tem_excecao: !!a.warn, nota: a.note || null, aprovado: !!a.approved}; }),
