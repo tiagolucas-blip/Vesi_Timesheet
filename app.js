@@ -5480,6 +5480,10 @@
         body: JSON.stringify({
           mensagem: txt,
           historico: chat.history.slice(0, -1).slice(-12),
+          /* The assistant always replies in the app's own language setting, not
+             whatever language the message happens to be written in - same rule
+             the rest of the UI follows (one selector, in Settings, for everything). */
+          idioma: state.lang,
           contexto: {
             ecra_atual: {semana:"My Timesheet", team:"Team", aprov:"Approval", cats:"CATS mapping"}[state.screen] || "My Timesheet",
             /* Which CATS data entry profile the person writing this message is on
