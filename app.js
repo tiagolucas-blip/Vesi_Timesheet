@@ -2993,7 +2993,6 @@
        unsaved - the person can reach for it any time as reassurance,
        not only when the app is telling them they have to. */
     if($("saveBtn")) $("saveBtn").hidden = false;
-    syncBottomSaveSubmit();
     var chip = $("stateChip");
     chip.textContent = state.needsSave ? t("chip_save_to_finish") : (allSubmitted ? t("chip_in_approval") : t("state_draft"));
     chip.className = state.needsSave ? "chip amber" : (allSubmitted ? "chip blue" : "chip grey");
@@ -3042,7 +3041,6 @@
     /* Always visible on My Timesheet, not just while there's something
        unsaved - see renderKpisMonth. */
     if($("saveBtn")) $("saveBtn").hidden = false;
-    syncBottomSaveSubmit();
     var chip = $("stateChip");
     chip.textContent = state.needsSave ? t("chip_save_to_finish") : (state.submitted ? t("chip_in_approval") : t("state_draft"));
     chip.className = state.needsSave ? "chip amber" : (state.submitted ? "chip blue" : "chip grey");
@@ -4979,8 +4977,6 @@
   $("quickBtn").onclick = function(){ openQuick("", 2); };
   $("submitBtn").onclick = openSubmit;
   if($("saveBtn")) $("saveBtn").onclick = saveChanges;
-  if($("submitBtnBottom")) $("submitBtnBottom").onclick = openSubmit;
-  if($("saveBtnBottom")) $("saveBtnBottom").onclick = saveChanges;
   $("sugChip").onclick = function(){ $("sugPanel").scrollIntoView({block:"center"}); };
   $("acceptHi").onclick = function(){
     var hi = visibleSugs().filter(function(s){ return s.conf === "hi"; });
@@ -5000,14 +4996,6 @@
     state.needsSave = false;
     render();
     toast(t("toast_changes_saved"));
-  }
-  /* A second Save/Submit pair at the foot of the grid, so a long week or
-     month doesn't force a scroll back to the top just to save or submit
-     after filling it in. The top pair stays too, as a shortcut for
-     someone who hasn't scrolled down at all. */
-  function syncBottomSaveSubmit(){
-    var top = $("submitBtn"), bottom = $("submitBtnBottom");
-    if(bottom){ bottom.disabled = top.disabled; bottom.textContent = top.textContent; }
   }
   $("nlq").addEventListener("input", parseNL);
   $("nlSave").onclick = function(ev){ if(!saveNL()) ev.preventDefault(); };
